@@ -42,6 +42,33 @@ armada_staged_ref() {
         'import sys,json; st=json.load(sys.stdin).get("status",{}).get("staged"); print(st["image"]["image"]["image"] if st else "")' 2>/dev/null || true
 }
 
+# "<booted-digest> <staged-digest> <staged-ref> <staged-version>", "-" keeps
+# empty fields positional. Needs root.
+armada_local_state() {
+    bootc status --format json 2>/dev/null | python3 -c '
+import sys, json
+st = json.load(sys.stdin).get("status") or {}
+b = (st.get("booted") or {}).get("image") or {}
+s = (st.get("staged") or {}).get("image") or {}
+out = [b.get("imageDigest"), s.get("imageDigest"), (s.get("image") or {}).get("image"), s.get("version")]
+print(" ".join(v or "-" for v in out))
+' 2>/dev/null || true
+}
+
+# "<digest> <version-label>" of a channel's published image in the registry.
+armada_remote_info() {
+    skopeo inspect --format '{{.Digest}} {{index .Labels "org.opencontainers.image.version"}}' \
+        "docker://${ARMADA_REGISTRY}:$1" 2>/dev/null || true
+}
+
+# Channel version for Steam duplicate detection: digest keeps the fallback
+# per-build; channel name only when the probe fails outright.
+armada_remote_version() {
+    local d v
+    read -r d v <<<"$(armada_remote_info "$1")" || true
+    printf '%s\n' "${v:-${d:-$1}}"
+}
+
 # Channel the user selected, validated to a known channel; else $1 (a caller-
 # supplied booted channel, to avoid re-querying) or the booted channel.
 armada_desired_channel() {
