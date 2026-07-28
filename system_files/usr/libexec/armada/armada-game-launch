@@ -174,7 +174,9 @@ def repair_wedged_controller():
         return
     lines = text.splitlines(keepends=True)
     pad_sections = sum(1 for line in lines if line.startswith("[") and "VID_28DE" in line)
-    if not pad_sections or any("WINEXINPUT" in line for line in lines):
+    # Only a WINEXINPUT key for this same pad proves promotion; an old target's keys outlive it.
+    promoted = any("WINEXINPUT" in line and "VID_28DE" in line for line in lines)
+    if not pad_sections or promoted:
         return  # no pad registered, or it promoted fine - leave the prefix alone
     reg.with_name("system.reg.armada-bak").write_text(
         text, encoding="utf-8", errors="surrogateescape")
