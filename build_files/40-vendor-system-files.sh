@@ -27,6 +27,7 @@ systemctl enable sddm.service
 systemctl enable nebel-session-default.service
 systemctl enable seatd.service
 systemctl enable nebel-input-calibration.service
+systemctl enable nebel-gamepad-autocal.service
 systemctl enable nebel-controller-type.service
 systemctl enable inputplumber.service
 systemctl enable nebel-device-quirks.service

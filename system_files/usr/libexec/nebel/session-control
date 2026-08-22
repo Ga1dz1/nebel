@@ -67,7 +67,7 @@ inputplumber_gamepad_mode() {
 }
 
 logout_plasma() {
-    local user=nebel
+    local user=armada
     local uid=1000
     local bus="/run/user/${uid}/bus"
     local qdbus=

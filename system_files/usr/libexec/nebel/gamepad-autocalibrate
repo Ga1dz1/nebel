@@ -1,0 +1,98 @@
+#!/usr/bin/python3
+"""Center the handheld gamepad sticks at boot.
+
+The Retroid/RSInput gamepad MCUs report raw stick positions whose electrical
+center is not 0 (seen live on Mini V2: left stick X resting at +166 of the
++-1408 range) and the offset drifts with age and temperature. The kernel
+driver (drivers/input/joystick/retroid.c, and the ABI-identical rsinput)
+exposes axis_*_center/axis_*_deadzone module params that are applied live to
+every packet, so we measure the resting position once per boot and write the
+offsets there. The Steam "calibrate sticks" wizard cannot help here: it only
+persists calibration for hardware the Steam client drives itself, which the
+InputPlumber virtual device is not.
+
+Skipped entirely when /etc/nebel/input-calibration.json exists - a static
+config (applied by nebel-input-calibration.service) takes precedence over
+measuring.
+"""
+import fcntl
+import glob
+import statistics
+import struct
+import sys
+import time
+from pathlib import Path
+
+DEADZONE = 100        # ~7% of the +-1408 range; kills residual center jitter
+MAX_REST = 400        # past this the stick is being held at boot; don't center
+SAMPLES = 5
+SAMPLE_INTERVAL = 0.06
+SETTLE_TIME = 1.5     # let the MCU stream stabilize after serdev bind
+
+# ABS axes of the two analog sticks (left: X/Y, right: RX/RY).
+AXES = (("axis_leftx", 0x00), ("axis_lefty", 0x01),
+        ("axis_rightx", 0x03), ("axis_righty", 0x04))
+MODULES = ("retroid", "rsinput")
+DEVICE_NAMES = ("Retroid Pocket Gamepad", "RSInput Gamepad")
+
+
+def find_params_dir():
+    for name in MODULES:
+        path = Path(f"/sys/module/{name}/parameters")
+        if path.is_dir():
+            return path
+    return None
+
+
+def find_event_node():
+    """Poll until the gamepad event node appears (serdev binds late)."""
+    for _ in range(100):
+        for node in sorted(glob.glob("/dev/input/event*")):
+            try:
+                with open(node, "rb") as f:
+                    buf = fcntl.ioctl(f, 0x80504506, bytes(80))  # EVIOCGETNAME
+                name = buf.split(b"\0")[0].decode(errors="replace")
+            except OSError:
+                continue
+            if name in DEVICE_NAMES:
+                return node
+        time.sleep(0.1)
+    return None
+
+
+def read_axis(fd, axis):
+    # EVIOCGABS(axis): struct input_absinfo { value, min, max, fuzz, flat, res }
+    buf = fcntl.ioctl(fd, 0x80184540 + axis, bytes(24))
+    return struct.unpack("6i", buf)[0]
+
+
+def main():
+    params = find_params_dir()
+    if params is None:
+        return  # not a handheld with a calibratable gamepad; nothing to do
+    node = find_event_node()
+    if node is None:
+        print("gamepad-autocalibrate: gamepad event node not found", file=sys.stderr)
+        return
+
+    with open(node, "rb") as fd:
+        time.sleep(SETTLE_TIME)
+        for name, axis in AXES:
+            if not (params / f"{name}_center").exists():
+                continue
+            samples = []
+            for _ in range(SAMPLES):
+                samples.append(read_axis(fd, axis))
+                time.sleep(SAMPLE_INTERVAL)
+            rest = int(statistics.median(samples))
+            if abs(rest) > MAX_REST:
+                print(f"gamepad-autocalibrate: {name} resting at {rest}, "
+                      f"past {MAX_REST} - stick held? leaving center alone")
+                continue
+            (params / f"{name}_center").write_text(str(-rest), encoding="utf-8")
+            (params / f"{name}_deadzone").write_text(str(DEADZONE), encoding="utf-8")
+            print(f"gamepad-autocalibrate: {name} center={-rest} deadzone={DEADZONE}")
+
+
+if __name__ == "__main__":
+    main()
