@@ -33,15 +33,10 @@ dnf5 -y install --setopt=install_weak_deps=False --enable-repo=terra \
     gamescope-session \
     steam-notif-daemon
 
-# ROCKNIX's --use-rotation-shader patch makes this a no-arg flag.
-if ! grep -q 'USE_ROTATION_SHADER_OPTION="--use-rotation-shader $USE_ROTATION_SHADER"' \
-    /usr/share/gamescope-session-plus/gamescope-session-plus; then
-    echo "ERROR: gamescope-session-plus rotation-shader hook changed; inspect before patching" >&2
-    exit 1
-fi
-sed -i \
-    's/USE_ROTATION_SHADER_OPTION="--use-rotation-shader $USE_ROTATION_SHADER"/USE_ROTATION_SHADER_OPTION="--use-rotation-shader"/' \
-    /usr/share/gamescope-session-plus/gamescope-session-plus
+# Upstream dropped the USE_ROTATION_SHADER hook (gamescope-session-plus git
+# 20260820) in favour of --force-composition-rotation; armada's own
+# sessions.d/steam builds the gamescope command itself and passes
+# --use-rotation-shader directly, so the main script needs no rotation patch.
 
 # Avoid xtrace spam during every game-mode startup.
 sed -i '/^set -x$/d' /usr/share/gamescope-session-plus/gamescope-session-plus
