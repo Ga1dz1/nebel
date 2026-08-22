@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { setControllerType as applyControllerType, setSharedStorageEnabled as applySharedStorageEnabled, setSshEnabled as applySshEnabled } from "../backend";
 import { openCalibration } from "../components/Calibration";
 import { SelectEdit, ToggleRow } from "../components/widgets";
+import { t } from "../i18n";
 import type { Config } from "../types";
 
 export function Settings({ config, setConfig }: {
@@ -45,24 +46,24 @@ export function Settings({ config, setConfig }: {
   };
   return (
     <>
-      <PanelSection title="Controller">
+      <PanelSection title={t("Controller")}>
         <SelectEdit
-          label="Emulation"
+          label={t("Emulation")}
           value={config.controllerType || "deck-uhid"}
           options={config.controllerTypes || []}
           onChange={setControllerType}
         />
-        <ButtonItem layout="below" onClick={openCalibration}>Launch Calibration</ButtonItem>
+        <ButtonItem layout="below" onClick={openCalibration}>{t("Launch Calibration")}</ButtonItem>
       </PanelSection>
-      <PanelSection title="System">
-        <ToggleRow label="Enable SSH" value={!!config.sshEnabled} onChange={setSshEnabled} />
+      <PanelSection title={t("System")}>
+        <ToggleRow label={t("Enable SSH")} value={!!config.sshEnabled} onChange={setSshEnabled} />
         <ToggleRow
-          label="Mount shared storage"
-          description="Mount ARMADA_SHARED partition at ~/Shared"
+          label={t("Mount shared storage")}
+          description={t("Mount NEBEL_SHARED partition at ~/Shared")}
           value={!!config.sharedStorageEnabled}
           onChange={setSharedStorageEnabled}
         />
-        <Field label="OS Version" description={config.osVersion || "unknown"} />
+        <Field label={t("OS Version")} description={config.osVersion || t("unknown")} />
       </PanelSection>
     </>
   );

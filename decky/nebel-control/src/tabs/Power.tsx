@@ -2,14 +2,15 @@ import { ButtonItem, PanelSection } from "@decky/ui";
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SelectEdit, SliderEdit } from "../components/widgets";
+import { t } from "../i18n";
 import { clone, titleCase, update } from "../lib/util";
 import type { Config, PowerProfile } from "../types";
 
 const underclocks = [
-  { data: "none", label: "None" },
-  { data: "small", label: "Small" },
-  { data: "medium", label: "Medium" },
-  { data: "large", label: "Large" },
+  { data: "none", label: t("None") },
+  { data: "small", label: t("Small") },
+  { data: "medium", label: t("Medium") },
+  { data: "large", label: t("Large") },
 ];
 
 export function Power({ config, setConfig }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>> }) {
@@ -50,20 +51,20 @@ export function Power({ config, setConfig }: { config: Config; setConfig: Dispat
   const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
   return (
     <>
-      <PanelSection title="EDIT POWER PROFILE">
+      <PanelSection title={t("EDIT POWER PROFILE")}>
         <SelectEdit value={profile} options={profiles} onChange={setProfile} />
       </PanelSection>
-      <PanelSection title="PROFILE SETTINGS">
-        <SelectEdit label="Fan Curve" value={p.fan_curve} options={fanCurves} onChange={(v) => setProfileValue("fan_curve", v)} />
+      <PanelSection title={t("PROFILE SETTINGS")}>
+        <SelectEdit label={t("Fan Curve")} value={p.fan_curve} options={fanCurves} onChange={(v) => setProfileValue("fan_curve", v)} />
         {supportsUnderclockPresets ? (
-          <SelectEdit label="CPU Underclock" value={underclockLevel} options={underclocks} onChange={(v) => setProfileValue("cpu_underclock", v)} />
+          <SelectEdit label={t("CPU Underclock")} value={underclockLevel} options={underclocks} onChange={(v) => setProfileValue("cpu_underclock", v)} />
         ) : (
-          <SliderEdit label="CPU Max (%)" value={Math.round(Number(p.cpu_max || 0) * 100)} min={35} max={100} step={1} onChange={(v) => setProfileValue("cpu_max", (v / 100).toFixed(2))} />
+          <SliderEdit label={t("CPU Max (%)")} value={Math.round(Number(p.cpu_max || 0) * 100)} min={35} max={100} step={1} onChange={(v) => setProfileValue("cpu_max", (v / 100).toFixed(2))} />
         )}
-        <SliderEdit label="GPU Min (%)" value={Math.round(Number(p.gpu_min || 0) * 100)} min={0} max={100} step={1} onChange={(v) => setGpuValue("gpu_min", (v / 100).toFixed(2))} />
-        <SliderEdit label="GPU Max (%)" value={Math.round(Number(p.gpu_max || 0) * 100)} min={35} max={100} step={1} onChange={(v) => setGpuValue("gpu_max", (v / 100).toFixed(2))} />
+        <SliderEdit label={t("GPU Min (%)")} value={Math.round(Number(p.gpu_min || 0) * 100)} min={0} max={100} step={1} onChange={(v) => setGpuValue("gpu_min", (v / 100).toFixed(2))} />
+        <SliderEdit label={t("GPU Max (%)")} value={Math.round(Number(p.gpu_max || 0) * 100)} min={35} max={100} step={1} onChange={(v) => setGpuValue("gpu_max", (v / 100).toFixed(2))} />
         <div className="nebel-reset-row">
-          <ButtonItem layout="below" onClick={resetProfile}>Reset to Default</ButtonItem>
+          <ButtonItem layout="below" onClick={resetProfile}>{t("Reset to Default")}</ButtonItem>
         </div>
       </PanelSection>
     </>

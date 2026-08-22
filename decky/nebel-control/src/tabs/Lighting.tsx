@@ -21,20 +21,21 @@ import {
 import { ColorPicker } from "../components/ColorPicker";
 import { ModePreview } from "../components/ModePreview";
 import { PresetSwatchGrid, SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
+import { t } from "../i18n";
 import type { Config, StickLedSideState, StickLedState } from "../types";
 
 const PRESET_COLORS: { label: string; value: string }[] = [
-  { label: "Blue", value: "0050FF" },
-  { label: "Cyan", value: "00E5FF" },
-  { label: "Purple", value: "8000FF" },
-  { label: "Pink", value: "FF0080" },
-  { label: "Red", value: "FF0000" },
-  { label: "Orange", value: "FF8000" },
+  { label: t("Blue"), value: "0050FF" },
+  { label: t("Cyan"), value: "00E5FF" },
+  { label: t("Purple"), value: "8000FF" },
+  { label: t("Pink"), value: "FF0080" },
+  { label: t("Red"), value: "FF0000" },
+  { label: t("Orange"), value: "FF8000" },
   // Matches stick-led-color's DEFAULT_DUOTONE_COLOR_B - pure gold (FFD700)
   // read as noticeably greenish on this LED.
-  { label: "Yellow", value: "FFAA00" },
-  { label: "Green", value: "00FF00" },
-  { label: "White", value: "FFFFFF" },
+  { label: t("Yellow"), value: "FFAA00" },
+  { label: t("Green"), value: "00FF00" },
+  { label: t("White"), value: "FFFFFF" },
 ];
 
 function patchSide(stickLed: StickLedState, side: "l" | "r", patch: Partial<StickLedSideState>): StickLedState {
@@ -42,34 +43,34 @@ function patchSide(stickLed: StickLedState, side: "l" | "r", patch: Partial<Stic
 }
 
 const SIDE_OPTIONS: { data: string; label: string }[] = [
-  { data: "l", label: "Left Stick" },
-  { data: "r", label: "Right Stick" },
+  { data: "l", label: t("Left Stick") },
+  { data: "r", label: t("Right Stick") },
 ];
 
 const MODE_OPTIONS: { data: string; label: string }[] = [
-  { data: "static", label: "Static" },
-  { data: "breathing", label: "Breathing" },
-  { data: "rainbow", label: "Rainbow" },
-  { data: "wave", label: "Wave (rainbow spread around the ring)" },
-  { data: "starlight", label: "Starlight (random zone twinkle)" },
-  { data: "spin", label: "Spin" },
-  { data: "reactive", label: "Reactive (sticks + buttons)" },
-  { data: "multidot", label: "Multidot (RGB chase)" },
-  { data: "ambilight", label: "Ambilight (matches screen)" },
-  { data: "duotone", label: "Duotone (two-color split)" },
+  { data: "static", label: t("Static") },
+  { data: "breathing", label: t("Breathing") },
+  { data: "rainbow", label: t("Rainbow") },
+  { data: "wave", label: t("Wave (rainbow spread around the ring)") },
+  { data: "starlight", label: t("Starlight (random zone twinkle)") },
+  { data: "spin", label: t("Spin") },
+  { data: "reactive", label: t("Reactive (sticks + buttons)") },
+  { data: "multidot", label: t("Multidot (RGB chase)") },
+  { data: "ambilight", label: t("Ambilight (matches screen)") },
+  { data: "duotone", label: t("Duotone (two-color split)") },
 ];
 const COLOR_VISIBLE_MODES = new Set(["static", "breathing", "spin"]);
 const COLOR_SOURCE_OPTIONS: { data: string; label: string }[] = [
-  { data: "static", label: "Custom color" },
-  { data: "battery", label: "Battery level" },
-  { data: "random", label: "Random (unpredictable color shift)" },
-  { data: "shimmer", label: "Shimmer (pale/cool to rich/warm)" },
+  { data: "static", label: t("Custom color") },
+  { data: "battery", label: t("Battery level") },
+  { data: "random", label: t("Random (unpredictable color shift)") },
+  { data: "shimmer", label: t("Shimmer (pale/cool to rich/warm)") },
 ];
 
 const DUOTONE_ORIENTATION_OPTIONS: { data: string; label: string }[] = [
-  { data: "horizontal", label: "Horizontal" },
-  { data: "vertical", label: "Vertical" },
-  { data: "diagonal", label: "Diagonal" },
+  { data: "horizontal", label: t("Horizontal") },
+  { data: "vertical", label: t("Vertical") },
+  { data: "diagonal", label: t("Diagonal") },
 ];
 
 const FLASH_BUTTON_OPTIONS: { data: string; label: string }[] = [
@@ -79,23 +80,23 @@ const FLASH_BUTTON_OPTIONS: { data: string; label: string }[] = [
   { data: "west", label: "West" },
   { data: "l1", label: "L1" },
   { data: "r1", label: "R1" },
-  { data: "l3", label: "L3 (left stick click)" },
-  { data: "r3", label: "R3 (right stick click)" },
-  { data: "l4", label: "L4 (left paddle)" },
-  { data: "r4", label: "R4 (right paddle)" },
+  { data: "l3", label: t("L3 (left stick click)") },
+  { data: "r3", label: t("R3 (right stick click)") },
+  { data: "l4", label: t("L4 (left paddle)") },
+  { data: "r4", label: t("R4 (right paddle)") },
   { data: "start", label: "Start" },
   { data: "select", label: "Select" },
-  { data: "dpad_up", label: "D-Pad Up" },
-  { data: "dpad_down", label: "D-Pad Down" },
-  { data: "dpad_left", label: "D-Pad Left" },
-  { data: "dpad_right", label: "D-Pad Right" },
-  { data: "other", label: "Other buttons" },
+  { data: "dpad_up", label: t("D-Pad Up") },
+  { data: "dpad_down", label: t("D-Pad Down") },
+  { data: "dpad_left", label: t("D-Pad Left") },
+  { data: "dpad_right", label: t("D-Pad Right") },
+  { data: "other", label: t("Other buttons") },
 ];
 const DEFAULT_FLASH_COLOR = "FFFFFF";
 
 const PARAM_UI: Record<string, { label: string; min: number; max: number; step: number; modes: Set<string>; toBackend: (v: number) => number; fromBackend: (v: number) => number }> = {
   speed: {
-    label: "Speed",
+    label: t("Speed"),
     min: 25,
     max: 300,
     step: 25,
@@ -104,7 +105,7 @@ const PARAM_UI: Record<string, { label: string; min: number; max: number; step: 
     fromBackend: (v) => Math.round(v * 100),
   },
   intensity: {
-    label: "Intensity (min brightness)",
+    label: t("Intensity (min brightness)"),
     min: 0,
     max: 50,
     step: 5,
@@ -113,7 +114,7 @@ const PARAM_UI: Record<string, { label: string; min: number; max: number; step: 
     fromBackend: (v) => Math.round(v * 100),
   },
   size: {
-    label: "Size",
+    label: t("Size"),
     min: 1,
     max: 3,
     step: 1,
@@ -394,32 +395,32 @@ export function Lighting({ config, setConfig }: {
 
   if (!stickLed?.supported || !sideState) {
     return (
-      <PanelSection title="Stick Lighting">
-        <Field label="No addressable stick lighting hardware detected on this device." />
+      <PanelSection title={t("Stick Lighting")}>
+        <Field label={t("No addressable stick lighting hardware detected on this device.")} />
       </PanelSection>
     );
   }
 
   return (
-    <PanelSection title="Stick Lighting">
+    <PanelSection title={t("Stick Lighting")}>
       <ToggleRow
-        label="Enable"
-        description="Turn both sticks off entirely, without losing the mode/color settings below"
+        label={t("Enable")}
+        description={t("Turn both sticks off entirely, without losing the mode/color settings below")}
         value={stickLed.enabled}
         onChange={setStickLedEnabled}
       />
-      {!stickLed.enabled && <Field label="Sticks are off - settings below are kept, not applied." />}
+      {!stickLed.enabled && <Field label={t("Sticks are off - settings below are kept, not applied.")} />}
       {stickLed.enabled && (
         <>
       <ToggleRow
-        label="Follow screen brightness"
-        description="Dim both sticks along with the display backlight"
+        label={t("Follow screen brightness")}
+        description={t("Dim both sticks along with the display backlight")}
         value={!!stickLed.screenLink}
         onChange={setStickLedScreenLink}
       />
       {!stickLed.screenLink && (
         <SliderEdit
-          label="Max Brightness"
+          label={t("Max Brightness")}
           value={Math.round((stickLed.maxBrightness ?? 1) * 100)}
           min={0}
           max={100}
@@ -428,15 +429,15 @@ export function Lighting({ config, setConfig }: {
         />
       )}
       <ToggleRow
-        label="Configure each stick separately"
-        description="Off: changes below apply to both sticks at once. On: pick a stick and edit just that one."
+        label={t("Configure each stick separately")}
+        description={t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.")}
         value={separate}
         onChange={setSeparate}
       />
       {separate && (
-        <SelectEdit label="Stick" value={selectedSide} options={SIDE_OPTIONS} onChange={(value) => setSelectedSide(value as "l" | "r")} />
+        <SelectEdit label={t("Stick")} value={selectedSide} options={SIDE_OPTIONS} onChange={(value) => setSelectedSide(value as "l" | "r")} />
       )}
-      <SelectEdit label="Mode" value={mode} options={MODE_OPTIONS} onChange={setStickLedMode} />
+      <SelectEdit label={t("Mode")} value={mode} options={MODE_OPTIONS} onChange={setStickLedMode} />
       <ModePreview
         mode={mode}
         color={sideState.color}
@@ -445,24 +446,24 @@ export function Lighting({ config, setConfig }: {
       />
       {mode === "spin" && (
         <ToggleRow
-          label="Soft trail"
-          description="Trailing fade (uses Size below) instead of a single hard-edged dot"
+          label={t("Soft trail")}
+          description={t("Trailing fade (uses Size below) instead of a single hard-edged dot")}
           value={!!sideState.chase}
           onChange={setStickLedChase}
         />
       )}
       {mode === "reactive" && (
         <ToggleRow
-          label="Compass"
-          description="Point the lit zone(s) at the stick's push direction instead of lighting evenly"
+          label={t("Compass")}
+          description={t("Point the lit zone(s) at the stick's push direction instead of lighting evenly")}
           value={!!sideState.compass}
           onChange={setStickLedCompass}
         />
       )}
       {mode === "duotone" && (
         <ToggleRow
-          label="Seesaw"
-          description="Breathe the two color groups against each other instead of a static split"
+          label={t("Seesaw")}
+          description={t("Breathe the two color groups against each other instead of a static split")}
           value={!!sideState.seesaw}
           onChange={setStickLedSeesaw}
         />
@@ -487,20 +488,20 @@ export function Lighting({ config, setConfig }: {
       {COLOR_VISIBLE_MODES.has(mode) && (
         <>
           <ButtonItem layout="below" onClick={() => setColorsExpanded((expanded) => !expanded)}>
-            {colorsExpanded ? "Hide colors ▲" : "Colors ▼"}
+            {colorsExpanded ? t("Hide colors") + " ▲" : t("Colors") + " ▼"}
           </ButtonItem>
           {colorsExpanded && (
             <>
               <SelectEdit
-                label="Color Source"
+                label={t("Color Source")}
                 value={sideState.colorSource || "static"}
                 options={COLOR_SOURCE_OPTIONS}
                 onChange={setStickLedColorSource}
               />
               {sideState.colorSource === "battery" && (
                 <ToggleRow
-                  label="Charging indicator"
-                  description="Spin a blue dot around the stick while charging"
+                  label={t("Charging indicator")}
+                  description={t("Spin a blue dot around the stick while charging")}
                   value={sideState.chargingIndicator}
                   onChange={setStickLedChargingIndicator}
                 />
@@ -509,7 +510,7 @@ export function Lighting({ config, setConfig }: {
                 <>
                   <PresetSwatchGrid colors={PRESET_COLORS} selected={sideState.color} onSelect={setStickLedColor} />
                   <ButtonItem layout="below" onClick={() => setCustomColorExpanded((expanded) => !expanded)}>
-                    {customColorExpanded ? "Hide custom color ▲" : "Custom color (advanced) ▼"}
+                    {customColorExpanded ? t("Hide custom color") + " ▲" : t("Custom color (advanced)") + " ▼"}
                   </ButtonItem>
                   {customColorExpanded && (
                     <ColorPicker hex={sideState.color} onChange={setStickLedColor} />
@@ -523,11 +524,11 @@ export function Lighting({ config, setConfig }: {
       {mode === "reactive" && (
         <>
           <ButtonItem layout="below" onClick={() => setFlashExpanded((expanded) => !expanded)}>
-            {flashExpanded ? "Hide flash colors ▲" : "Show flash colors ▼"}
+            {flashExpanded ? t("Hide flash colors") + " ▲" : t("Show flash colors") + " ▼"}
           </ButtonItem>
           {flashExpanded && (
             <>
-              <SelectEdit label="Button" value={flashButton} options={FLASH_BUTTON_OPTIONS} onChange={setFlashButton} />
+              <SelectEdit label={t("Button")} value={flashButton} options={FLASH_BUTTON_OPTIONS} onChange={setFlashButton} />
               <PresetSwatchGrid
                 colors={PRESET_COLORS}
                 selected={stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR}
@@ -544,26 +545,26 @@ export function Lighting({ config, setConfig }: {
       {mode === "duotone" && (
         <>
           <SelectEdit
-            label="Split"
+            label={t("Split")}
             value={sideState.duotoneOrientation || "horizontal"}
             options={DUOTONE_ORIENTATION_OPTIONS}
             onChange={setStickLedDuotoneOrientation}
           />
           <ColorPicker
-            label="Color A"
+            label={t("Color A")}
             hex={sideState.duotoneColorA}
             onChange={(hex) => setStickLedDuotoneColor("a", hex)}
           />
           <ColorPicker
-            label="Color B"
+            label={t("Color B")}
             hex={sideState.duotoneColorB}
             onChange={(hex) => setStickLedDuotoneColor("b", hex)}
           />
         </>
       )}
       <ToggleRow
-        label="Flip stick ring"
-        description="Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)"
+        label={t("Flip stick ring")}
+        description={t("Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)")}
         value={!!sideState.flip}
         onChange={setStickLedFlip}
       />

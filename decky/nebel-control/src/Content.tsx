@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { getConfig, getInstalledGames, savePowerConfig, saveTweaks } from "./backend";
 import { useDebouncedSave } from "./hooks/useDebouncedSave";
+import { t } from "./i18n";
 import { tabIcons } from "./icons";
 import { currentGame } from "./lib/games";
 import { styles } from "./styles";
@@ -17,7 +18,7 @@ import type { Config } from "./types";
 export function Content() {
   const [tab, setTab] = useState("Compatibility");
   const [config, setConfig] = useState<Config | null>(null);
-  const [message, setMessage] = useState("Loading");
+  const [message, setMessage] = useState(t("Loading"));
   const savedPowerSnapshot = useRef("");
   const savedTweaksSnapshot = useRef("");
   const installedGamesRequested = useRef(false);

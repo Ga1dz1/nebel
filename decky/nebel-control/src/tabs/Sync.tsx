@@ -22,6 +22,7 @@ import {
   syncSetFolderEnabled,
 } from "../backend";
 import { ToggleRow } from "../components/widgets";
+import { t } from "../i18n";
 import type { SyncState } from "../types";
 
 function AddDeviceModal({ closeModal, onAdd }: {
@@ -45,7 +46,7 @@ function AddDeviceModal({ closeModal, onAdd }: {
     <ModalRoot onCancel={closeModal}>
       <DialogBody>
         <div style={{ marginBottom: "6px", fontSize: "13px", opacity: 0.8 }}>
-          Device ID of the other console (shown on its Sync tab)
+          {t("Device ID of the other console (shown on its Sync tab)")}
         </div>
         <input
           type="text"
@@ -56,7 +57,7 @@ function AddDeviceModal({ closeModal, onAdd }: {
         />
         <input
           type="text"
-          placeholder="Name (e.g. Mini V2)"
+          placeholder={t("Name (e.g. Mini V2)")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           style={inputStyle}
@@ -72,7 +73,7 @@ function AddDeviceModal({ closeModal, onAdd }: {
               });
             }}
           >
-            Add device
+            {t("Add device")}
           </DialogButton>
         </DialogFooter>
       </DialogBody>
@@ -101,7 +102,7 @@ function AddFolderModal({ closeModal, onAdd }: {
     <ModalRoot onCancel={closeModal}>
       <DialogBody>
         <div style={{ marginBottom: "6px", fontSize: "13px", opacity: 0.8 }}>
-          Folder to sync (under ~ or /run/media)
+          {t("Folder to sync (under ~ or /run/media)")}
         </div>
         <input
           type="text"
@@ -112,7 +113,7 @@ function AddFolderModal({ closeModal, onAdd }: {
         />
         <input
           type="text"
-          placeholder="Label (optional)"
+          placeholder={t("Label (optional)")}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           style={inputStyle}
@@ -128,7 +129,7 @@ function AddFolderModal({ closeModal, onAdd }: {
               });
             }}
           >
-            Add folder
+            {t("Add folder")}
           </DialogButton>
         </DialogFooter>
       </DialogBody>
@@ -178,50 +179,50 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
     [],
   );
 
-  if (!state) return <PanelSection title="Sync"><Field label="Loading" /></PanelSection>;
+  if (!state) return <PanelSection title={t("Sync")}><Field label={t("Loading")} /></PanelSection>;
 
   const connectedCount = state.devices.filter((d) => d.connected).length;
   return (
     <>
       <PanelSection title="Syncthing">
-        {!state.installed && <Field label="Syncthing is not installed in this OS image" />}
+        {!state.installed && <Field label={t("Syncthing is not installed in this OS image")} />}
         <ToggleRow
-          label="Sync service"
-          description={state.serviceActive ? "Running" : "Stopped"}
+          label={t("Sync service")}
+          description={state.serviceActive ? t("Running") : t("Stopped")}
           value={state.serviceEnabled && state.serviceActive}
           disabled={busy || !state.installed}
           onChange={(enabled) => void run(async () => { await setSyncServiceEnabled(enabled); await refresh(); })}
         />
         {state.myId && (
-          <Field label="This device ID" description={state.myId} />
+          <Field label={t("This device ID")} description={state.myId} />
         )}
         {state.devices.length > 0 && (
           <Field
-            label="Status"
-            description={`${connectedCount} of ${state.devices.length} device(s) connected`}
+            label={t("Status")}
+            description={t("{connected} of {total} device(s) connected", { connected: connectedCount, total: state.devices.length })}
           />
         )}
-        {!!error && <Field label="Error" description={error} />}
+        {!!error && <Field label={t("Error")} description={error} />}
       </PanelSection>
       {state.serviceActive && (state.pendingDevices.length > 0 || state.pendingFolders.length > 0) && (
-        <PanelSection title="Requests">
+        <PanelSection title={t("Requests")}>
           {state.pendingDevices.map((device) => (
             <PanelSectionRow key={device.id}>
-              <Field label={`Device "${device.name}" wants to pair`} description={device.id.slice(0, 13) + "..."}>
+              <Field label={t("Device \"{name}\" wants to pair", { name: device.name })} description={device.id.slice(0, 13) + "..."}>
                 <div style={{ display: "flex", gap: "8px" }}>
                   <DialogButton
                     style={{ minWidth: "80px" }}
                     disabled={busy}
                     onClick={() => void run(() => syncAddDevice(device.id, device.name))}
                   >
-                    Accept
+                    {t("Accept")}
                   </DialogButton>
                   <DialogButton
                     style={{ minWidth: "80px" }}
                     disabled={busy}
                     onClick={() => void run(() => syncDismissDevice(device.id))}
                   >
-                    Dismiss
+                    {t("Dismiss")}
                   </DialogButton>
                 </div>
               </Field>
@@ -229,21 +230,21 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
           ))}
           {state.pendingFolders.map((folder) => (
             <PanelSectionRow key={folder.id}>
-              <Field label={`Folder "${folder.label}" was shared with you`} description={folder.id}>
+              <Field label={t("Folder \"{name}\" was shared with you", { name: folder.label })} description={folder.id}>
                 <div style={{ display: "flex", gap: "8px" }}>
                   <DialogButton
                     style={{ minWidth: "80px" }}
                     disabled={busy}
                     onClick={() => void run(() => syncAcceptFolder(folder.id))}
                   >
-                    Accept
+                    {t("Accept")}
                   </DialogButton>
                   <DialogButton
                     style={{ minWidth: "80px" }}
                     disabled={busy}
                     onClick={() => void run(() => syncDismissFolder(folder.id, folder.offeredBy[0] || ""))}
                   >
-                    Dismiss
+                    {t("Dismiss")}
                   </DialogButton>
                 </div>
               </Field>
@@ -252,11 +253,11 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
         </PanelSection>
       )}
       {state.serviceActive && (
-        <PanelSection title="Devices">
+        <PanelSection title={t("Devices")}>
           {state.devices.map((device) => (
             <PanelSectionRow key={device.id}>
               <Field
-                label={`${device.name}${device.connected ? " (connected)" : ""}`}
+                label={`${device.name}${device.connected ? " " + t("(connected)") : ""}`}
                 description={device.id.slice(0, 13) + "..."}
               >
                 <DialogButton
@@ -264,7 +265,7 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
                   disabled={busy}
                   onClick={() => void run(() => syncRemoveDevice(device.id))}
                 >
-                  Remove
+                  {t("Remove")}
                 </DialogButton>
               </Field>
             </PanelSectionRow>
@@ -282,22 +283,22 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
                 )
               }
             >
-              Add device
+              {t("Add device")}
             </DialogButton>
           </PanelSectionRow>
         </PanelSection>
       )}
       {state.serviceActive && (
-        <PanelSection title="Folders">
+        <PanelSection title={t("Folders")}>
           {state.devices.length === 0 && (
-            <Field label="Add a device first - folders sync only to paired devices" />
+            <Field label={t("Add a device first - folders sync only to paired devices")} />
           )}
           {state.folders.map((folder) => {
             const statusSuffix = folder.enabled
               ? folder.syncState === "syncing"
-                ? " • syncing…"
+                ? " • " + t("syncing…")
                 : folder.syncState === "idle"
-                  ? " • in sync"
+                  ? " • " + t("in sync")
                   : ""
               : "";
             const description = folder.path.replace("/var/home/armada", "~") + statusSuffix;
@@ -309,7 +310,7 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
                     disabled={busy}
                     onClick={() => void run(() => syncRemoveCustomFolder(folder.id))}
                   >
-                    Remove
+                    {t("Remove")}
                   </DialogButton>
                 </Field>
               </PanelSectionRow>
@@ -337,7 +338,7 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
                 )
               }
             >
-              Add custom folder
+              {t("Add custom folder")}
             </DialogButton>
           </PanelSectionRow>
         </PanelSection>

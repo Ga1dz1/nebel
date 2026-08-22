@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { saveCompatApplied } from "../backend";
 import { SelectEdit } from "../components/widgets";
+import { t } from "../i18n";
 import { getGlobalResolution, setGlobalResolution } from "../lib/steamSettings";
 import { clone } from "../lib/util";
 import { availableGames, editTargetOptions } from "../lib/games";
@@ -41,21 +42,21 @@ import type { CompatTool } from "../lib/steamCompat";
 import type { Config } from "../types";
 
 const resolutionOptions = [
-  { data: "Default", label: "Default" },
-  { data: "Native", label: "Native" },
+  { data: "Default", label: t("Default") },
+  { data: "Native", label: t("Native") },
   { data: "1280x720", label: "1280x720" },
   { data: "960x540", label: "960x540" },
 ];
 const compatModeOptions = [
-  { data: "arm64", label: "ARM64 (native, recommended)" },
-  { data: "x86_64", label: "x86_64 (emulated via FEX)" },
+  { data: "arm64", label: t("ARM64 (native, recommended)") },
+  { data: "x86_64", label: t("x86_64 (emulated via FEX)") },
 ];
 // SM8250's cpu0-3 are the 1.8GHz LITTLE cluster, cpu4-7 the 2.4-2.84GHz
 // big+prime cluster - same split ROCKNIX's own SM8250 profile uses.
 const cpuAffinityOptions = [
-  { data: "", label: "Default (any core)" },
-  { data: "big", label: "Big cores only (cpu4-7)" },
-  { data: "little", label: "Little cores only (cpu0-3)" },
+  { data: "", label: t("Default (any core)") },
+  { data: "big", label: t("Big cores only (cpu4-7)") },
+  { data: "little", label: t("Little cores only (cpu0-3)") },
 ];
 const fexKnobs = [
   { key: "TSOEnabled", label: "TSO Enabled" },
@@ -82,11 +83,11 @@ function ConfirmResetAllModal({ closeModal, onConfirm }: { closeModal?: () => vo
   return (
     <ModalRoot onCancel={closeModal}>
       <DialogBody>
-        This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.
+        {t("This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.")}
       </DialogBody>
       <DialogFooter>
-        <DialogButton onClick={confirm}>Reset All Games</DialogButton>
-        <DialogButton onClick={closeModal}>Cancel</DialogButton>
+        <DialogButton onClick={confirm}>{t("Reset All Games")}</DialogButton>
+        <DialogButton onClick={closeModal}>{t("Cancel")}</DialogButton>
       </DialogFooter>
     </ModalRoot>
   );
@@ -129,7 +130,7 @@ export function Compatibility({ config, setConfig }: { config: Config; setConfig
           setResolutionMessage("");
         }
       } catch (error) {
-        if (!cancelled) setResolutionMessage("Resolution override is unavailable");
+        if (!cancelled) setResolutionMessage(t("Resolution override is unavailable"));
       }
     }
     loadResolution();
@@ -241,7 +242,7 @@ export function Compatibility({ config, setConfig }: { config: Config; setConfig
       await apps.SetAppResolutionOverride(Number(game.appid), value);
       setResolutionMessage("");
     } catch (error) {
-      setResolutionMessage("Failed to set resolution override");
+      setResolutionMessage(t("Failed to set resolution override"));
     }
   };
   const setSteamDefaultResolution = async (value: string) => {
@@ -251,7 +252,7 @@ export function Compatibility({ config, setConfig }: { config: Config; setConfig
       setResolutionMessage("");
       setDefaultResolution(applied || "Default");
     } catch (error) {
-      setResolutionMessage("Failed to set default resolution");
+      setResolutionMessage(t("Failed to set default resolution"));
     }
   };
   const resetAllGames = async () => {
@@ -332,8 +333,8 @@ export function Compatibility({ config, setConfig }: { config: Config; setConfig
     selectableTools.set(currentTool, { id: currentTool, label: currentTool });
   }
   const perGameToolOptions = [
-    { data: USE_DEFAULT_COMPAT, label: "Use Default" },
-    { data: FOLLOW_STEAM_COMPAT, label: "Follow Steam" },
+    { data: USE_DEFAULT_COMPAT, label: t("Use Default") },
+    { data: FOLLOW_STEAM_COMPAT, label: t("Follow Steam") },
     ...Array.from(selectableTools.values()).map((tool) => ({ data: tool.id, label: tool.label })),
   ];
   const onSelectPerGameTool = async (choice: any) => {
@@ -362,7 +363,7 @@ export function Compatibility({ config, setConfig }: { config: Config; setConfig
   const isCustom = customSelected || (!hasPreset && !!storedConfig);
   const fexValue = isCustom ? "custom" : hasPreset ? storedProfile! : "default";
   const fexConfig: Record<string, string> = (isCustom ? storedConfig : presets[fexValue]?.config) || presets.default?.config || {};
-  const fexOptions = [...presetEntries.map(([id, profile]) => ({ data: id, label: profile.label })), { data: "custom", label: "Custom" }];
+  const fexOptions = [...presetEntries.map(([id, profile]) => ({ data: id, label: profile.label })), { data: "custom", label: t("Custom") }];
   const onSelectFex = (id: any) => {
     if (id === "custom") {
       setCustomSelected(true);
@@ -380,60 +381,60 @@ export function Compatibility({ config, setConfig }: { config: Config; setConfig
 
   return (
     <>
-      <PanelSection title="EDIT GAME PROFILE">
+      <PanelSection title={t("EDIT GAME PROFILE")}>
         <SelectEdit value={game?.appid || ""} options={gameOptions} onChange={setSelectedGame} />
-        <div className="nebel-compat-note">Compatibility changes apply on next launch</div>
+        <div className="nebel-compat-note">{t("Compatibility changes apply on next launch")}</div>
       </PanelSection>
-      <PanelSection title="PROFILE SETTINGS">
+      <PanelSection title={t("PROFILE SETTINGS")}>
         {editingDefault ? (
           <>
             <SelectEdit
               labelBelow
-              label="Compatibility Mode"
+              label={t("Compatibility Mode")}
               value={compatMode}
               options={compatModeOptions}
               onChange={onSelectCompatMode}
             />
-            <SelectEdit labelBelow label="Default Proton" value={globalTool} options={toolOptions} onChange={onSelectGlobalDefault} />
+            <SelectEdit labelBelow label={t("Default Proton")} value={globalTool} options={toolOptions} onChange={onSelectGlobalDefault} />
             <ToggleField
-              label="Apply to New Games"
+              label={t("Apply to New Games")}
               checked={tweaks.global.autoApplyCompat !== false}
               onChange={(enabled) => {
                 setAutoApplyCompat(enabled);
                 patchSettings({ autoApplyCompat: enabled });
               }}
             />
-            <SelectEdit label="Game Resolution" value={defaultResolution} options={resolutionOptions} onChange={setSteamDefaultResolution} />
+            <SelectEdit label={t("Game Resolution")} value={defaultResolution} options={resolutionOptions} onChange={setSteamDefaultResolution} />
             <ToggleField
-              label="Performance Overlay"
-              description="FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"
+              label={t("Performance Overlay")}
+              description={t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart")}
               checked={tweaks.global.mangoapp === true}
               onChange={(enabled) => patchSettings({ mangoapp: enabled })}
             />
           </>
         ) : (
           <>
-            <SelectEdit labelBelow label="Compatibility Tool" value={currentTool} options={perGameToolOptions} onChange={onSelectPerGameTool} />
-            <SelectEdit label="Game Resolution" value={resolution} options={resolutionOptions} onChange={setSteamResolution} />
+            <SelectEdit labelBelow label={t("Compatibility Tool")} value={currentTool} options={perGameToolOptions} onChange={onSelectPerGameTool} />
+            <SelectEdit label={t("Game Resolution")} value={resolution} options={resolutionOptions} onChange={setSteamResolution} />
           </>
         )}
-        {resolutionMessage ? <Field label="Status" description={resolutionMessage} /> : null}
-        <SelectEdit label="FEX Preset" value={fexValue} options={fexOptions} onChange={onSelectFex} />
+        {resolutionMessage ? <Field label={t("Status")} description={resolutionMessage} /> : null}
+        <SelectEdit label={t("FEX Preset")} value={fexValue} options={fexOptions} onChange={onSelectFex} />
         {isCustom
           ? fexKnobs.map((knob) => (
               <ToggleField key={knob.key} label={knob.label} checked={fexConfig[knob.key] === "1"} onChange={(value) => setKnob(knob.key, value)} />
             ))
           : null}
       </PanelSection>
-      <PanelSection title="ADVANCED">
+      <PanelSection title={t("ADVANCED")}>
         <SelectEdit
-          label="CPU Cores"
+          label={t("CPU Cores")}
           value={String(values.cores || "")}
           options={cpuAffinityOptions}
           onChange={(value) => patchSettings({ cores: value || undefined })}
         />
         <ButtonItem layout="below" onClick={() => setShowThunks((value) => !value)}>
-          {showThunks ? "Hide Host Thunks" : "Host Thunks"}
+          {showThunks ? t("Hide Host Thunks") : t("Host Thunks")}
         </ButtonItem>
         {showThunks
           ? thunkModules.map((thunk) => (
@@ -444,13 +445,13 @@ export function Compatibility({ config, setConfig }: { config: Config; setConfig
       {!editingDefault ? (
         <PanelSection>
           <ButtonItem layout="below" onClick={resetGame}>
-            Reset to Default
+            {t("Reset to Default")}
           </ButtonItem>
         </PanelSection>
       ) : (
         <PanelSection>
           <ButtonItem layout="below" disabled={resettingAll} onClick={confirmResetAllGames}>
-            {resettingAll ? "Resetting..." : "Reset All Games"}
+            {resettingAll ? t("Resetting...") : t("Reset All Games")}
           </ButtonItem>
         </PanelSection>
       )}

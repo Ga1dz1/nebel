@@ -103,6 +103,727 @@ function useDebouncedSave(options) {
     }, [value]);
 }
 
+const uk = {
+    "Loading": "Завантаження",
+    "Default": "За замовчуванням",
+    "Reset to Default": "Скинути до типових",
+    "Cancel": "Скасувати",
+    "Status": "Стан",
+    "Error": "Помилка",
+    "Remove": "Видалити",
+    "Accept": "Прийняти",
+    "Dismiss": "Відхилити",
+    "Close": "Закрити",
+    "EDIT GAME PROFILE": "РЕДАГУВАННЯ ПРОФІЛЮ ГРИ",
+    "PROFILE SETTINGS": "НАЛАШТУВАННЯ ПРОФІЛЮ",
+    "ADVANCED": "ДОДАТКОВО",
+    "Compatibility changes apply on next launch": "Зміни сумісності застосуються під час наступного запуску",
+    "Compatibility Mode": "Режим сумісності",
+    "ARM64 (native, recommended)": "ARM64 (нативний, рекомендовано)",
+    "x86_64 (emulated via FEX)": "x86_64 (емуляція через FEX)",
+    "Default Proton": "Типовий Proton",
+    "Apply to New Games": "Застосовувати до нових ігор",
+    "Game Resolution": "Роздільна здатність гри",
+    "Native": "Нативна",
+    "Performance Overlay": "Оверлей продуктивності",
+    "FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart": "Оверлей FPS/ЦП/ГП/температур через вбудований --mangoapp у gamescope — застосовується після перезапуску сеансу",
+    "Compatibility Tool": "Інструмент сумісності",
+    "Use Default": "Використовувати типовий",
+    "Follow Steam": "Як у Steam",
+    "FEX Preset": "Пресет FEX",
+    "Custom": "Власний",
+    "CPU Cores": "Ядра ЦП",
+    "Default (any core)": "Типово (будь-яке ядро)",
+    "Big cores only (cpu4-7)": "Лише великі ядра (cpu4-7)",
+    "Little cores only (cpu0-3)": "Лише малі ядра (cpu0-3)",
+    "Host Thunks": "Прокладки хоста (thunks)",
+    "Hide Host Thunks": "Сховати прокладки хоста",
+    "Reset All Games": "Скинути всі ігри",
+    "Resetting...": "Скидання...",
+    "This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.": "Це видалить усі налаштування Nebel для окремих ігор, скине перевизначення роздільної здатності, застосує типовий Proton там, де Steam обирає Proton, і залишить нативні Linux-ігри на розсуд Steam.",
+    "Resolution override is unavailable": "Перевизначення роздільної здатності недоступне",
+    "Failed to set resolution override": "Не вдалося встановити перевизначення роздільної здатності",
+    "Failed to set default resolution": "Не вдалося встановити типову роздільну здатність",
+    "EDIT POWER PROFILE": "РЕДАГУВАННЯ ПРОФІЛЮ ЖИВЛЕННЯ",
+    "Fan Curve": "Крива вентилятора",
+    "CPU Underclock": "Зниження частоти ЦП",
+    "None": "Немає",
+    "Small": "Мале",
+    "Medium": "Середнє",
+    "Large": "Велике",
+    "CPU Max (%)": "Макс. ЦП (%)",
+    "GPU Min (%)": "Мін. ГП (%)",
+    "GPU Max (%)": "Макс. ГП (%)",
+    "DISPLAY": "ДИСПЛЕЙ",
+    "EXTERNAL DISPLAY": "ЗОВНІШНІЙ ДИСПЛЕЙ",
+    "Internal Screen": "Вбудований екран",
+    "{connector} (disconnected)": "{connector} (від’єднано)",
+    "Primary Display": "Основний дисплей",
+    "Resolution": "Роздільна здатність",
+    "Rotation isn't available for an external display (gamescope only rotates the internal screen).": "Поворот недоступний для зовнішнього дисплея (gamescope повертає лише вбудований екран).",
+    "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Зовнішній дисплей не виявлено. Під’єднайте його (док/USB-C/HDMI), щоб обрати тут.",
+    "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Цей дисплей зараз не під’єднано — ігровий режим працює на вбудованому екрані, доки його не буде під’єднано знову. Налаштування збережено.",
+    "Error: {message}": "Помилка: {message}",
+    "Apply & Restart Game Mode": "Застосувати й перезапустити ігровий режим",
+    "Stick Lighting": "Підсвітка стіків",
+    "No addressable stick lighting hardware detected on this device.": "На цьому пристрої не виявлено адресної підсвітки стіків.",
+    "Enable": "Увімкнути",
+    "Turn both sticks off entirely, without losing the mode/color settings below": "Повністю вимкнути підсвітку обох стіків, не втрачаючи налаштування режиму й кольору нижче",
+    "Sticks are off - settings below are kept, not applied.": "Підсвітку вимкнено — налаштування нижче збережено, але не застосовуються.",
+    "Follow screen brightness": "Слідкувати за яскравістю екрана",
+    "Dim both sticks along with the display backlight": "Затемнювати обидва стіки разом із підсвіткою дисплея",
+    "Max Brightness": "Макс. яскравість",
+    "Configure each stick separately": "Налаштовувати кожен стік окремо",
+    "Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.": "Вимкнено: зміни нижче застосовуються до обох стіків одночасно. Увімкнено: оберіть стік і редагуйте лише його.",
+    "Stick": "Стік",
+    "Left Stick": "Лівий стік",
+    "Right Stick": "Правий стік",
+    "Mode": "Режим",
+    "Static": "Статичний",
+    "Breathing": "Дихання",
+    "Rainbow": "Веселка",
+    "Wave (rainbow spread around the ring)": "Хвиля (веселка розтікається кільцем)",
+    "Starlight (random zone twinkle)": "Зоряне світло (випадкове мерехтіння зон)",
+    "Spin": "Обертання",
+    "Reactive (sticks + buttons)": "Реактивний (стіки + кнопки)",
+    "Multidot (RGB chase)": "Мультиточка (RGB-навздогін)",
+    "Ambilight (matches screen)": "Ambilight (за кольором екрана)",
+    "Duotone (two-color split)": "Дуетон (поділ на два кольори)",
+    "Speed": "Швидкість",
+    "Intensity (min brightness)": "Інтенсивність (мін. яскравість)",
+    "Size": "Розмір",
+    "Soft trail": "М’який шлейф",
+    "Trailing fade (uses Size below) instead of a single hard-edged dot": "Згасаючий шлейф (використовує «Розмір» нижче) замість однієї чіткої точки",
+    "Compass": "Компас",
+    "Point the lit zone(s) at the stick's push direction instead of lighting evenly": "Спрямовувати світлі зони в бік нахилу стіка замість рівномірного світіння",
+    "Seesaw": "Гойдалка",
+    "Breathe the two color groups against each other instead of a static split": "Дві групи кольорів «дихають» назустріч одна одній замість статичного поділу",
+    "Colors": "Кольори",
+    "Hide colors": "Сховати кольори",
+    "Color Source": "Джерело кольору",
+    "Custom color": "Власний колір",
+    "Battery level": "Рівень заряду",
+    "Random (unpredictable color shift)": "Випадковий (непередбачувана зміна кольору)",
+    "Shimmer (pale/cool to rich/warm)": "Мерехтіння (від блідого холодного до насиченого теплого)",
+    "Charging indicator": "Індикатор заряджання",
+    "Spin a blue dot around the stick while charging": "Обертати синю точку навколо стіка під час заряджання",
+    "Custom color (advanced)": "Власний колір (розширено)",
+    "Hide custom color": "Сховати власний колір",
+    "Show flash colors": "Показати кольори спалаху",
+    "Hide flash colors": "Сховати кольори спалаху",
+    "Button": "Кнопка",
+    "Split": "Поділ",
+    "Horizontal": "Горизонтальний",
+    "Vertical": "Вертикальний",
+    "Diagonal": "Діагональний",
+    "Color A": "Колір A",
+    "Color B": "Колір B",
+    "Flip stick ring": "Перевернути кільце стіка",
+    "Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)": "Повернути LED-кільце на 180° для стіків, розпаяних догори ногами (виправляє компас/напрямок на деяких RP6)",
+    "Blue": "Синій",
+    "Cyan": "Блакитний",
+    "Purple": "Фіолетовий",
+    "Pink": "Рожевий",
+    "Red": "Червоний",
+    "Orange": "Помаранчевий",
+    "Yellow": "Жовтий",
+    "Green": "Зелений",
+    "White": "Білий",
+    "L3 (left stick click)": "L3 (натискання лівого стіка)",
+    "R3 (right stick click)": "R3 (натискання правого стіка)",
+    "L4 (left paddle)": "L4 (ліва пелюстка)",
+    "R4 (right paddle)": "R4 (права пелюстка)",
+    "D-Pad Up": "Хрестовина вгору",
+    "D-Pad Down": "Хрестовина вниз",
+    "D-Pad Left": "Хрестовина вліво",
+    "D-Pad Right": "Хрестовина вправо",
+    "Other buttons": "Інші кнопки",
+    "Controller": "Контролер",
+    "Emulation": "Емуляція",
+    "Launch Calibration": "Запустити калібрування",
+    "System": "Система",
+    "Enable SSH": "Увімкнути SSH",
+    "Mount shared storage": "Монтувати спільне сховище",
+    "Mount NEBEL_SHARED partition at ~/Shared": "Монтувати розділ NEBEL_SHARED у ~/Shared",
+    "OS Version": "Версія ОС",
+    "unknown": "невідомо",
+    "Sync": "Синхронізація",
+    "Syncthing is not installed in this OS image": "Syncthing не встановлено в цьому образі ОС",
+    "Sync service": "Служба синхронізації",
+    "Running": "Працює",
+    "Stopped": "Зупинено",
+    "This device ID": "ID цього пристрою",
+    "{connected} of {total} device(s) connected": "Під’єднано пристроїв: {connected} з {total}",
+    "Requests": "Запити",
+    "Device \"{name}\" wants to pair": "Пристрій «{name}» хоче спаруватися",
+    "Folder \"{name}\" was shared with you": "З вами поділилися папкою «{name}»",
+    "Devices": "Пристрої",
+    "(connected)": "(під’єднано)",
+    "Folders": "Папки",
+    "Add a device first - folders sync only to paired devices": "Спочатку додайте пристрій — папки синхронізуються лише зі спарованими пристроями",
+    "syncing…": "синхронізація…",
+    "in sync": "синхронізовано",
+    "Add device": "Додати пристрій",
+    "Add folder": "Додати папку",
+    "Add custom folder": "Додати власну папку",
+    "Device ID of the other console (shown on its Sync tab)": "ID іншої консолі (показано на її вкладці «Синхронізація»)",
+    "Name (e.g. Mini V2)": "Назва (напр., Mini V2)",
+    "Folder to sync (under ~ or /run/media)": "Папка для синхронізації (у ~ або /run/media)",
+    "Label (optional)": "Назва (необов’язково)",
+    "Checking controller...": "Перевірка контролера...",
+    "This device can't save calibration, but you can check stick and trigger response here.": "Цей пристрій не може зберігати калібрування, але тут можна перевірити відгук стіків і тригерів.",
+    "Move both sticks in full circles and fully press both triggers, then Save.": "Покрутіть обидва стіки по повному колу та повністю натисніть обидва тригери, потім натисніть «Зберегти».",
+    "Press Start, then move sticks and triggers through full range.": "Натисніть Start, потім проведіть стіки й тригери через повний діапазон.",
+    "Save Calibration": "Зберегти калібрування",
+    "Start Calibration": "Почати калібрування",
+    "Reset to Defaults": "Скинути до типових",
+};
+const ru = {
+    "Loading": "Загрузка",
+    "Default": "По умолчанию",
+    "Reset to Default": "Сбросить к настройкам по умолчанию",
+    "Cancel": "Отмена",
+    "Status": "Статус",
+    "Error": "Ошибка",
+    "Remove": "Удалить",
+    "Accept": "Принять",
+    "Dismiss": "Отклонить",
+    "Close": "Закрыть",
+    "EDIT GAME PROFILE": "РЕДАКТИРОВАНИЕ ПРОФИЛЯ ИГРЫ",
+    "PROFILE SETTINGS": "НАСТРОЙКИ ПРОФИЛЯ",
+    "ADVANCED": "ДОПОЛНИТЕЛЬНО",
+    "Compatibility changes apply on next launch": "Изменения совместимости применятся при следующем запуске",
+    "Compatibility Mode": "Режим совместимости",
+    "ARM64 (native, recommended)": "ARM64 (нативный, рекомендуется)",
+    "x86_64 (emulated via FEX)": "x86_64 (эмуляция через FEX)",
+    "Default Proton": "Proton по умолчанию",
+    "Apply to New Games": "Применять к новым играм",
+    "Game Resolution": "Разрешение игры",
+    "Native": "Нативное",
+    "Performance Overlay": "Оверлей производительности",
+    "FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart": "Оверлей FPS/ЦП/ГП/температур через встроенный --mangoapp в gamescope — применяется после перезапуска сессии",
+    "Compatibility Tool": "Инструмент совместимости",
+    "Use Default": "Использовать по умолчанию",
+    "Follow Steam": "Как в Steam",
+    "FEX Preset": "Пресет FEX",
+    "Custom": "Свой",
+    "CPU Cores": "Ядра ЦП",
+    "Default (any core)": "По умолчанию (любое ядро)",
+    "Big cores only (cpu4-7)": "Только большие ядра (cpu4-7)",
+    "Little cores only (cpu0-3)": "Только маленькие ядра (cpu0-3)",
+    "Host Thunks": "Прослойки хоста (thunks)",
+    "Hide Host Thunks": "Скрыть прослойки хоста",
+    "Reset All Games": "Сбросить все игры",
+    "Resetting...": "Сброс...",
+    "This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.": "Это удалит все настройки Nebel для отдельных игр, сбросит переопределения разрешения, применит Proton по умолчанию там, где Steam выбирает Proton, и оставит нативные Linux-игры на усмотрение Steam.",
+    "Resolution override is unavailable": "Переопределение разрешения недоступно",
+    "Failed to set resolution override": "Не удалось установить переопределение разрешения",
+    "Failed to set default resolution": "Не удалось установить разрешение по умолчанию",
+    "EDIT POWER PROFILE": "РЕДАКТИРОВАНИЕ ПРОФИЛЯ ПИТАНИЯ",
+    "Fan Curve": "Кривая вентилятора",
+    "CPU Underclock": "Снижение частоты ЦП",
+    "None": "Нет",
+    "Small": "Малое",
+    "Medium": "Среднее",
+    "Large": "Большое",
+    "CPU Max (%)": "Макс. ЦП (%)",
+    "GPU Min (%)": "Мин. ГП (%)",
+    "GPU Max (%)": "Макс. ГП (%)",
+    "DISPLAY": "ДИСПЛЕЙ",
+    "EXTERNAL DISPLAY": "ВНЕШНИЙ ДИСПЛЕЙ",
+    "Internal Screen": "Встроенный экран",
+    "{connector} (disconnected)": "{connector} (отключён)",
+    "Primary Display": "Основной дисплей",
+    "Resolution": "Разрешение",
+    "Rotation isn't available for an external display (gamescope only rotates the internal screen).": "Поворот недоступен для внешнего дисплея (gamescope поворачивает только встроенный экран).",
+    "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Внешний дисплей не обнаружен. Подключите его (док/USB-C/HDMI), чтобы выбрать здесь.",
+    "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Этот дисплей сейчас не подключён — игровой режим работает на встроенном экране, пока его не подключат снова. Настройки сохранены.",
+    "Error: {message}": "Ошибка: {message}",
+    "Apply & Restart Game Mode": "Применить и перезапустить игровой режим",
+    "Stick Lighting": "Подсветка стиков",
+    "No addressable stick lighting hardware detected on this device.": "На этом устройстве не обнаружена адресная подсветка стиков.",
+    "Enable": "Включить",
+    "Turn both sticks off entirely, without losing the mode/color settings below": "Полностью выключить подсветку обоих стиков, не теряя настройки режима и цвета ниже",
+    "Sticks are off - settings below are kept, not applied.": "Подсветка выключена — настройки ниже сохранены, но не применяются.",
+    "Follow screen brightness": "Следовать яркости экрана",
+    "Dim both sticks along with the display backlight": "Затемнять оба стика вместе с подсветкой дисплея",
+    "Max Brightness": "Макс. яркость",
+    "Configure each stick separately": "Настраивать каждый стик отдельно",
+    "Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.": "Выкл: изменения ниже применяются к обоим стикам сразу. Вкл: выберите стик и редактируйте только его.",
+    "Stick": "Стик",
+    "Left Stick": "Левый стик",
+    "Right Stick": "Правый стик",
+    "Mode": "Режим",
+    "Static": "Статичный",
+    "Breathing": "Дыхание",
+    "Rainbow": "Радуга",
+    "Wave (rainbow spread around the ring)": "Волна (радуга растекается по кольцу)",
+    "Starlight (random zone twinkle)": "Звёздный свет (случайное мерцание зон)",
+    "Spin": "Вращение",
+    "Reactive (sticks + buttons)": "Реактивный (стики + кнопки)",
+    "Multidot (RGB chase)": "Мультиточка (RGB-погоня)",
+    "Ambilight (matches screen)": "Ambilight (под цвет экрана)",
+    "Duotone (two-color split)": "Дуотон (разделение на два цвета)",
+    "Speed": "Скорость",
+    "Intensity (min brightness)": "Интенсивность (мин. яркость)",
+    "Size": "Размер",
+    "Soft trail": "Мягкий шлейф",
+    "Trailing fade (uses Size below) instead of a single hard-edged dot": "Затухающий шлейф (использует «Размер» ниже) вместо одной чёткой точки",
+    "Compass": "Компас",
+    "Point the lit zone(s) at the stick's push direction instead of lighting evenly": "Направлять светящиеся зоны в сторону наклона стика вместо равномерного свечения",
+    "Seesaw": "Качели",
+    "Breathe the two color groups against each other instead of a static split": "Две группы цветов «дышат» навстречу друг другу вместо статичного разделения",
+    "Colors": "Цвета",
+    "Hide colors": "Скрыть цвета",
+    "Color Source": "Источник цвета",
+    "Custom color": "Свой цвет",
+    "Battery level": "Уровень заряда",
+    "Random (unpredictable color shift)": "Случайный (непредсказуемая смена цвета)",
+    "Shimmer (pale/cool to rich/warm)": "Мерцание (от бледного холодного к насыщенному тёплому)",
+    "Charging indicator": "Индикатор зарядки",
+    "Spin a blue dot around the stick while charging": "Вращать синюю точку вокруг стика во время зарядки",
+    "Custom color (advanced)": "Свой цвет (расширенно)",
+    "Hide custom color": "Скрыть свой цвет",
+    "Show flash colors": "Показать цвета вспышки",
+    "Hide flash colors": "Скрыть цвета вспышки",
+    "Button": "Кнопка",
+    "Split": "Разделение",
+    "Horizontal": "Горизонтально",
+    "Vertical": "Вертикально",
+    "Diagonal": "Диагонально",
+    "Color A": "Цвет A",
+    "Color B": "Цвет B",
+    "Flip stick ring": "Перевернуть кольцо стика",
+    "Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)": "Повернуть LED-кольцо на 180° для стиков, распаянных вверх ногами (исправляет компас/направление на некоторых RP6)",
+    "Blue": "Синий",
+    "Cyan": "Голубой",
+    "Purple": "Фиолетовый",
+    "Pink": "Розовый",
+    "Red": "Красный",
+    "Orange": "Оранжевый",
+    "Yellow": "Жёлтый",
+    "Green": "Зелёный",
+    "White": "Белый",
+    "L3 (left stick click)": "L3 (нажатие левого стика)",
+    "R3 (right stick click)": "R3 (нажатие правого стика)",
+    "L4 (left paddle)": "L4 (левый лепесток)",
+    "R4 (right paddle)": "R4 (правый лепесток)",
+    "D-Pad Up": "Крестовина вверх",
+    "D-Pad Down": "Крестовина вниз",
+    "D-Pad Left": "Крестовина влево",
+    "D-Pad Right": "Крестовина вправо",
+    "Other buttons": "Другие кнопки",
+    "Controller": "Контроллер",
+    "Emulation": "Эмуляция",
+    "Launch Calibration": "Запустить калибровку",
+    "System": "Система",
+    "Enable SSH": "Включить SSH",
+    "Mount shared storage": "Монтировать общее хранилище",
+    "Mount NEBEL_SHARED partition at ~/Shared": "Монтировать раздел NEBEL_SHARED в ~/Shared",
+    "OS Version": "Версия ОС",
+    "unknown": "неизвестно",
+    "Sync": "Синхронизация",
+    "Syncthing is not installed in this OS image": "Syncthing не установлен в этом образе ОС",
+    "Sync service": "Служба синхронизации",
+    "Running": "Работает",
+    "Stopped": "Остановлено",
+    "This device ID": "ID этого устройства",
+    "{connected} of {total} device(s) connected": "Подключено устройств: {connected} из {total}",
+    "Requests": "Запросы",
+    "Device \"{name}\" wants to pair": "Устройство «{name}» хочет подключиться",
+    "Folder \"{name}\" was shared with you": "С вами поделились папкой «{name}»",
+    "Devices": "Устройства",
+    "(connected)": "(подключено)",
+    "Folders": "Папки",
+    "Add a device first - folders sync only to paired devices": "Сначала добавьте устройство — папки синхронизируются только с сопряжёнными устройствами",
+    "syncing…": "синхронизация…",
+    "in sync": "синхронизировано",
+    "Add device": "Добавить устройство",
+    "Add folder": "Добавить папку",
+    "Add custom folder": "Добавить свою папку",
+    "Device ID of the other console (shown on its Sync tab)": "ID другой консоли (показан на её вкладке «Синхронизация»)",
+    "Name (e.g. Mini V2)": "Имя (напр., Mini V2)",
+    "Folder to sync (under ~ or /run/media)": "Папка для синхронизации (в ~ или /run/media)",
+    "Label (optional)": "Метка (необязательно)",
+    "Checking controller...": "Проверка контроллера...",
+    "This device can't save calibration, but you can check stick and trigger response here.": "Это устройство не может сохранять калибровку, но здесь можно проверить отклик стиков и триггеров.",
+    "Move both sticks in full circles and fully press both triggers, then Save.": "Покрутите оба стика по полному кругу и полностью нажмите оба триггера, затем нажмите «Сохранить».",
+    "Press Start, then move sticks and triggers through full range.": "Нажмите Start, затем проведите стики и триггеры через полный диапазон.",
+    "Save Calibration": "Сохранить калибровку",
+    "Start Calibration": "Начать калибровку",
+    "Reset to Defaults": "Сбросить к настройкам по умолчанию",
+};
+const es = {
+    "Loading": "Cargando",
+    "Default": "Predeterminado",
+    "Reset to Default": "Restablecer valores predeterminados",
+    "Cancel": "Cancelar",
+    "Status": "Estado",
+    "Error": "Error",
+    "Remove": "Eliminar",
+    "Accept": "Aceptar",
+    "Dismiss": "Descartar",
+    "Close": "Cerrar",
+    "EDIT GAME PROFILE": "EDITAR PERFIL DE JUEGO",
+    "PROFILE SETTINGS": "AJUSTES DEL PERFIL",
+    "ADVANCED": "AVANZADO",
+    "Compatibility changes apply on next launch": "Los cambios de compatibilidad se aplicarán en el próximo inicio",
+    "Compatibility Mode": "Modo de compatibilidad",
+    "ARM64 (native, recommended)": "ARM64 (nativo, recomendado)",
+    "x86_64 (emulated via FEX)": "x86_64 (emulado mediante FEX)",
+    "Default Proton": "Proton predeterminado",
+    "Apply to New Games": "Aplicar a juegos nuevos",
+    "Game Resolution": "Resolución del juego",
+    "Native": "Nativa",
+    "Performance Overlay": "Superposición de rendimiento",
+    "FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart": "Superposición de FPS/CPU/GPU/temperaturas mediante --mangoapp integrado en gamescope: se aplica tras reiniciar la sesión",
+    "Compatibility Tool": "Herramienta de compatibilidad",
+    "Use Default": "Usar predeterminado",
+    "Follow Steam": "Seguir a Steam",
+    "FEX Preset": "Preajuste de FEX",
+    "Custom": "Personalizado",
+    "CPU Cores": "Núcleos de CPU",
+    "Default (any core)": "Predeterminado (cualquier núcleo)",
+    "Big cores only (cpu4-7)": "Solo núcleos grandes (cpu4-7)",
+    "Little cores only (cpu0-3)": "Solo núcleos pequeños (cpu0-3)",
+    "Host Thunks": "Thunks del host",
+    "Hide Host Thunks": "Ocultar thunks del host",
+    "Reset All Games": "Restablecer todos los juegos",
+    "Resetting...": "Restableciendo...",
+    "This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.": "Esto elimina todos los ajustes de Nebel por juego, restablece las resoluciones personalizadas, aplica el Proton predeterminado donde Steam selecciona Proton y deja las selecciones nativas de Linux en manos de Steam.",
+    "Resolution override is unavailable": "La anulación de resolución no está disponible",
+    "Failed to set resolution override": "No se pudo establecer la anulación de resolución",
+    "Failed to set default resolution": "No se pudo establecer la resolución predeterminada",
+    "EDIT POWER PROFILE": "EDITAR PERFIL DE ENERGÍA",
+    "Fan Curve": "Curva del ventilador",
+    "CPU Underclock": "Underclocking de CPU",
+    "None": "Ninguno",
+    "Small": "Pequeño",
+    "Medium": "Medio",
+    "Large": "Grande",
+    "CPU Max (%)": "CPU máx. (%)",
+    "GPU Min (%)": "GPU mín. (%)",
+    "GPU Max (%)": "GPU máx. (%)",
+    "DISPLAY": "PANTALLA",
+    "EXTERNAL DISPLAY": "PANTALLA EXTERNA",
+    "Internal Screen": "Pantalla interna",
+    "{connector} (disconnected)": "{connector} (desconectado)",
+    "Primary Display": "Pantalla principal",
+    "Resolution": "Resolución",
+    "Rotation isn't available for an external display (gamescope only rotates the internal screen).": "La rotación no está disponible para pantallas externas (gamescope solo rota la pantalla interna).",
+    "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "No se detectó ninguna pantalla externa. Conecta una (dock/USB-C/HDMI) para elegirla aquí.",
+    "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Esta pantalla no está conectada ahora mismo: el modo de juego funciona en la pantalla interna hasta que se vuelva a conectar. Sus ajustes se conservan.",
+    "Error: {message}": "Error: {message}",
+    "Apply & Restart Game Mode": "Aplicar y reiniciar el modo de juego",
+    "Stick Lighting": "Iluminación de los sticks",
+    "No addressable stick lighting hardware detected on this device.": "No se detectó hardware de iluminación direccionable de sticks en este dispositivo.",
+    "Enable": "Activar",
+    "Turn both sticks off entirely, without losing the mode/color settings below": "Apagar ambos sticks por completo sin perder los ajustes de modo y color de abajo",
+    "Sticks are off - settings below are kept, not applied.": "Los sticks están apagados: los ajustes de abajo se conservan, no se aplican.",
+    "Follow screen brightness": "Seguir el brillo de la pantalla",
+    "Dim both sticks along with the display backlight": "Atenuar ambos sticks junto con la retroiluminación de la pantalla",
+    "Max Brightness": "Brillo máximo",
+    "Configure each stick separately": "Configurar cada stick por separado",
+    "Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.": "Desactivado: los cambios de abajo se aplican a ambos sticks a la vez. Activado: elige un stick y edita solo ese.",
+    "Stick": "Stick",
+    "Left Stick": "Stick izquierdo",
+    "Right Stick": "Stick derecho",
+    "Mode": "Modo",
+    "Static": "Estático",
+    "Breathing": "Respiración",
+    "Rainbow": "Arcoíris",
+    "Wave (rainbow spread around the ring)": "Onda (arcoíris repartido por el anillo)",
+    "Starlight (random zone twinkle)": "Luz estelar (parpadeo aleatorio de zonas)",
+    "Spin": "Giro",
+    "Reactive (sticks + buttons)": "Reactivo (sticks + botones)",
+    "Multidot (RGB chase)": "Multipunto (persecución RGB)",
+    "Ambilight (matches screen)": "Ambilight (coincide con la pantalla)",
+    "Duotone (two-color split)": "Duotono (división en dos colores)",
+    "Speed": "Velocidad",
+    "Intensity (min brightness)": "Intensidad (brillo mínimo)",
+    "Size": "Tamaño",
+    "Soft trail": "Estela suave",
+    "Trailing fade (uses Size below) instead of a single hard-edged dot": "Estela difuminada (usa Tamaño abajo) en lugar de un solo punto de bordes duros",
+    "Compass": "Brújula",
+    "Point the lit zone(s) at the stick's push direction instead of lighting evenly": "Apuntar las zonas iluminadas hacia la dirección de empuje del stick en lugar de iluminar uniformemente",
+    "Seesaw": "Subibaja",
+    "Breathe the two color groups against each other instead of a static split": "Los dos grupos de color «respiran» uno contra otro en lugar de una división estática",
+    "Colors": "Colores",
+    "Hide colors": "Ocultar colores",
+    "Color Source": "Fuente de color",
+    "Custom color": "Color personalizado",
+    "Battery level": "Nivel de batería",
+    "Random (unpredictable color shift)": "Aleatorio (cambio de color impredecible)",
+    "Shimmer (pale/cool to rich/warm)": "Destello (de pálido/frío a intenso/cálido)",
+    "Charging indicator": "Indicador de carga",
+    "Spin a blue dot around the stick while charging": "Girar un punto azul alrededor del stick durante la carga",
+    "Custom color (advanced)": "Color personalizado (avanzado)",
+    "Hide custom color": "Ocultar color personalizado",
+    "Show flash colors": "Mostrar colores de destello",
+    "Hide flash colors": "Ocultar colores de destello",
+    "Button": "Botón",
+    "Split": "División",
+    "Horizontal": "Horizontal",
+    "Vertical": "Vertical",
+    "Diagonal": "Diagonal",
+    "Color A": "Color A",
+    "Color B": "Color B",
+    "Flip stick ring": "Invertir el anillo del stick",
+    "Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)": "Girar el anillo LED 180° para variantes de stick cableadas al revés (corrige la brújula/dirección en algunas RP6)",
+    "Blue": "Azul",
+    "Cyan": "Cian",
+    "Purple": "Morado",
+    "Pink": "Rosa",
+    "Red": "Rojo",
+    "Orange": "Naranja",
+    "Yellow": "Amarillo",
+    "Green": "Verde",
+    "White": "Blanco",
+    "L3 (left stick click)": "L3 (clic del stick izquierdo)",
+    "R3 (right stick click)": "R3 (clic del stick derecho)",
+    "L4 (left paddle)": "L4 (paleta izquierda)",
+    "R4 (right paddle)": "R4 (paleta derecha)",
+    "D-Pad Up": "Cruceta arriba",
+    "D-Pad Down": "Cruceta abajo",
+    "D-Pad Left": "Cruceta izquierda",
+    "D-Pad Right": "Cruceta derecha",
+    "Other buttons": "Otros botones",
+    "Controller": "Mando",
+    "Emulation": "Emulación",
+    "Launch Calibration": "Iniciar calibración",
+    "System": "Sistema",
+    "Enable SSH": "Activar SSH",
+    "Mount shared storage": "Montar almacenamiento compartido",
+    "Mount NEBEL_SHARED partition at ~/Shared": "Montar la partición NEBEL_SHARED en ~/Shared",
+    "OS Version": "Versión del SO",
+    "unknown": "desconocida",
+    "Sync": "Sincronización",
+    "Syncthing is not installed in this OS image": "Syncthing no está instalado en esta imagen del SO",
+    "Sync service": "Servicio de sincronización",
+    "Running": "En ejecución",
+    "Stopped": "Detenido",
+    "This device ID": "ID de este dispositivo",
+    "{connected} of {total} device(s) connected": "{connected} de {total} dispositivo(s) conectados",
+    "Requests": "Solicitudes",
+    "Device \"{name}\" wants to pair": "El dispositivo «{name}» quiere emparejarse",
+    "Folder \"{name}\" was shared with you": "La carpeta «{name}» se ha compartido contigo",
+    "Devices": "Dispositivos",
+    "(connected)": "(conectado)",
+    "Folders": "Carpetas",
+    "Add a device first - folders sync only to paired devices": "Añade primero un dispositivo: las carpetas solo se sincronizan con dispositivos emparejados",
+    "syncing…": "sincronizando…",
+    "in sync": "sincronizado",
+    "Add device": "Añadir dispositivo",
+    "Add folder": "Añadir carpeta",
+    "Add custom folder": "Añadir carpeta personalizada",
+    "Device ID of the other console (shown on its Sync tab)": "ID de la otra consola (se muestra en su pestaña Sincronización)",
+    "Name (e.g. Mini V2)": "Nombre (p. ej., Mini V2)",
+    "Folder to sync (under ~ or /run/media)": "Carpeta a sincronizar (bajo ~ o /run/media)",
+    "Label (optional)": "Etiqueta (opcional)",
+    "Checking controller...": "Comprobando el mando...",
+    "This device can't save calibration, but you can check stick and trigger response here.": "Este dispositivo no puede guardar la calibración, pero aquí puedes comprobar la respuesta de sticks y gatillos.",
+    "Move both sticks in full circles and fully press both triggers, then Save.": "Mueve ambos sticks en círculos completos y pulsa a fondo ambos gatillos, luego Guardar.",
+    "Press Start, then move sticks and triggers through full range.": "Pulsa Start y luego mueve sticks y gatillos por todo su recorrido.",
+    "Save Calibration": "Guardar calibración",
+    "Start Calibration": "Iniciar calibración",
+    "Reset to Defaults": "Restablecer valores predeterminados",
+};
+const fr = {
+    "Loading": "Chargement",
+    "Default": "Par défaut",
+    "Reset to Default": "Réinitialiser par défaut",
+    "Cancel": "Annuler",
+    "Status": "Statut",
+    "Error": "Erreur",
+    "Remove": "Supprimer",
+    "Accept": "Accepter",
+    "Dismiss": "Ignorer",
+    "Close": "Fermer",
+    "EDIT GAME PROFILE": "MODIFIER LE PROFIL DU JEU",
+    "PROFILE SETTINGS": "PARAMÈTRES DU PROFIL",
+    "ADVANCED": "AVANCÉ",
+    "Compatibility changes apply on next launch": "Les changements de compatibilité s'appliqueront au prochain lancement",
+    "Compatibility Mode": "Mode de compatibilité",
+    "ARM64 (native, recommended)": "ARM64 (natif, recommandé)",
+    "x86_64 (emulated via FEX)": "x86_64 (émulé via FEX)",
+    "Default Proton": "Proton par défaut",
+    "Apply to New Games": "Appliquer aux nouveaux jeux",
+    "Game Resolution": "Résolution du jeu",
+    "Native": "Native",
+    "Performance Overlay": "Surcouche de performances",
+    "FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart": "Surcouche FPS/CPU/GPU/températures via --mangoapp intégré à gamescope : s'applique au prochain redémarrage de session",
+    "Compatibility Tool": "Outil de compatibilité",
+    "Use Default": "Utiliser la valeur par défaut",
+    "Follow Steam": "Suivre Steam",
+    "FEX Preset": "Préréglage FEX",
+    "Custom": "Personnalisé",
+    "CPU Cores": "Cœurs CPU",
+    "Default (any core)": "Par défaut (n'importe quel cœur)",
+    "Big cores only (cpu4-7)": "Gros cœurs uniquement (cpu4-7)",
+    "Little cores only (cpu0-3)": "Petits cœurs uniquement (cpu0-3)",
+    "Host Thunks": "Thunks hôte",
+    "Hide Host Thunks": "Masquer les thunks hôte",
+    "Reset All Games": "Réinitialiser tous les jeux",
+    "Resetting...": "Réinitialisation...",
+    "This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.": "Cela supprime tous les paramètres Nebel par jeu, réinitialise les résolutions personnalisées, applique le Proton par défaut là où Steam sélectionne Proton, et laisse Steam gérer les jeux Linux natifs.",
+    "Resolution override is unavailable": "Le forçage de résolution n'est pas disponible",
+    "Failed to set resolution override": "Échec du forçage de résolution",
+    "Failed to set default resolution": "Échec de la définition de la résolution par défaut",
+    "EDIT POWER PROFILE": "MODIFIER LE PROFIL D'ALIMENTATION",
+    "Fan Curve": "Courbe du ventilateur",
+    "CPU Underclock": "Underclocking du CPU",
+    "None": "Aucun",
+    "Small": "Faible",
+    "Medium": "Moyen",
+    "Large": "Fort",
+    "CPU Max (%)": "CPU max (%)",
+    "GPU Min (%)": "GPU min (%)",
+    "GPU Max (%)": "GPU max (%)",
+    "DISPLAY": "AFFICHAGE",
+    "EXTERNAL DISPLAY": "ÉCRAN EXTERNE",
+    "Internal Screen": "Écran interne",
+    "{connector} (disconnected)": "{connector} (déconnecté)",
+    "Primary Display": "Écran principal",
+    "Resolution": "Résolution",
+    "Rotation isn't available for an external display (gamescope only rotates the internal screen).": "La rotation n'est pas disponible pour un écran externe (gamescope ne pivote que l'écran interne).",
+    "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Aucun écran externe détecté. Connectez-en un (dock/USB-C/HDMI) pour le choisir ici.",
+    "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Cet écran n'est pas connecté pour le moment : le mode jeu tourne sur l'écran interne jusqu'à ce qu'il soit rebranché. Ses paramètres sont conservés.",
+    "Error: {message}": "Erreur : {message}",
+    "Apply & Restart Game Mode": "Appliquer et redémarrer le mode jeu",
+    "Stick Lighting": "Éclairage des sticks",
+    "No addressable stick lighting hardware detected on this device.": "Aucun matériel d'éclairage adressable de sticks détecté sur cet appareil.",
+    "Enable": "Activer",
+    "Turn both sticks off entirely, without losing the mode/color settings below": "Éteindre complètement les deux sticks sans perdre les réglages de mode et de couleur ci-dessous",
+    "Sticks are off - settings below are kept, not applied.": "Les sticks sont éteints : les réglages ci-dessous sont conservés, pas appliqués.",
+    "Follow screen brightness": "Suivre la luminosité de l'écran",
+    "Dim both sticks along with the display backlight": "Atténuer les deux sticks avec le rétroéclairage de l'écran",
+    "Max Brightness": "Luminosité max",
+    "Configure each stick separately": "Configurer chaque stick séparément",
+    "Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.": "Désactivé : les changements ci-dessous s'appliquent aux deux sticks à la fois. Activé : choisissez un stick et modifiez uniquement celui-ci.",
+    "Stick": "Stick",
+    "Left Stick": "Stick gauche",
+    "Right Stick": "Stick droit",
+    "Mode": "Mode",
+    "Static": "Statique",
+    "Breathing": "Respiration",
+    "Rainbow": "Arc-en-ciel",
+    "Wave (rainbow spread around the ring)": "Vague (arc-en-ciel réparti sur l'anneau)",
+    "Starlight (random zone twinkle)": "Lumière stellaire (scintillement aléatoire des zones)",
+    "Spin": "Rotation",
+    "Reactive (sticks + buttons)": "Réactif (sticks + boutons)",
+    "Multidot (RGB chase)": "Multipoint (poursuite RGB)",
+    "Ambilight (matches screen)": "Ambilight (suit l'écran)",
+    "Duotone (two-color split)": "Duotone (répartition en deux couleurs)",
+    "Speed": "Vitesse",
+    "Intensity (min brightness)": "Intensité (luminosité min)",
+    "Size": "Taille",
+    "Soft trail": "Traînée douce",
+    "Trailing fade (uses Size below) instead of a single hard-edged dot": "Traînée estompée (utilise Taille ci-dessous) au lieu d'un point unique aux bords nets",
+    "Compass": "Boussole",
+    "Point the lit zone(s) at the stick's push direction instead of lighting evenly": "Orienter les zones éclairées vers la direction d'inclinaison du stick au lieu d'un éclairage uniforme",
+    "Seesaw": "Bascule",
+    "Breathe the two color groups against each other instead of a static split": "Les deux groupes de couleurs « respirent » l'un contre l'autre au lieu d'une répartition statique",
+    "Colors": "Couleurs",
+    "Hide colors": "Masquer les couleurs",
+    "Color Source": "Source de couleur",
+    "Custom color": "Couleur personnalisée",
+    "Battery level": "Niveau de batterie",
+    "Random (unpredictable color shift)": "Aléatoire (changement de couleur imprévisible)",
+    "Shimmer (pale/cool to rich/warm)": "Chatoyant (de pâle/froid à riche/chaud)",
+    "Charging indicator": "Indicateur de charge",
+    "Spin a blue dot around the stick while charging": "Faire tourner un point bleu autour du stick pendant la charge",
+    "Custom color (advanced)": "Couleur personnalisée (avancé)",
+    "Hide custom color": "Masquer la couleur personnalisée",
+    "Show flash colors": "Afficher les couleurs de flash",
+    "Hide flash colors": "Masquer les couleurs de flash",
+    "Button": "Bouton",
+    "Split": "Répartition",
+    "Horizontal": "Horizontal",
+    "Vertical": "Vertical",
+    "Diagonal": "Diagonal",
+    "Color A": "Couleur A",
+    "Color B": "Couleur B",
+    "Flip stick ring": "Inverser l'anneau du stick",
+    "Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)": "Pivoter l'anneau LED de 180° pour les variantes de sticks câblées à l'envers (corrige la boussole/direction sur certaines RP6)",
+    "Blue": "Bleu",
+    "Cyan": "Cyan",
+    "Purple": "Violet",
+    "Pink": "Rose",
+    "Red": "Rouge",
+    "Orange": "Orange",
+    "Yellow": "Jaune",
+    "Green": "Vert",
+    "White": "Blanc",
+    "L3 (left stick click)": "L3 (clic du stick gauche)",
+    "R3 (right stick click)": "R3 (clic du stick droit)",
+    "L4 (left paddle)": "L4 (palette gauche)",
+    "R4 (right paddle)": "R4 (palette droite)",
+    "D-Pad Up": "Croix haut",
+    "D-Pad Down": "Croix bas",
+    "D-Pad Left": "Croix gauche",
+    "D-Pad Right": "Croix droite",
+    "Other buttons": "Autres boutons",
+    "Controller": "Manette",
+    "Emulation": "Émulation",
+    "Launch Calibration": "Lancer l'étalonnage",
+    "System": "Système",
+    "Enable SSH": "Activer SSH",
+    "Mount shared storage": "Monter le stockage partagé",
+    "Mount NEBEL_SHARED partition at ~/Shared": "Monter la partition NEBEL_SHARED dans ~/Shared",
+    "OS Version": "Version de l'OS",
+    "unknown": "inconnue",
+    "Sync": "Synchronisation",
+    "Syncthing is not installed in this OS image": "Syncthing n'est pas installé dans cette image de l'OS",
+    "Sync service": "Service de synchronisation",
+    "Running": "En cours d'exécution",
+    "Stopped": "Arrêté",
+    "This device ID": "ID de cet appareil",
+    "{connected} of {total} device(s) connected": "{connected} appareil(s) connecté(s) sur {total}",
+    "Requests": "Demandes",
+    "Device \"{name}\" wants to pair": "L'appareil «{name}» veut s'appairer",
+    "Folder \"{name}\" was shared with you": "Le dossier «{name}» a été partagé avec vous",
+    "Devices": "Appareils",
+    "(connected)": "(connecté)",
+    "Folders": "Dossiers",
+    "Add a device first - folders sync only to paired devices": "Ajoutez d'abord un appareil : les dossiers ne se synchronisent qu'avec les appareils appairés",
+    "syncing…": "synchronisation…",
+    "in sync": "synchronisé",
+    "Add device": "Ajouter un appareil",
+    "Add folder": "Ajouter un dossier",
+    "Add custom folder": "Ajouter un dossier personnalisé",
+    "Device ID of the other console (shown on its Sync tab)": "ID de l'autre console (affiché sur son onglet Synchronisation)",
+    "Name (e.g. Mini V2)": "Nom (p. ex. Mini V2)",
+    "Folder to sync (under ~ or /run/media)": "Dossier à synchroniser (sous ~ ou /run/media)",
+    "Label (optional)": "Libellé (facultatif)",
+    "Checking controller...": "Vérification de la manette...",
+    "This device can't save calibration, but you can check stick and trigger response here.": "Cet appareil ne peut pas enregistrer l'étalonnage, mais vous pouvez vérifier ici la réponse des sticks et des gâchettes.",
+    "Move both sticks in full circles and fully press both triggers, then Save.": "Décrivez des cercles complets avec les deux sticks et appuyez à fond sur les deux gâchettes, puis Enregistrer.",
+    "Press Start, then move sticks and triggers through full range.": "Appuyez sur Start, puis parcourez toute la course des sticks et des gâchettes.",
+    "Save Calibration": "Enregistrer l'étalonnage",
+    "Start Calibration": "Démarrer l'étalonnage",
+    "Reset to Defaults": "Réinitialiser par défaut",
+};
+const dictionaries = { uk, ru, es, fr };
+// CEF's navigator.language follows the Steam UI language in game mode, which
+// is the one signal available without depending on unstable SteamClient APIs.
+function detectLocale() {
+    const language = (typeof navigator !== "undefined" && navigator.language) || "";
+    const prefix = language.toLowerCase().split("-")[0];
+    if (prefix === "uk" || prefix === "ru" || prefix === "es" || prefix === "fr")
+        return prefix;
+    return "en";
+}
+const currentLocale = detectLocale();
+function t(key, vars) {
+    let text = dictionaries[currentLocale]?.[key] || key;
+    if (vars) {
+        for (const [name, value] of Object.entries(vars)) {
+            text = text.split(`{${name}}`).join(String(value));
+        }
+    }
+    return text;
+}
+
 function Icon({ path }) {
     return (SP_JSX.jsx("svg", { style: { display: "block" }, width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: path }));
 }
@@ -621,7 +1342,7 @@ function availableGames(config) {
 }
 function editTargetOptions(config) {
     return [
-        { data: "", label: "Default" },
+        { data: "", label: t("Default") },
         ...availableGames(config).map((game) => ({ data: game.appid, label: gameDisplayName(game) })),
     ];
 }
@@ -828,21 +1549,21 @@ function titleCase(value) {
 }
 
 const resolutionOptions = [
-    { data: "Default", label: "Default" },
-    { data: "Native", label: "Native" },
+    { data: "Default", label: t("Default") },
+    { data: "Native", label: t("Native") },
     { data: "1280x720", label: "1280x720" },
     { data: "960x540", label: "960x540" },
 ];
 const compatModeOptions = [
-    { data: "arm64", label: "ARM64 (native, recommended)" },
-    { data: "x86_64", label: "x86_64 (emulated via FEX)" },
+    { data: "arm64", label: t("ARM64 (native, recommended)") },
+    { data: "x86_64", label: t("x86_64 (emulated via FEX)") },
 ];
 // SM8250's cpu0-3 are the 1.8GHz LITTLE cluster, cpu4-7 the 2.4-2.84GHz
 // big+prime cluster - same split ROCKNIX's own SM8250 profile uses.
 const cpuAffinityOptions = [
-    { data: "", label: "Default (any core)" },
-    { data: "big", label: "Big cores only (cpu4-7)" },
-    { data: "little", label: "Little cores only (cpu0-3)" },
+    { data: "", label: t("Default (any core)") },
+    { data: "big", label: t("Big cores only (cpu4-7)") },
+    { data: "little", label: t("Little cores only (cpu0-3)") },
 ];
 const fexKnobs = [
     { key: "TSOEnabled", label: "TSO Enabled" },
@@ -865,7 +1586,7 @@ function ConfirmResetAllModal({ closeModal, onConfirm }) {
         closeModal?.();
         onConfirm();
     };
-    return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: closeModal, children: [SP_JSX.jsx(DFL.DialogBody, { children: "This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam." }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx(DFL.DialogButton, { onClick: confirm, children: "Reset All Games" }), SP_JSX.jsx(DFL.DialogButton, { onClick: closeModal, children: "Cancel" })] })] }));
+    return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: closeModal, children: [SP_JSX.jsx(DFL.DialogBody, { children: t("This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.") }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx(DFL.DialogButton, { onClick: confirm, children: t("Reset All Games") }), SP_JSX.jsx(DFL.DialogButton, { onClick: closeModal, children: t("Cancel") })] })] }));
 }
 function Compatibility({ config, setConfig }) {
     const [resolution, setResolution] = SP_REACT.useState("Default");
@@ -904,7 +1625,7 @@ function Compatibility({ config, setConfig }) {
             }
             catch (error) {
                 if (!cancelled)
-                    setResolutionMessage("Resolution override is unavailable");
+                    setResolutionMessage(t("Resolution override is unavailable"));
             }
         }
         loadResolution();
@@ -1033,7 +1754,7 @@ function Compatibility({ config, setConfig }) {
             setResolutionMessage("");
         }
         catch (error) {
-            setResolutionMessage("Failed to set resolution override");
+            setResolutionMessage(t("Failed to set resolution override"));
         }
     };
     const setSteamDefaultResolution = async (value) => {
@@ -1044,7 +1765,7 @@ function Compatibility({ config, setConfig }) {
             setDefaultResolution(applied || "Default");
         }
         catch (error) {
-            setResolutionMessage("Failed to set default resolution");
+            setResolutionMessage(t("Failed to set default resolution"));
         }
     };
     const resetAllGames = async () => {
@@ -1133,8 +1854,8 @@ function Compatibility({ config, setConfig }) {
         selectableTools.set(currentTool, { id: currentTool, label: currentTool });
     }
     const perGameToolOptions = [
-        { data: USE_DEFAULT_COMPAT, label: "Use Default" },
-        { data: FOLLOW_STEAM_COMPAT, label: "Follow Steam" },
+        { data: USE_DEFAULT_COMPAT, label: t("Use Default") },
+        { data: FOLLOW_STEAM_COMPAT, label: t("Follow Steam") },
         ...Array.from(selectableTools.values()).map((tool) => ({ data: tool.id, label: tool.label })),
     ];
     const onSelectPerGameTool = async (choice) => {
@@ -1164,7 +1885,7 @@ function Compatibility({ config, setConfig }) {
     const isCustom = customSelected || (!hasPreset && !!storedConfig);
     const fexValue = isCustom ? "custom" : hasPreset ? storedProfile : "default";
     const fexConfig = (isCustom ? storedConfig : presets[fexValue]?.config) || presets.default?.config || {};
-    const fexOptions = [...presetEntries.map(([id, profile]) => ({ data: id, label: profile.label })), { data: "custom", label: "Custom" }];
+    const fexOptions = [...presetEntries.map(([id, profile]) => ({ data: id, label: profile.label })), { data: "custom", label: t("Custom") }];
     const onSelectFex = (id) => {
         if (id === "custom") {
             setCustomSelected(true);
@@ -1179,14 +1900,14 @@ function Compatibility({ config, setConfig }) {
     const setKnob = (key, on) => patchSettings({ fexProfile: "custom", fexConfig: { ...fexConfig, [key]: on ? "1" : "0" } });
     const thunks = values.thunks || {};
     const setThunk = (module, on) => patchSettings({ thunks: { ...thunks, [module]: on } });
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "EDIT GAME PROFILE", children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: "Compatibility changes apply on next launch" })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "PROFILE SETTINGS", children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Compatibility Mode", value: compatMode, options: compatModeOptions, onChange: onSelectCompatMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Default Proton", value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: "Apply to New Games", checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("EDIT GAME PROFILE"), children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Compatibility changes apply on next launch") })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: compatMode, options: compatModeOptions, onChange: onSelectCompatMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Default Proton"), value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: t("Apply to New Games"), checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
                                     setAutoApplyCompat(enabled);
                                     patchSettings({ autoApplyCompat: enabled });
-                                } }), SP_JSX.jsx(SelectEdit, { label: "Game Resolution", value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), SP_JSX.jsx(DFL.ToggleField, { label: "Performance Overlay", description: "FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart", checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) })] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Compatibility Tool", value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { label: "Game Resolution", value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: "Status", description: resolutionMessage }) : null, SP_JSX.jsx(SelectEdit, { label: "FEX Preset", value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
+                                } }), SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) })] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                         ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
-                        : null] }), SP_JSX.jsxs(DFL.PanelSection, { title: "ADVANCED", children: [SP_JSX.jsx(SelectEdit, { label: "CPU Cores", value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? "Hide Host Thunks" : "Host Thunks" }), showThunks
+                        : null] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                         ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
-                        : null] }), !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: "Reset to Default" }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? "Resetting..." : "Reset All Games" }) }))] }));
+                        : null] }), !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] }));
 }
 
 // gamescope only ever drives one embedded output at a time (--prefer-output
@@ -1197,7 +1918,7 @@ function Compatibility({ config, setConfig }) {
 const INTERNAL = "__internal__";
 function Display() {
     const [state, setState] = SP_REACT.useState(null);
-    const [loadMessage, setLoadMessage] = SP_REACT.useState("Loading");
+    const [loadMessage, setLoadMessage] = SP_REACT.useState(t("Loading"));
     const [errorMessage, setErrorMessage] = SP_REACT.useState("");
     const [saving, setSaving] = SP_REACT.useState(false);
     const [restarting, setRestarting] = SP_REACT.useState(false);
@@ -1207,15 +1928,15 @@ function Display() {
             .catch((error) => setLoadMessage(String(error)));
     }, []);
     if (!state) {
-        return (SP_JSX.jsx(DFL.PanelSection, { title: "DISPLAY", children: SP_JSX.jsx(DFL.Field, { label: loadMessage }) }));
+        return (SP_JSX.jsx(DFL.PanelSection, { title: t("DISPLAY"), children: SP_JSX.jsx(DFL.Field, { label: loadMessage }) }));
     }
     const externals = state.connectors.filter((c) => !c.internal);
     const selectedConnector = state.useExternal ? state.connector : INTERNAL;
     const primaryOptions = [
-        { data: INTERNAL, label: "Internal Screen" },
+        { data: INTERNAL, label: t("Internal Screen") },
         ...externals.map((c) => ({
             data: c.connector,
-            label: !c.connected ? `${c.connector} (disconnected)` : c.connector,
+            label: !c.connected ? t("{connector} (disconnected)", { connector: c.connector }) : c.connector,
         })),
     ];
     const activeExternal = externals.find((c) => c.connector === state.connector);
@@ -1259,7 +1980,7 @@ function Display() {
             return;
         persist({ width: w, height: h });
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "EXTERNAL DISPLAY", children: [SP_JSX.jsx(SelectEdit, { label: "Primary Display", value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Resolution", value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(DFL.Field, { label: "Rotation isn't available for an external display (gamescope only rotates the internal screen)." })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here." })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered." })), errorMessage && SP_JSX.jsx(DFL.Field, { label: `Error: ${errorMessage}` }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("EXTERNAL DISPLAY"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(DFL.Field, { label: t("Rotation isn't available for an external display (gamescope only rotates the internal screen).") })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
                         setRestarting(true);
                         setErrorMessage("");
                         // A successful restart tears down this very session (and Decky
@@ -1270,7 +1991,7 @@ function Display() {
                         restartGamescopeSession()
                             .catch((error) => setErrorMessage(String(error)))
                             .finally(() => setRestarting(false));
-                    }, children: "Apply & Restart Game Mode" }) })] }));
+                    }, children: t("Apply & Restart Game Mode") }) })] }));
 }
 
 // RRGGBB hex <-> RGB <-> HSB conversions shared by every color picker in
@@ -1551,48 +2272,48 @@ function ModePreview({ mode, color, duotoneColorA, duotoneColorB }) {
 }
 
 const PRESET_COLORS = [
-    { label: "Blue", value: "0050FF" },
-    { label: "Cyan", value: "00E5FF" },
-    { label: "Purple", value: "8000FF" },
-    { label: "Pink", value: "FF0080" },
-    { label: "Red", value: "FF0000" },
-    { label: "Orange", value: "FF8000" },
+    { label: t("Blue"), value: "0050FF" },
+    { label: t("Cyan"), value: "00E5FF" },
+    { label: t("Purple"), value: "8000FF" },
+    { label: t("Pink"), value: "FF0080" },
+    { label: t("Red"), value: "FF0000" },
+    { label: t("Orange"), value: "FF8000" },
     // Matches stick-led-color's DEFAULT_DUOTONE_COLOR_B - pure gold (FFD700)
     // read as noticeably greenish on this LED.
-    { label: "Yellow", value: "FFAA00" },
-    { label: "Green", value: "00FF00" },
-    { label: "White", value: "FFFFFF" },
+    { label: t("Yellow"), value: "FFAA00" },
+    { label: t("Green"), value: "00FF00" },
+    { label: t("White"), value: "FFFFFF" },
 ];
 function patchSide(stickLed, side, patch) {
     return { ...stickLed, sides: { ...stickLed.sides, [side]: { ...stickLed.sides[side], ...patch } } };
 }
 const SIDE_OPTIONS = [
-    { data: "l", label: "Left Stick" },
-    { data: "r", label: "Right Stick" },
+    { data: "l", label: t("Left Stick") },
+    { data: "r", label: t("Right Stick") },
 ];
 const MODE_OPTIONS = [
-    { data: "static", label: "Static" },
-    { data: "breathing", label: "Breathing" },
-    { data: "rainbow", label: "Rainbow" },
-    { data: "wave", label: "Wave (rainbow spread around the ring)" },
-    { data: "starlight", label: "Starlight (random zone twinkle)" },
-    { data: "spin", label: "Spin" },
-    { data: "reactive", label: "Reactive (sticks + buttons)" },
-    { data: "multidot", label: "Multidot (RGB chase)" },
-    { data: "ambilight", label: "Ambilight (matches screen)" },
-    { data: "duotone", label: "Duotone (two-color split)" },
+    { data: "static", label: t("Static") },
+    { data: "breathing", label: t("Breathing") },
+    { data: "rainbow", label: t("Rainbow") },
+    { data: "wave", label: t("Wave (rainbow spread around the ring)") },
+    { data: "starlight", label: t("Starlight (random zone twinkle)") },
+    { data: "spin", label: t("Spin") },
+    { data: "reactive", label: t("Reactive (sticks + buttons)") },
+    { data: "multidot", label: t("Multidot (RGB chase)") },
+    { data: "ambilight", label: t("Ambilight (matches screen)") },
+    { data: "duotone", label: t("Duotone (two-color split)") },
 ];
 const COLOR_VISIBLE_MODES = new Set(["static", "breathing", "spin"]);
 const COLOR_SOURCE_OPTIONS = [
-    { data: "static", label: "Custom color" },
-    { data: "battery", label: "Battery level" },
-    { data: "random", label: "Random (unpredictable color shift)" },
-    { data: "shimmer", label: "Shimmer (pale/cool to rich/warm)" },
+    { data: "static", label: t("Custom color") },
+    { data: "battery", label: t("Battery level") },
+    { data: "random", label: t("Random (unpredictable color shift)") },
+    { data: "shimmer", label: t("Shimmer (pale/cool to rich/warm)") },
 ];
 const DUOTONE_ORIENTATION_OPTIONS = [
-    { data: "horizontal", label: "Horizontal" },
-    { data: "vertical", label: "Vertical" },
-    { data: "diagonal", label: "Diagonal" },
+    { data: "horizontal", label: t("Horizontal") },
+    { data: "vertical", label: t("Vertical") },
+    { data: "diagonal", label: t("Diagonal") },
 ];
 const FLASH_BUTTON_OPTIONS = [
     { data: "south", label: "South" },
@@ -1601,22 +2322,22 @@ const FLASH_BUTTON_OPTIONS = [
     { data: "west", label: "West" },
     { data: "l1", label: "L1" },
     { data: "r1", label: "R1" },
-    { data: "l3", label: "L3 (left stick click)" },
-    { data: "r3", label: "R3 (right stick click)" },
-    { data: "l4", label: "L4 (left paddle)" },
-    { data: "r4", label: "R4 (right paddle)" },
+    { data: "l3", label: t("L3 (left stick click)") },
+    { data: "r3", label: t("R3 (right stick click)") },
+    { data: "l4", label: t("L4 (left paddle)") },
+    { data: "r4", label: t("R4 (right paddle)") },
     { data: "start", label: "Start" },
     { data: "select", label: "Select" },
-    { data: "dpad_up", label: "D-Pad Up" },
-    { data: "dpad_down", label: "D-Pad Down" },
-    { data: "dpad_left", label: "D-Pad Left" },
-    { data: "dpad_right", label: "D-Pad Right" },
-    { data: "other", label: "Other buttons" },
+    { data: "dpad_up", label: t("D-Pad Up") },
+    { data: "dpad_down", label: t("D-Pad Down") },
+    { data: "dpad_left", label: t("D-Pad Left") },
+    { data: "dpad_right", label: t("D-Pad Right") },
+    { data: "other", label: t("Other buttons") },
 ];
 const DEFAULT_FLASH_COLOR = "FFFFFF";
 const PARAM_UI = {
     speed: {
-        label: "Speed",
+        label: t("Speed"),
         min: 25,
         max: 300,
         step: 25,
@@ -1625,7 +2346,7 @@ const PARAM_UI = {
         fromBackend: (v) => Math.round(v * 100),
     },
     intensity: {
-        label: "Intensity (min brightness)",
+        label: t("Intensity (min brightness)"),
         min: 0,
         max: 50,
         step: 5,
@@ -1634,7 +2355,7 @@ const PARAM_UI = {
         fromBackend: (v) => Math.round(v * 100),
     },
     size: {
-        label: "Size",
+        label: t("Size"),
         min: 1,
         max: 3,
         step: 1,
@@ -1957,22 +2678,22 @@ function Lighting({ config, setConfig }) {
     const setStickLedSeesaw$1 = makeToggleSetter("seesaw", setStickLedSeesaw);
     const setStickLedFlip$1 = makeToggleSetter("flip", setStickLedFlip);
     if (!stickLed?.supported || !sideState) {
-        return (SP_JSX.jsx(DFL.PanelSection, { title: "Stick Lighting", children: SP_JSX.jsx(DFL.Field, { label: "No addressable stick lighting hardware detected on this device." }) }));
+        return (SP_JSX.jsx(DFL.PanelSection, { title: t("Stick Lighting"), children: SP_JSX.jsx(DFL.Field, { label: t("No addressable stick lighting hardware detected on this device.") }) }));
     }
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Stick Lighting", children: [SP_JSX.jsx(ToggleRow, { label: "Enable", description: "Turn both sticks off entirely, without losing the mode/color settings below", value: stickLed.enabled, onChange: setStickLedEnabled$1 }), !stickLed.enabled && SP_JSX.jsx(DFL.Field, { label: "Sticks are off - settings below are kept, not applied." }), stickLed.enabled && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: "Follow screen brightness", description: "Dim both sticks along with the display backlight", value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: "Max Brightness", value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => setStickLedMaxBrightness$1(value / 100) })), SP_JSX.jsx(ToggleRow, { label: "Configure each stick separately", description: "Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.", value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: "Stick", value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) })), SP_JSX.jsx(SelectEdit, { label: "Mode", value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), SP_JSX.jsx(ModePreview, { mode: mode, color: sideState.color, duotoneColorA: sideState.duotoneColorA, duotoneColorB: sideState.duotoneColorB }), mode === "spin" && (SP_JSX.jsx(ToggleRow, { label: "Soft trail", description: "Trailing fade (uses Size below) instead of a single hard-edged dot", value: !!sideState.chase, onChange: setStickLedChase$1 })), mode === "reactive" && (SP_JSX.jsx(ToggleRow, { label: "Compass", description: "Point the lit zone(s) at the stick's push direction instead of lighting evenly", value: !!sideState.compass, onChange: setStickLedCompass$1 })), mode === "duotone" && (SP_JSX.jsx(ToggleRow, { label: "Seesaw", description: "Breathe the two color groups against each other instead of a static split", value: !!sideState.seesaw, onChange: setStickLedSeesaw$1 })), Object.entries(PARAM_UI)
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Stick Lighting"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable"), description: t("Turn both sticks off entirely, without losing the mode/color settings below"), value: stickLed.enabled, onChange: setStickLedEnabled$1 }), !stickLed.enabled && SP_JSX.jsx(DFL.Field, { label: t("Sticks are off - settings below are kept, not applied.") }), stickLed.enabled && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Follow screen brightness"), description: t("Dim both sticks along with the display backlight"), value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => setStickLedMaxBrightness$1(value / 100) })), SP_JSX.jsx(ToggleRow, { label: t("Configure each stick separately"), description: t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one."), value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: t("Stick"), value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) })), SP_JSX.jsx(SelectEdit, { label: t("Mode"), value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), SP_JSX.jsx(ModePreview, { mode: mode, color: sideState.color, duotoneColorA: sideState.duotoneColorA, duotoneColorB: sideState.duotoneColorB }), mode === "spin" && (SP_JSX.jsx(ToggleRow, { label: t("Soft trail"), description: t("Trailing fade (uses Size below) instead of a single hard-edged dot"), value: !!sideState.chase, onChange: setStickLedChase$1 })), mode === "reactive" && (SP_JSX.jsx(ToggleRow, { label: t("Compass"), description: t("Point the lit zone(s) at the stick's push direction instead of lighting evenly"), value: !!sideState.compass, onChange: setStickLedCompass$1 })), mode === "duotone" && (SP_JSX.jsx(ToggleRow, { label: t("Seesaw"), description: t("Breathe the two color groups against each other instead of a static split"), value: !!sideState.seesaw, onChange: setStickLedSeesaw$1 })), Object.entries(PARAM_UI)
                         .filter(([, spec]) => spec.modes.has(mode))
                         .map(([param, spec]) => {
                         const key = `${param}_${mode}`;
                         const raw = sideState.params[key] ?? PARAM_DEFAULTS[param];
                         return (SP_JSX.jsx(SliderEdit, { label: spec.label, value: spec.fromBackend(raw), min: spec.min, max: spec.max, step: spec.step, onChange: (value) => setStickLedParam$1(param, spec.toBackend(value)) }, param));
-                    }), COLOR_VISIBLE_MODES.has(mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setColorsExpanded((expanded) => !expanded), children: colorsExpanded ? "Hide colors ▲" : "Colors ▼" }), colorsExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Color Source", value: sideState.colorSource || "static", options: COLOR_SOURCE_OPTIONS, onChange: setStickLedColorSource$1 }), sideState.colorSource === "battery" && (SP_JSX.jsx(ToggleRow, { label: "Charging indicator", description: "Spin a blue dot around the stick while charging", value: sideState.chargingIndicator, onChange: setStickLedChargingIndicator$1 })), sideState.colorSource !== "battery" && sideState.colorSource !== "random" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: sideState.color, onSelect: setStickLedColor$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setCustomColorExpanded((expanded) => !expanded), children: customColorExpanded ? "Hide custom color ▲" : "Custom color (advanced) ▼" }), customColorExpanded && (SP_JSX.jsx(ColorPicker, { hex: sideState.color, onChange: setStickLedColor$1 }))] }))] }))] })), mode === "reactive" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setFlashExpanded((expanded) => !expanded), children: flashExpanded ? "Hide flash colors ▲" : "Show flash colors ▼" }), flashExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Button", value: flashButton, options: FLASH_BUTTON_OPTIONS, onChange: setFlashButton }), SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onSelect: setStickLedFlashColor$1 }), SP_JSX.jsx(ColorPicker, { hex: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onChange: setStickLedFlashColor$1 })] }))] })), mode === "duotone" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Split", value: sideState.duotoneOrientation || "horizontal", options: DUOTONE_ORIENTATION_OPTIONS, onChange: setStickLedDuotoneOrientation$1 }), SP_JSX.jsx(ColorPicker, { label: "Color A", hex: sideState.duotoneColorA, onChange: (hex) => setStickLedDuotoneColor$1("a", hex) }), SP_JSX.jsx(ColorPicker, { label: "Color B", hex: sideState.duotoneColorB, onChange: (hex) => setStickLedDuotoneColor$1("b", hex) })] })), SP_JSX.jsx(ToggleRow, { label: "Flip stick ring", description: "Rotate the LED ring 180\u00B0 for stick variants wired upside-down (fixes compass/direction on some RP6 units)", value: !!sideState.flip, onChange: setStickLedFlip$1 })] }))] }));
+                    }), COLOR_VISIBLE_MODES.has(mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setColorsExpanded((expanded) => !expanded), children: colorsExpanded ? t("Hide colors") + " ▲" : t("Colors") + " ▼" }), colorsExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Color Source"), value: sideState.colorSource || "static", options: COLOR_SOURCE_OPTIONS, onChange: setStickLedColorSource$1 }), sideState.colorSource === "battery" && (SP_JSX.jsx(ToggleRow, { label: t("Charging indicator"), description: t("Spin a blue dot around the stick while charging"), value: sideState.chargingIndicator, onChange: setStickLedChargingIndicator$1 })), sideState.colorSource !== "battery" && sideState.colorSource !== "random" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: sideState.color, onSelect: setStickLedColor$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setCustomColorExpanded((expanded) => !expanded), children: customColorExpanded ? t("Hide custom color") + " ▲" : t("Custom color (advanced)") + " ▼" }), customColorExpanded && (SP_JSX.jsx(ColorPicker, { hex: sideState.color, onChange: setStickLedColor$1 }))] }))] }))] })), mode === "reactive" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setFlashExpanded((expanded) => !expanded), children: flashExpanded ? t("Hide flash colors") + " ▲" : t("Show flash colors") + " ▼" }), flashExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Button"), value: flashButton, options: FLASH_BUTTON_OPTIONS, onChange: setFlashButton }), SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onSelect: setStickLedFlashColor$1 }), SP_JSX.jsx(ColorPicker, { hex: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onChange: setStickLedFlashColor$1 })] }))] })), mode === "duotone" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Split"), value: sideState.duotoneOrientation || "horizontal", options: DUOTONE_ORIENTATION_OPTIONS, onChange: setStickLedDuotoneOrientation$1 }), SP_JSX.jsx(ColorPicker, { label: t("Color A"), hex: sideState.duotoneColorA, onChange: (hex) => setStickLedDuotoneColor$1("a", hex) }), SP_JSX.jsx(ColorPicker, { label: t("Color B"), hex: sideState.duotoneColorB, onChange: (hex) => setStickLedDuotoneColor$1("b", hex) })] })), SP_JSX.jsx(ToggleRow, { label: t("Flip stick ring"), description: t("Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)"), value: !!sideState.flip, onChange: setStickLedFlip$1 })] }))] }));
 }
 
 const underclocks = [
-    { data: "none", label: "None" },
-    { data: "small", label: "Small" },
-    { data: "medium", label: "Medium" },
-    { data: "large", label: "Large" },
+    { data: "none", label: t("None") },
+    { data: "small", label: t("Small") },
+    { data: "medium", label: t("Medium") },
+    { data: "large", label: t("Large") },
 ];
 function Power({ config, setConfig }) {
     const [profile, setProfile] = SP_REACT.useState(config.power.general.default_profile || "balanced");
@@ -2012,7 +2733,7 @@ function Power({ config, setConfig }) {
     };
     const underclockLevel = p.cpu_underclock || "";
     const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: "EDIT POWER PROFILE", children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: "PROFILE SETTINGS", children: [SP_JSX.jsx(SelectEdit, { label: "Fan Curve", value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: "CPU Underclock", value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: "CPU Max (%)", value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: "GPU Min (%)", value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: "GPU Max (%)", value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: "Reset to Default" }) })] })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("EDIT POWER PROFILE"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] })] }));
 }
 
 const CAPTURE_CONTROLS = ["left_x", "left_y", "right_x", "right_y", "left_trigger", "right_trigger"];
@@ -2186,13 +2907,13 @@ function CalibrationModal({ closeModal }) {
         }
     };
     const instructions = !state
-        ? "Checking controller..."
+        ? t("Checking controller...")
         : !canApply
-            ? "This device can't save calibration, but you can check stick and trigger response here."
+            ? t("This device can't save calibration, but you can check stick and trigger response here.")
             : phase === "recording"
-                ? "Move both sticks in full circles and fully press both triggers, then Save."
-                : "Press Start, then move sticks and triggers through full range.";
-    return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: close, children: [SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsxs("div", { style: { ...gridTwoCol, alignItems: "start", marginBottom: "22px" }, children: [SP_JSX.jsx(StickPlot, { title: "Left Stick", xName: "left_x", yName: "left_y", state: state }), SP_JSX.jsx(StickPlot, { title: "Right Stick", xName: "right_x", yName: "right_y", state: state })] }), SP_JSX.jsxs("div", { style: { ...gridTwoCol, marginBottom: "16px" }, children: [SP_JSX.jsx(TriggerBar, { title: "LT", name: "left_trigger", state: state }), SP_JSX.jsx(TriggerBar, { title: "RT", name: "right_trigger", state: state })] }), SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "18px", opacity: 0.72, textAlign: "center" }, children: instructions })] }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx("style", { children: focusStyles }), !canApply ? (SP_JSX.jsx("div", { className: "nebel-cal-footer", style: { display: "flex", gap: "10px" }, children: SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: "Close" }) })) : phase === "recording" ? (SP_JSX.jsxs("div", { className: "nebel-cal-footer", style: { display: "flex", gap: "10px" }, children: [SP_JSX.jsx(DFL.DialogButton, { onClick: save, disabled: !capture, children: "Save Calibration" }), SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: "Close" })] })) : (SP_JSX.jsxs("div", { className: "nebel-cal-footer", style: { display: "flex", gap: "10px" }, children: [SP_JSX.jsx(DFL.DialogButton, { onClick: start, children: "Start Calibration" }), SP_JSX.jsx(DFL.DialogButton, { onClick: reset, children: "Reset to Defaults" }), SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: "Close" })] }))] })] }));
+                ? t("Move both sticks in full circles and fully press both triggers, then Save.")
+                : t("Press Start, then move sticks and triggers through full range.");
+    return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: close, children: [SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsxs("div", { style: { ...gridTwoCol, alignItems: "start", marginBottom: "22px" }, children: [SP_JSX.jsx(StickPlot, { title: t("Left Stick"), xName: "left_x", yName: "left_y", state: state }), SP_JSX.jsx(StickPlot, { title: t("Right Stick"), xName: "right_x", yName: "right_y", state: state })] }), SP_JSX.jsxs("div", { style: { ...gridTwoCol, marginBottom: "16px" }, children: [SP_JSX.jsx(TriggerBar, { title: "LT", name: "left_trigger", state: state }), SP_JSX.jsx(TriggerBar, { title: "RT", name: "right_trigger", state: state })] }), SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "18px", opacity: 0.72, textAlign: "center" }, children: instructions })] }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx("style", { children: focusStyles }), !canApply ? (SP_JSX.jsx("div", { className: "nebel-cal-footer", style: { display: "flex", gap: "10px" }, children: SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: t("Close") }) })) : phase === "recording" ? (SP_JSX.jsxs("div", { className: "nebel-cal-footer", style: { display: "flex", gap: "10px" }, children: [SP_JSX.jsx(DFL.DialogButton, { onClick: save, disabled: !capture, children: t("Save Calibration") }), SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: t("Close") })] })) : (SP_JSX.jsxs("div", { className: "nebel-cal-footer", style: { display: "flex", gap: "10px" }, children: [SP_JSX.jsx(DFL.DialogButton, { onClick: start, children: t("Start Calibration") }), SP_JSX.jsx(DFL.DialogButton, { onClick: reset, children: t("Reset to Defaults") }), SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: t("Close") })] }))] })] }));
 }
 function openCalibration() {
     DFL.showModal(SP_JSX.jsx(CalibrationModal, {}));
@@ -2236,7 +2957,7 @@ function Settings({ config, setConfig }) {
             setConfig((current) => (current ? { ...current, sharedStorageEnabled: !enabled } : current));
         }
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Controller", children: [SP_JSX.jsx(SelectEdit, { label: "Emulation", value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: "Launch Calibration" })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "System", children: [SP_JSX.jsx(ToggleRow, { label: "Enable SSH", value: !!config.sshEnabled, onChange: setSshEnabled$1 }), SP_JSX.jsx(ToggleRow, { label: "Mount shared storage", description: "Mount ARMADA_SHARED partition at ~/Shared", value: !!config.sharedStorageEnabled, onChange: setSharedStorageEnabled$1 }), SP_JSX.jsx(DFL.Field, { label: "OS Version", description: config.osVersion || "unknown" })] })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("Controller"), children: [SP_JSX.jsx(SelectEdit, { label: t("Emulation"), value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: t("Launch Calibration") })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("System"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable SSH"), value: !!config.sshEnabled, onChange: setSshEnabled$1 }), SP_JSX.jsx(ToggleRow, { label: t("Mount shared storage"), description: t("Mount NEBEL_SHARED partition at ~/Shared"), value: !!config.sharedStorageEnabled, onChange: setSharedStorageEnabled$1 }), SP_JSX.jsx(DFL.Field, { label: t("OS Version"), description: config.osVersion || t("unknown") })] })] }));
 }
 
 function AddDeviceModal({ closeModal, onAdd }) {
@@ -2253,13 +2974,13 @@ function AddDeviceModal({ closeModal, onAdd }) {
         color: "inherit",
         fontSize: "14px",
     };
-    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: "Device ID of the other console (shown on its Sync tab)" }), SP_JSX.jsx("input", { type: "text", placeholder: "XXXXXXX-XXXXXXX-...", value: deviceId, onChange: (e) => setDeviceId(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: "Name (e.g. Mini V2)", value: name, onChange: (e) => setName(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || deviceId.trim().length < 20, onClick: () => {
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: t("Device ID of the other console (shown on its Sync tab)") }), SP_JSX.jsx("input", { type: "text", placeholder: "XXXXXXX-XXXXXXX-...", value: deviceId, onChange: (e) => setDeviceId(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: t("Name (e.g. Mini V2)"), value: name, onChange: (e) => setName(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || deviceId.trim().length < 20, onClick: () => {
                             setBusy(true);
                             void onAdd(deviceId, name).finally(() => {
                                 setBusy(false);
                                 closeModal?.();
                             });
-                        }, children: "Add device" }) })] }) }));
+                        }, children: t("Add device") }) })] }) }));
 }
 function AddFolderModal({ closeModal, onAdd }) {
     const [path, setPath] = SP_REACT.useState("");
@@ -2275,13 +2996,13 @@ function AddFolderModal({ closeModal, onAdd }) {
         color: "inherit",
         fontSize: "14px",
     };
-    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: "Folder to sync (under ~ or /run/media)" }), SP_JSX.jsx("input", { type: "text", placeholder: "~/Games/Heroic", value: path, onChange: (e) => setPath(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: "Label (optional)", value: label, onChange: (e) => setLabel(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || path.trim().length < 2, onClick: () => {
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: t("Folder to sync (under ~ or /run/media)") }), SP_JSX.jsx("input", { type: "text", placeholder: "~/Games/Heroic", value: path, onChange: (e) => setPath(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: t("Label (optional)"), value: label, onChange: (e) => setLabel(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || path.trim().length < 2, onClick: () => {
                             setBusy(true);
                             void onAdd(path, label).finally(() => {
                                 setBusy(false);
                                 closeModal?.();
                             });
-                        }, children: "Add folder" }) })] }) }));
+                        }, children: t("Add folder") }) })] }) }));
 }
 function Sync() {
     const [state, setState] = SP_REACT.useState(null);
@@ -2329,29 +3050,29 @@ function Sync() {
         }
     }, []);
     if (!state)
-        return SP_JSX.jsx(DFL.PanelSection, { title: "Sync", children: SP_JSX.jsx(DFL.Field, { label: "Loading" }) });
+        return SP_JSX.jsx(DFL.PanelSection, { title: t("Sync"), children: SP_JSX.jsx(DFL.Field, { label: t("Loading") }) });
     const connectedCount = state.devices.filter((d) => d.connected).length;
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Syncthing", children: [!state.installed && SP_JSX.jsx(DFL.Field, { label: "Syncthing is not installed in this OS image" }), SP_JSX.jsx(ToggleRow, { label: "Sync service", description: state.serviceActive ? "Running" : "Stopped", value: state.serviceEnabled && state.serviceActive, disabled: busy || !state.installed, onChange: (enabled) => void run(async () => { await setSyncServiceEnabled(enabled); await refresh(); }) }), state.myId && (SP_JSX.jsx(DFL.Field, { label: "This device ID", description: state.myId })), state.devices.length > 0 && (SP_JSX.jsx(DFL.Field, { label: "Status", description: `${connectedCount} of ${state.devices.length} device(s) connected` })), !!error && SP_JSX.jsx(DFL.Field, { label: "Error", description: error })] }), state.serviceActive && (state.pendingDevices.length > 0 || state.pendingFolders.length > 0) && (SP_JSX.jsxs(DFL.PanelSection, { title: "Requests", children: [state.pendingDevices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `Device "${device.name}" wants to pair`, description: device.id.slice(0, 13) + "...", children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAddDevice(device.id, device.name)), children: "Accept" }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissDevice(device.id)), children: "Dismiss" })] }) }) }, device.id))), state.pendingFolders.map((folder) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `Folder "${folder.label}" was shared with you`, description: folder.id, children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAcceptFolder(folder.id)), children: "Accept" }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissFolder(folder.id, folder.offeredBy[0] || "")), children: "Dismiss" })] }) }) }, folder.id)))] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: "Devices", children: [state.devices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `${device.name}${device.connected ? " (connected)" : ""}`, description: device.id.slice(0, 13) + "...", children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveDevice(device.id)), children: "Remove" }) }) }, device.id))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddDeviceModal, { onAdd: async (deviceId, name) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Syncthing", children: [!state.installed && SP_JSX.jsx(DFL.Field, { label: t("Syncthing is not installed in this OS image") }), SP_JSX.jsx(ToggleRow, { label: t("Sync service"), description: state.serviceActive ? t("Running") : t("Stopped"), value: state.serviceEnabled && state.serviceActive, disabled: busy || !state.installed, onChange: (enabled) => void run(async () => { await setSyncServiceEnabled(enabled); await refresh(); }) }), state.myId && (SP_JSX.jsx(DFL.Field, { label: t("This device ID"), description: state.myId })), state.devices.length > 0 && (SP_JSX.jsx(DFL.Field, { label: t("Status"), description: t("{connected} of {total} device(s) connected", { connected: connectedCount, total: state.devices.length }) })), !!error && SP_JSX.jsx(DFL.Field, { label: t("Error"), description: error })] }), state.serviceActive && (state.pendingDevices.length > 0 || state.pendingFolders.length > 0) && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Requests"), children: [state.pendingDevices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Device \"{name}\" wants to pair", { name: device.name }), description: device.id.slice(0, 13) + "...", children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAddDevice(device.id, device.name)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissDevice(device.id)), children: t("Dismiss") })] }) }) }, device.id))), state.pendingFolders.map((folder) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Folder \"{name}\" was shared with you", { name: folder.label }), description: folder.id, children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAcceptFolder(folder.id)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissFolder(folder.id, folder.offeredBy[0] || "")), children: t("Dismiss") })] }) }) }, folder.id)))] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Devices"), children: [state.devices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `${device.name}${device.connected ? " " + t("(connected)") : ""}`, description: device.id.slice(0, 13) + "...", children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveDevice(device.id)), children: t("Remove") }) }) }, device.id))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddDeviceModal, { onAdd: async (deviceId, name) => {
                                     await run(() => syncAddDevice(deviceId, name));
-                                } })), children: "Add device" }) })] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: "Folders", children: [state.devices.length === 0 && (SP_JSX.jsx(DFL.Field, { label: "Add a device first - folders sync only to paired devices" })), state.folders.map((folder) => {
+                                } })), children: t("Add device") }) })] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Folders"), children: [state.devices.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("Add a device first - folders sync only to paired devices") })), state.folders.map((folder) => {
                         const statusSuffix = folder.enabled
                             ? folder.syncState === "syncing"
-                                ? " • syncing…"
+                                ? " • " + t("syncing…")
                                 : folder.syncState === "idle"
-                                    ? " • in sync"
+                                    ? " • " + t("in sync")
                                     : ""
                             : "";
                         const description = folder.path.replace("/var/home/armada", "~") + statusSuffix;
-                        return folder.custom ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: folder.label, description: description, children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveCustomFolder(folder.id)), children: "Remove" }) }) }, folder.id)) : (SP_JSX.jsx(ToggleRow, { label: folder.label, description: description, value: folder.enabled, disabled: busy, onChange: (enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled)) }, folder.id));
+                        return folder.custom ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: folder.label, description: description, children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveCustomFolder(folder.id)), children: t("Remove") }) }) }, folder.id)) : (SP_JSX.jsx(ToggleRow, { label: folder.label, description: description, value: folder.enabled, disabled: busy, onChange: (enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled)) }, folder.id));
                     }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddFolderModal, { onAdd: async (path, label) => {
                                     await run(() => syncAddCustomFolder(path, label));
-                                } })), children: "Add custom folder" }) })] }))] }));
+                                } })), children: t("Add custom folder") }) })] }))] }));
 }
 
 function Content() {
     const [tab, setTab] = SP_REACT.useState("Compatibility");
     const [config, setConfig] = SP_REACT.useState(null);
-    const [message, setMessage] = SP_REACT.useState("Loading");
+    const [message, setMessage] = SP_REACT.useState(t("Loading"));
     const savedPowerSnapshot = SP_REACT.useRef("");
     const savedTweaksSnapshot = SP_REACT.useRef("");
     const installedGamesRequested = SP_REACT.useRef(false);

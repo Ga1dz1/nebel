@@ -2,6 +2,7 @@ import { ButtonItem, Field, PanelSection } from "@decky/ui";
 import { useEffect, useState } from "react";
 import { getDisplayState, restartGamescopeSession, setDisplayConfig } from "../backend";
 import { SelectEdit } from "../components/widgets";
+import { t } from "../i18n";
 import type { DisplayState } from "../types";
 
 // gamescope only ever drives one embedded output at a time (--prefer-output
@@ -13,7 +14,7 @@ const INTERNAL = "__internal__";
 
 export function Display() {
   const [state, setState] = useState<DisplayState | null>(null);
-  const [loadMessage, setLoadMessage] = useState("Loading");
+  const [loadMessage, setLoadMessage] = useState(t("Loading"));
   const [errorMessage, setErrorMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [restarting, setRestarting] = useState(false);
@@ -26,7 +27,7 @@ export function Display() {
 
   if (!state) {
     return (
-      <PanelSection title="DISPLAY">
+      <PanelSection title={t("DISPLAY")}>
         <Field label={loadMessage} />
       </PanelSection>
     );
@@ -35,10 +36,10 @@ export function Display() {
   const externals = state.connectors.filter((c) => !c.internal);
   const selectedConnector = state.useExternal ? state.connector : INTERNAL;
   const primaryOptions = [
-    { data: INTERNAL, label: "Internal Screen" },
+    { data: INTERNAL, label: t("Internal Screen") },
     ...externals.map((c) => ({
       data: c.connector,
-      label: !c.connected ? `${c.connector} (disconnected)` : c.connector,
+      label: !c.connected ? t("{connector} (disconnected)", { connector: c.connector }) : c.connector,
     })),
   ];
   const activeExternal = externals.find((c) => c.connector === state.connector);
@@ -86,21 +87,21 @@ export function Display() {
   };
 
   return (
-    <PanelSection title="EXTERNAL DISPLAY">
-      <SelectEdit label="Primary Display" value={selectedConnector} options={primaryOptions} onChange={selectPrimary} disabled={saving} />
+    <PanelSection title={t("EXTERNAL DISPLAY")}>
+      <SelectEdit label={t("Primary Display")} value={selectedConnector} options={primaryOptions} onChange={selectPrimary} disabled={saving} />
       {state.useExternal && (
         <>
-          <SelectEdit label="Resolution" value={currentMode} options={modeOptions} onChange={selectMode} disabled={saving || activeDisconnected} />
-          <Field label="Rotation isn't available for an external display (gamescope only rotates the internal screen)." />
+          <SelectEdit label={t("Resolution")} value={currentMode} options={modeOptions} onChange={selectMode} disabled={saving || activeDisconnected} />
+          <Field label={t("Rotation isn't available for an external display (gamescope only rotates the internal screen).")} />
         </>
       )}
       {externals.length === 0 && (
-        <Field label="No external display detected. Connect one (dock/USB-C/HDMI) to choose it here." />
+        <Field label={t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.")} />
       )}
       {activeDisconnected && (
-        <Field label="This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered." />
+        <Field label={t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.")} />
       )}
-      {errorMessage && <Field label={`Error: ${errorMessage}`} />}
+      {errorMessage && <Field label={t("Error: {message}", { message: errorMessage })} />}
       <div className="nebel-reset-row">
         <ButtonItem
           layout="below"
@@ -118,7 +119,7 @@ export function Display() {
               .finally(() => setRestarting(false));
           }}
         >
-          Apply &amp; Restart Game Mode
+          {t("Apply & Restart Game Mode")}
         </ButtonItem>
       </div>
     </PanelSection>

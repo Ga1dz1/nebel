@@ -1,4 +1,5 @@
 import { Router } from "@decky/ui";
+import { t } from "../i18n";
 import { isGameApp } from "./steamCompat";
 import type { Config, DropdownChoice, GameRef } from "../types";
 
@@ -19,7 +20,7 @@ export function availableGames(config: Config): GameRef[] {
 
 export function editTargetOptions(config: Config): DropdownChoice[] {
   return [
-    { data: "", label: "Default" },
+    { data: "", label: t("Default") },
     ...availableGames(config).map((game) => ({ data: game.appid, label: gameDisplayName(game) })),
   ];
 }
