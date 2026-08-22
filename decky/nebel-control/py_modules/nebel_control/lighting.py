@@ -55,6 +55,8 @@ def _default_state(supported):
         "screenLink": DEFAULT_SCREEN_LINK,
         "enabled": True,
         "maxBrightness": 1.0,
+        "notifyEnabled": True,
+        "notifyColor": "33AAFF",
         "sides": {"l": _default_side_state(), "r": _default_side_state()},
         "flashColors": {},
     }
@@ -83,6 +85,8 @@ def _parse_cli_output(out):
     screen_link = DEFAULT_SCREEN_LINK
     enabled = True
     max_brightness = 1.0
+    notify_enabled = True
+    notify_color = "33AAFF"
     flash_colors = {}
     for line in out.splitlines():
         key, sep, value = line.partition("=")
@@ -100,6 +104,12 @@ def _parse_cli_output(out):
                 max_brightness = max(0.0, min(1.0, float(value)))
             except ValueError:
                 pass
+            continue
+        if key == "notify_enabled":
+            notify_enabled = value == "1"
+            continue
+        if key == "notify_color" and re.fullmatch(r"[0-9A-Fa-f]{6}", value or ""):
+            notify_color = value.upper()
             continue
         if key.startswith("flash_") and key[len("flash_"):] in FLASH_BUTTONS:
             if re.fullmatch(r"[0-9A-Fa-f]{6}", value or ""):
@@ -144,6 +154,8 @@ def _parse_cli_output(out):
         "screenLink": screen_link,
         "enabled": enabled,
         "maxBrightness": max_brightness,
+        "notifyEnabled": notify_enabled,
+        "notifyColor": notify_color,
         "sides": sides,
         "flashColors": flash_colors,
     }
@@ -159,6 +171,8 @@ def stick_led_state():
             "screenLink": bool(result.get("screenLink")),
             "enabled": bool(result.get("enabled", True)),
             "maxBrightness": max(0.0, min(1.0, float(result.get("maxBrightness", 1.0)))),
+            "notifyEnabled": bool(result.get("notifyEnabled", True)),
+            "notifyColor": str(result.get("notifyColor") or "33AAFF"),
             "sides": {side: _coerce_side((result.get("sides") or {}).get(side)) for side in STICK_SIDES},
             "flashColors": {k: str(v) for k, v in dict(result.get("flashColors") or {}).items()},
         }
@@ -285,4 +299,17 @@ def set_stick_led_flip(side, enabled):
     if side not in STICK_SIDES:
         raise ValueError("invalid stick side")
     call("set_stick_led_flip", side=side, enabled=bool(enabled))
+    return stick_led_state()
+
+
+def set_stick_led_notify(enabled):
+    call("set_stick_led_notify", enabled=bool(enabled))
+    return stick_led_state()
+
+
+def set_stick_led_notify_color(value):
+    value = str(value).lstrip("#")
+    if not re.fullmatch(r"[0-9A-Fa-f]{6}", value):
+        raise ValueError("invalid color")
+    call("set_stick_led_notify_color", value=value.upper())
     return stick_led_state()

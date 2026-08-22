@@ -17,6 +17,14 @@ const RING_RADIUS = SIZE / 2 - DOT_RADIUS - 4;
 // layout (zones 1=SW, 2=NW, 3=NE, 4=SE) when the stick is viewed from above.
 // Ordered clockwise: NE (top-right), SE (bottom-right), SW (bottom-left), NW (top-left).
 const ZONE_ANGLES = [-45, 45, 135, 225];
+// Canvas index -> hardware zone, per the confirmed live mapping above.
+const INDEX_TO_ZONE = [3, 4, 1, 2];
+// Same split as the backend's DUOTONE_ZONE_GROUPS: which zones take color A.
+const DUOTONE_GROUP_A: Record<string, number[]> = {
+  horizontal: [2, 3], // top (NW+NE)
+  vertical: [4, 3], //   right (SE+NE)
+  diagonal: [4, 2], //   SE+NW
+};
 
 function rgbCss([r, g, b]: [number, number, number], alpha = 1): string {
   return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`;
@@ -27,11 +35,12 @@ function zonePosition(angleDeg: number) {
   return { x: CENTER + RING_RADIUS * Math.cos(rad), y: CENTER + RING_RADIUS * Math.sin(rad) };
 }
 
-export function ModePreview({ mode, color, duotoneColorA, duotoneColorB }: {
+export function ModePreview({ mode, color, duotoneColorA, duotoneColorB, duotoneOrientation }: {
   mode: string;
   color: string;
   duotoneColorA: string;
   duotoneColorB: string;
+  duotoneOrientation?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -99,8 +108,10 @@ export function ModePreview({ mode, color, duotoneColorA, duotoneColorB }: {
         }
         case "duotone": {
           const level = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 1.8));
-          const [pr, pg, pb] = i % 2 === 0 ? colorA : colorB;
-          return i % 2 === 0
+          const groupA = DUOTONE_GROUP_A[duotoneOrientation || "horizontal"] || DUOTONE_GROUP_A.horizontal;
+          const isA = groupA.includes(INDEX_TO_ZONE[i]);
+          const [pr, pg, pb] = isA ? colorA : colorB;
+          return isA
             ? [pr, pg, pb]
             : [pr * level, pg * level, pb * level];
         }
@@ -136,7 +147,7 @@ export function ModePreview({ mode, color, duotoneColorA, duotoneColorB }: {
     }
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [mode, color, duotoneColorA, duotoneColorB]);
+  }, [mode, color, duotoneColorA, duotoneColorB, duotoneOrientation]);
 
   return (
     <PanelSectionRow>

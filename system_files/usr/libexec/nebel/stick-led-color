@@ -120,6 +120,9 @@ CONFIG = Path("/etc/nebel/stick-led.conf")
 # one-shot "off" command) that would otherwise keep re-lighting the sticks
 # every tick regardless of suspend state.
 SUSPEND_FLAG = Path("/run/nebel/fake-suspend.active")
+# Notification flash trigger: nebel-led-notify touches this file when a
+# desktop notification arrives; the daemon plays a cascade over the ring.
+NOTIFY_FLAG = Path("/run/nebel/stick-led-notify")
 SUSPEND_POLL_INTERVAL = 0.5
 DEFAULT_COLOR = "0050FF"
 DEFAULT_MODE = "static"
@@ -128,6 +131,8 @@ DEFAULT_MAX_BRIGHTNESS = 1.0
 DEFAULT_ENABLED = True
 DEFAULT_COLOR_SOURCE = "static"
 DEFAULT_CHARGING_INDICATOR = True
+DEFAULT_NOTIFY_ENABLED = True
+DEFAULT_NOTIFY_COLOR = "33AAFF"
 COLOR_SOURCES = ("static", "battery", "random", "shimmer")
 # "chase" (soft trailing dot) folded into "spin" as a per-side toggle - the
 # two only ever differed in the falloff shape (apply_chase's gradient vs
@@ -724,6 +729,8 @@ def load_state():
         "enabled": DEFAULT_ENABLED,
         "max_brightness": DEFAULT_MAX_BRIGHTNESS,
         "flash_colors": {},
+        "notify_enabled": DEFAULT_NOTIFY_ENABLED,
+        "notify_color": DEFAULT_NOTIFY_COLOR,
     }
     try:
         lines = CONFIG.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -739,6 +746,12 @@ def load_state():
             continue
         if key == "enabled":
             state["enabled"] = raw == "1"
+            continue
+        if key == "notify_enabled":
+            state["notify_enabled"] = raw == "1"
+            continue
+        if key == "notify_color" and re.fullmatch(r"[0-9A-Fa-f]{6}", raw or ""):
+            state["notify_color"] = raw.upper()
             continue
         if key == "max_brightness":
             try:
@@ -818,6 +831,8 @@ def save_state(state):
         f"screen_link={'1' if state['screen_link'] else '0'}",
         f"enabled={'1' if state.get('enabled', True) else '0'}",
         f"max_brightness={state.get('max_brightness', DEFAULT_MAX_BRIGHTNESS):.3f}",
+        f"notify_enabled={'1' if state.get('notify_enabled', True) else '0'}",
+        f"notify_color={state.get('notify_color', DEFAULT_NOTIFY_COLOR)}",
     ]
     for side in SIDES:
         s = state[side]
@@ -1245,10 +1260,35 @@ def render_side_animated(side, s, scale, anim, reactive, ambilight_colors, flash
     _maybe_charging_dot(side, s, dot_scale, charging)
 
 
+def _notify_flag_mtime():
+    try:
+        return NOTIFY_FLAG.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
+def play_notify_cascade(color, scale, cycles=2):
+    """Notification flash, laid out on the real hardware: the top LED pair
+    (NW+NE = zones 2,3) lights first, then the light "falls" into the bottom
+    pair (SW+SE = zones 1,4) and fades - a falling-drop cascade, twice."""
+    r, g, b = int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16)
+    top, bottom = (2, 3), (1, 4)
+    frames = [(1.0, 0.0), (0.55, 1.0), (0.2, 0.55), (0.0, 0.2), (0.0, 0.0)]
+    for _ in range(cycles):
+        for level_top, level_bottom in frames:
+            for side in SIDES:
+                for zone in top:
+                    write_zone(side, zone, r * level_top * scale, g * level_top * scale, b * level_top * scale)
+                for zone in bottom:
+                    write_zone(side, zone, r * level_bottom * scale, g * level_bottom * scale, b * level_bottom * scale)
+            time.sleep(0.11)
+
+
 def run_daemon():
     anim = {"l": _new_anim(), "r": _new_anim()}
     reactive = ReactiveInput()
     ambilight = AmbilightSampler()
+    notify_seen = _notify_flag_mtime()
     while True:
         if SUSPEND_FLAG.exists():
             reactive.close()
@@ -1267,6 +1307,12 @@ def run_daemon():
             time.sleep(IDLE_INTERVAL)
             continue
         scale = base_scale(state)
+        if state.get("notify_enabled", DEFAULT_NOTIFY_ENABLED):
+            mtime = _notify_flag_mtime()
+            if mtime > notify_seen:
+                notify_seen = mtime
+                play_notify_cascade(state.get("notify_color", DEFAULT_NOTIFY_COLOR), scale)
+                continue
         modes = {side: state[side]["mode"] for side in SIDES}
         used_reactive = "reactive" in modes.values()
         used_ambilight = "ambilight" in modes.values()
@@ -1305,7 +1351,13 @@ def run_daemon():
             for side in SIDES:
                 render_side_static(side, state[side], scale, charging)
             anim = {"l": _new_anim(), "r": _new_anim()}
-            time.sleep(IDLE_INTERVAL if not state["screen_link"] else BREATH_INTERVAL * 4)
+            # Idle in short slices so a notification flash isn't stuck behind
+            # the full IDLE_INTERVAL (5 s) wait on otherwise-static modes.
+            deadline = time.monotonic() + (IDLE_INTERVAL if not state["screen_link"] else BREATH_INTERVAL * 4)
+            while time.monotonic() < deadline:
+                if state.get("notify_enabled", DEFAULT_NOTIFY_ENABLED) and _notify_flag_mtime() > notify_seen:
+                    break
+                time.sleep(0.25)
 
 
 def print_state():
@@ -1313,6 +1365,8 @@ def print_state():
     print(f"screen_link={'1' if state['screen_link'] else '0'}")
     print(f"enabled={'1' if state.get('enabled', True) else '0'}")
     print(f"max_brightness={state.get('max_brightness', DEFAULT_MAX_BRIGHTNESS):.3f}")
+    print(f"notify_enabled={'1' if state.get('notify_enabled', True) else '0'}")
+    print(f"notify_color={state.get('notify_color', DEFAULT_NOTIFY_COLOR)}")
     for side in SIDES:
         s = state[side]
         print(f"mode_{side}={s['mode']}")
@@ -1545,6 +1599,27 @@ def main(argv):
         state[side]["duotone_orientation"] = orientation
         save_state(state)
         return 0 if apply_current() else 1
+    if command == "set-notify":
+        if len(argv) != 3 or argv[2] not in ("on", "off"):
+            print("usage: stick-led-color set-notify <on|off>", file=sys.stderr)
+            return 2
+        state = load_state()
+        state["notify_enabled"] = argv[2] == "on"
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "set-notify-color":
+        if len(argv) != 3 or not re.fullmatch(r"[0-9A-Fa-f]{6}", argv[2]):
+            print("usage: stick-led-color set-notify-color <RRGGBB hex>", file=sys.stderr)
+            return 2
+        state = load_state()
+        state["notify_color"] = argv[2].upper()
+        save_state(state)
+        return 0
+    if command == "test-notify":
+        state = load_state()
+        _update_zone_rotation(state)
+        play_notify_cascade(state.get("notify_color", DEFAULT_NOTIFY_COLOR), base_scale(state))
+        return 0
     if command == "apply":
         return 0 if apply_current() else 1
     if command == "daemon":

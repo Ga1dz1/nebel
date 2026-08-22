@@ -23,11 +23,14 @@ from nebel_control.lighting import (
     set_stick_led_flash_color,
     set_stick_led_max_brightness,
     set_stick_led_mode,
+    set_stick_led_notify,
+    set_stick_led_notify_color,
     set_stick_led_param,
     set_stick_led_screen_link,
     set_stick_led_seesaw,
     set_stick_led_flip,
 )
+from nebel_control.monitor import set_overlay_enabled, system_monitor
 from nebel_control.power import save_power_config
 from nebel_control.shared_storage import set_shared_storage_enabled
 from nebel_control.steam import installed_games
@@ -164,6 +167,18 @@ class Plugin:
 
     async def restart_gamescope_session(self):
         return await asyncio.to_thread(restart_gamescope_session)
+
+    async def set_stick_led_notify(self, enabled):
+        return await asyncio.to_thread(set_stick_led_notify, enabled)
+
+    async def set_stick_led_notify_color(self, value):
+        return await asyncio.to_thread(set_stick_led_notify_color, value)
+
+    async def get_system_monitor(self):
+        return await asyncio.to_thread(system_monitor)
+
+    async def set_overlay_enabled(self, enabled):
+        return await asyncio.to_thread(set_overlay_enabled, enabled)
 
     async def get_controller_state(self):
         return await asyncio.to_thread(controller_state)

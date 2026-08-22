@@ -1,5 +1,5 @@
 import { call } from "@decky/api";
-import type { CalibrationState, Capture, Config, DisplayState, InstalledGame, PowerConfig, StickLedState, SyncState, Tweaks } from "./types";
+import type { CalibrationState, Capture, Config, DisplayState, InstalledGame, PowerConfig, StickLedState, SyncState, SystemMonitor, Tweaks } from "./types";
 
 export const getConfig = () => call<[], Config>("get_config");
 export const getInstalledGames = () => call<[], InstalledGame[]>("get_installed_games");
@@ -53,6 +53,12 @@ export const setStickLedFlip = (side: "l" | "r", enabled: boolean) =>
   call<[string, boolean], StickLedState>("set_stick_led_flip", side, enabled);
 export const setStickLedEnabled = (enabled: boolean) =>
   call<[boolean], StickLedState>("set_stick_led_enabled", enabled);
+export const setStickLedNotify = (enabled: boolean) =>
+  call<[boolean], StickLedState>("set_stick_led_notify", enabled);
+export const setStickLedNotifyColor = (value: string) =>
+  call<[string], StickLedState>("set_stick_led_notify_color", value);
+export const getSystemMonitor = () => call<[], SystemMonitor>("get_system_monitor");
+export const setOverlayEnabled = (enabled: boolean) => call<[boolean], boolean>("set_overlay_enabled", enabled);
 export const setStickLedMaxBrightness = (value: number) =>
   call<[number], StickLedState>("set_stick_led_max_brightness", value);
 export const getControllerState = () => call<[], CalibrationState>("get_controller_state");

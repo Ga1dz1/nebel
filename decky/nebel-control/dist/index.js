@@ -54,6 +54,10 @@ const setStickLedCompass = (side, enabled) => call("set_stick_led_compass", side
 const setStickLedSeesaw = (side, enabled) => call("set_stick_led_seesaw", side, enabled);
 const setStickLedFlip = (side, enabled) => call("set_stick_led_flip", side, enabled);
 const setStickLedEnabled = (enabled) => call("set_stick_led_enabled", enabled);
+const setStickLedNotify = (enabled) => call("set_stick_led_notify", enabled);
+const setStickLedNotifyColor = (value) => call("set_stick_led_notify_color", value);
+const getSystemMonitor = () => call("get_system_monitor");
+const setOverlayEnabled = (enabled) => call("set_overlay_enabled", enabled);
 const setStickLedMaxBrightness = (value) => call("set_stick_led_max_brightness", value);
 const getControllerState = () => call("get_controller_state");
 const saveCalibration = (capture) => call("save_calibration", capture);
@@ -290,7 +294,33 @@ const uk = {
     "Added to Steam library": "Додано до бібліотеки Steam",
     "SD card": "Карта SD",
     "Internal storage": "Встроенная память",
+    "Monitor": "Монитор",
+    "Fan": "Вентилятор",
+    "Battery": "Батарея",
+    "Charging": "Зарядка",
+    "Discharging": "Разряд",
+    "Full": "Заряжена",
+    "Not charging": "Не заряжается",
+    "Unknown": "Неизвестно",
+    "FPS overlay (all games)": "FPS-оверлей (все игры)",
+    "Shows FPS in every game, incl. non-Steam. Applies after reboot.": "Показывает FPS во всех играх, включая сторонние. Применится после перезагрузки.",
+    "Notification flash": "Вспышка уведомлений",
+    "Stick LEDs flash on notifications": "Подсветка стиков вспыхивает при уведомлениях",
+    "Flash color": "Цвет вспышки",
     "Internal storage": "Внутрішня пам'ять",
+    "Monitor": "Монітор",
+    "Fan": "Вентилятор",
+    "Battery": "Акумулятор",
+    "Charging": "Заряджається",
+    "Discharging": "Розряд",
+    "Full": "Заряджено",
+    "Not charging": "Не заряджається",
+    "Unknown": "Невідомо",
+    "FPS overlay (all games)": "FPS-оверлей (всі ігри)",
+    "Shows FPS in every game, incl. non-Steam. Applies after reboot.": "Показує FPS у всіх іграх, включно зі сторонніми. Застосується після перезавантаження.",
+    "Notification flash": "Спалах сповіщень",
+    "Stick LEDs flash on notifications": "Підсвітка стіків спалахує при сповіщеннях",
+    "Flash color": "Колір спалаху",
     "Failed to add shortcut": "Не вдалося додати ярлик",
 };
 const ru = {
@@ -666,6 +696,19 @@ const es = {
     "Added to Steam library": "Añadido a la biblioteca de Steam",
     "SD card": "Tarjeta SD",
     "Internal storage": "Almacenamiento interno",
+    "Monitor": "Monitor",
+    "Fan": "Ventilador",
+    "Battery": "Batería",
+    "Charging": "Cargando",
+    "Discharging": "Descargando",
+    "Full": "Completa",
+    "Not charging": "No se carga",
+    "Unknown": "Desconocido",
+    "FPS overlay (all games)": "Overlay de FPS (todos los juegos)",
+    "Shows FPS in every game, incl. non-Steam. Applies after reboot.": "Muestra FPS en todos los juegos, incluidos los de terceros. Se aplica tras reiniciar.",
+    "Notification flash": "Destello de notificaciones",
+    "Stick LEDs flash on notifications": "Los sticks parpadean con las notificaciones",
+    "Flash color": "Color del destello",
     "Failed to add shortcut": "No se pudo añadir el acceso directo",
 };
 const fr = {
@@ -854,6 +897,19 @@ const fr = {
     "Added to Steam library": "Ajouté à la bibliothèque Steam",
     "SD card": "Carte SD",
     "Internal storage": "Stockage interne",
+    "Monitor": "Moniteur",
+    "Fan": "Ventilateur",
+    "Battery": "Batterie",
+    "Charging": "En charge",
+    "Discharging": "Décharge",
+    "Full": "Pleine",
+    "Not charging": "Pas en charge",
+    "Unknown": "Inconnu",
+    "FPS overlay (all games)": "Overlay FPS (tous les jeux)",
+    "Shows FPS in every game, incl. non-Steam. Applies after reboot.": "Affiche les FPS dans tous les jeux, y compris tiers. Actif après redémarrage.",
+    "Notification flash": "Flash de notifications",
+    "Stick LEDs flash on notifications": "Les sticks clignotent aux notifications",
+    "Flash color": "Couleur du flash",
     "Failed to add shortcut": "Échec de l'ajout du raccourci",
 };
 const dictionaries = { uk, ru, es, fr };
@@ -2272,6 +2328,14 @@ const RING_RADIUS = SIZE / 2 - DOT_RADIUS - 4;
 // layout (zones 1=SW, 2=NW, 3=NE, 4=SE) when the stick is viewed from above.
 // Ordered clockwise: NE (top-right), SE (bottom-right), SW (bottom-left), NW (top-left).
 const ZONE_ANGLES = [-45, 45, 135, 225];
+// Canvas index -> hardware zone, per the confirmed live mapping above.
+const INDEX_TO_ZONE = [3, 4, 1, 2];
+// Same split as the backend's DUOTONE_ZONE_GROUPS: which zones take color A.
+const DUOTONE_GROUP_A = {
+    horizontal: [2, 3], // top (NW+NE)
+    vertical: [4, 3], //   right (SE+NE)
+    diagonal: [4, 2], //   SE+NW
+};
 function rgbCss([r, g, b], alpha = 1) {
     return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`;
 }
@@ -2279,7 +2343,7 @@ function zonePosition(angleDeg) {
     const rad = (angleDeg * Math.PI) / 180;
     return { x: CENTER + RING_RADIUS * Math.cos(rad), y: CENTER + RING_RADIUS * Math.sin(rad) };
 }
-function ModePreview({ mode, color, duotoneColorA, duotoneColorB }) {
+function ModePreview({ mode, color, duotoneColorA, duotoneColorB, duotoneOrientation }) {
     const canvasRef = SP_REACT.useRef(null);
     SP_REACT.useEffect(() => {
         const canvas = canvasRef.current;
@@ -2346,8 +2410,10 @@ function ModePreview({ mode, color, duotoneColorA, duotoneColorB }) {
                 }
                 case "duotone": {
                     const level = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 1.8));
-                    const [pr, pg, pb] = i % 2 === 0 ? colorA : colorB;
-                    return i % 2 === 0
+                    const groupA = DUOTONE_GROUP_A[duotoneOrientation || "horizontal"] || DUOTONE_GROUP_A.horizontal;
+                    const isA = groupA.includes(INDEX_TO_ZONE[i]);
+                    const [pr, pg, pb] = isA ? colorA : colorB;
+                    return isA
                         ? [pr, pg, pb]
                         : [pr * level, pg * level, pb * level];
                 }
@@ -2379,7 +2445,7 @@ function ModePreview({ mode, color, duotoneColorA, duotoneColorB }) {
         }
         raf = requestAnimationFrame(draw);
         return () => cancelAnimationFrame(raf);
-    }, [mode, color, duotoneColorA, duotoneColorB]);
+    }, [mode, color, duotoneColorA, duotoneColorB, duotoneOrientation]);
     return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "nebel-mode-preview-wrap", children: SP_JSX.jsx("canvas", { ref: canvasRef, width: SIZE, height: SIZE, className: "nebel-mode-preview-canvas" }) }) }));
 }
 
@@ -2560,6 +2626,32 @@ function Lighting({ config, setConfig }) {
         }
         catch (error) {
             setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, maxBrightness: previous } } : current));
+        }
+    };
+    const setStickLedNotify$1 = async (value) => {
+        if (!stickLed)
+            return;
+        const previous = stickLed.notifyEnabled;
+        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: value } } : current));
+        try {
+            const applied = await setStickLedNotify(value);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: previous } } : current));
+        }
+    };
+    const setStickLedNotifyColor$1 = async (hex) => {
+        if (!stickLed)
+            return;
+        const previous = stickLed.notifyColor;
+        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: hex } } : current));
+        try {
+            const applied = await setStickLedNotifyColor(hex);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: previous } } : current));
         }
     };
     const setStickLedColor$1 = async (hex) => {
@@ -2792,7 +2884,7 @@ function Lighting({ config, setConfig }) {
     if (!stickLed?.supported || !sideState) {
         return (SP_JSX.jsx(DFL.PanelSection, { title: t("Stick Lighting"), children: SP_JSX.jsx(DFL.Field, { label: t("No addressable stick lighting hardware detected on this device.") }) }));
     }
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Stick Lighting"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable"), description: t("Turn both sticks off entirely, without losing the mode/color settings below"), value: stickLed.enabled, onChange: setStickLedEnabled$1 }), !stickLed.enabled && SP_JSX.jsx(DFL.Field, { label: t("Sticks are off - settings below are kept, not applied.") }), stickLed.enabled && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Follow screen brightness"), description: t("Dim both sticks along with the display backlight"), value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => setStickLedMaxBrightness$1(value / 100) })), SP_JSX.jsx(ToggleRow, { label: t("Configure each stick separately"), description: t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one."), value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: t("Stick"), value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) })), SP_JSX.jsx(SelectEdit, { label: t("Mode"), value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), SP_JSX.jsx(ModePreview, { mode: mode, color: sideState.color, duotoneColorA: sideState.duotoneColorA, duotoneColorB: sideState.duotoneColorB }), mode === "spin" && (SP_JSX.jsx(ToggleRow, { label: t("Soft trail"), description: t("Trailing fade (uses Size below) instead of a single hard-edged dot"), value: !!sideState.chase, onChange: setStickLedChase$1 })), mode === "reactive" && (SP_JSX.jsx(ToggleRow, { label: t("Compass"), description: t("Point the lit zone(s) at the stick's push direction instead of lighting evenly"), value: !!sideState.compass, onChange: setStickLedCompass$1 })), mode === "duotone" && (SP_JSX.jsx(ToggleRow, { label: t("Seesaw"), description: t("Breathe the two color groups against each other instead of a static split"), value: !!sideState.seesaw, onChange: setStickLedSeesaw$1 })), Object.entries(PARAM_UI)
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Stick Lighting"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable"), description: t("Turn both sticks off entirely, without losing the mode/color settings below"), value: stickLed.enabled, onChange: setStickLedEnabled$1 }), !stickLed.enabled && SP_JSX.jsx(DFL.Field, { label: t("Sticks are off - settings below are kept, not applied.") }), stickLed.enabled && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Follow screen brightness"), description: t("Dim both sticks along with the display backlight"), value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => setStickLedMaxBrightness$1(value / 100) })), SP_JSX.jsx(ToggleRow, { label: t("Notification flash"), description: t("Stick LEDs flash on notifications"), value: !!stickLed.notifyEnabled, onChange: setStickLedNotify$1 }), stickLed.notifyEnabled && (SP_JSX.jsx(ColorPicker, { hex: stickLed.notifyColor || "33AAFF", onChange: setStickLedNotifyColor$1 })), SP_JSX.jsx(ToggleRow, { label: t("Configure each stick separately"), description: t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one."), value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: t("Stick"), value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) })), SP_JSX.jsx(SelectEdit, { label: t("Mode"), value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), SP_JSX.jsx(ModePreview, { mode: mode, color: sideState.color, duotoneColorA: sideState.duotoneColorA, duotoneColorB: sideState.duotoneColorB, duotoneOrientation: sideState.duotoneOrientation }), mode === "spin" && (SP_JSX.jsx(ToggleRow, { label: t("Soft trail"), description: t("Trailing fade (uses Size below) instead of a single hard-edged dot"), value: !!sideState.chase, onChange: setStickLedChase$1 })), mode === "reactive" && (SP_JSX.jsx(ToggleRow, { label: t("Compass"), description: t("Point the lit zone(s) at the stick's push direction instead of lighting evenly"), value: !!sideState.compass, onChange: setStickLedCompass$1 })), mode === "duotone" && (SP_JSX.jsx(ToggleRow, { label: t("Seesaw"), description: t("Breathe the two color groups against each other instead of a static split"), value: !!sideState.seesaw, onChange: setStickLedSeesaw$1 })), Object.entries(PARAM_UI)
                         .filter(([, spec]) => spec.modes.has(mode))
                         .map(([param, spec]) => {
                         const key = `${param}_${mode}`;
@@ -2845,7 +2937,43 @@ function Power({ config, setConfig }) {
     };
     const underclockLevel = p.cpu_underclock || "";
     const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("EDIT POWER PROFILE"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] })] }));
+    const [mon, setMon] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        let alive = true;
+        const tick = async () => {
+            try {
+                const next = await getSystemMonitor();
+                if (alive)
+                    setMon(next);
+            }
+            catch { }
+        };
+        tick();
+        const timer = window.setInterval(tick, 2000);
+        return () => {
+            alive = false;
+            window.clearInterval(timer);
+        };
+    }, []);
+    const setOverlay = async (enabled) => {
+        setMon((current) => (current ? { ...current, overlayEnabled: enabled } : current));
+        try {
+            const applied = await setOverlayEnabled(enabled);
+            setMon((current) => (current ? { ...current, overlayEnabled: applied } : current));
+        }
+        catch {
+            setMon((current) => (current ? { ...current, overlayEnabled: !enabled } : current));
+        }
+    };
+    const fmtTemp = (v) => (v == null ? "—" : `${v.toFixed(1)} °C`);
+    const batteryLine = (m) => [
+        m.batteryPct != null ? `${m.batteryPct}%` : "—",
+        t(m.batteryStatus || "Unknown"),
+        m.batteryWatts != null ? `${m.batteryWatts} W` : "",
+    ]
+        .filter(Boolean)
+        .join(" · ");
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("EDIT POWER PROFILE"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Monitor"), children: [mon && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: "CPU / GPU", description: `${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}` }), SP_JSX.jsx(DFL.Field, { label: t("Fan"), description: mon.fanPct != null ? `${mon.fanPct}%` : "—" }), SP_JSX.jsx(DFL.Field, { label: t("Battery"), description: batteryLine(mon) })] })), SP_JSX.jsx(ToggleRow, { label: t("FPS overlay (all games)"), description: t("Shows FPS in every game, incl. non-Steam. Applies after reboot."), value: !!mon?.overlayEnabled, onChange: setOverlay })] })] }));
 }
 
 const CAPTURE_CONTROLS = ["left_x", "left_y", "right_x", "right_y", "left_trigger", "right_trigger"];
@@ -3174,7 +3302,7 @@ function Sync() {
                                     ? " • " + t("in sync")
                                     : ""
                             : "";
-                        const description = folder.path.replace("/var/home/armada", "~") + statusSuffix;
+                        const description = folder.path.replace("/var/home/nebel", "~") + statusSuffix;
                         return folder.custom ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: folder.label, description: description, children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveCustomFolder(folder.id)), children: t("Remove") }) }) }, folder.id)) : (SP_JSX.jsx(ToggleRow, { label: folder.label, description: description, value: folder.enabled, disabled: busy, onChange: (enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled)) }, folder.id));
                     }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddFolderModal, { onAdd: async (path, label) => {
                                     await run(() => syncAddCustomFolder(path, label));

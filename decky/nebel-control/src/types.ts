@@ -90,8 +90,21 @@ export interface StickLedState {
   screenLink: boolean;
   enabled: boolean;
   maxBrightness: number;
+  notifyEnabled: boolean;
+  notifyColor: string;
   sides: { l: StickLedSideState; r: StickLedSideState };
   flashColors: Record<string, string>;
+}
+
+export interface SystemMonitor {
+  cpuTemp: number | null;
+  gpuTemp: number | null;
+  skinTemp: number | null;
+  fanPct: number | null;
+  batteryPct: number | null;
+  batteryStatus: string;
+  batteryWatts: number | null;
+  overlayEnabled: boolean;
 }
 
 export interface Config {

@@ -15,6 +15,8 @@ import {
   setStickLedScreenLink as applyStickLedScreenLink,
   setStickLedEnabled as applyStickLedEnabled,
   setStickLedMaxBrightness as applyStickLedMaxBrightness,
+  setStickLedNotify as applyStickLedNotify,
+  setStickLedNotifyColor as applyStickLedNotifyColor,
   setStickLedSeesaw as applyStickLedSeesaw,
   setStickLedFlip as applyStickLedFlip,
 } from "../backend";
@@ -200,6 +202,28 @@ export function Lighting({ config, setConfig }: {
       setConfig((current) => (current ? { ...current, stickLed: applied } : current));
     } catch (error) {
       setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, maxBrightness: previous } } : current));
+    }
+  };
+  const setStickLedNotify = async (value: boolean) => {
+    if (!stickLed) return;
+    const previous = stickLed.notifyEnabled;
+    setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: value } } : current));
+    try {
+      const applied = await applyStickLedNotify(value);
+      setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+    } catch (error) {
+      setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: previous } } : current));
+    }
+  };
+  const setStickLedNotifyColor = async (hex: string) => {
+    if (!stickLed) return;
+    const previous = stickLed.notifyColor;
+    setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: hex } } : current));
+    try {
+      const applied = await applyStickLedNotifyColor(hex);
+      setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+    } catch (error) {
+      setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: previous } } : current));
     }
   };
   const setStickLedColor = async (hex: string) => {
@@ -429,6 +453,15 @@ export function Lighting({ config, setConfig }: {
         />
       )}
       <ToggleRow
+        label={t("Notification flash")}
+        description={t("Stick LEDs flash on notifications")}
+        value={!!stickLed.notifyEnabled}
+        onChange={setStickLedNotify}
+      />
+      {stickLed.notifyEnabled && (
+        <ColorPicker hex={stickLed.notifyColor || "33AAFF"} onChange={setStickLedNotifyColor} />
+      )}
+      <ToggleRow
         label={t("Configure each stick separately")}
         description={t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.")}
         value={separate}
@@ -443,6 +476,7 @@ export function Lighting({ config, setConfig }: {
         color={sideState.color}
         duotoneColorA={sideState.duotoneColorA}
         duotoneColorB={sideState.duotoneColorB}
+        duotoneOrientation={sideState.duotoneOrientation}
       />
       {mode === "spin" && (
         <ToggleRow

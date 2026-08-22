@@ -384,6 +384,20 @@ action_set_stick_led_compass = _action_set_stick_led_bool_toggle("set-compass")
 action_set_stick_led_seesaw = _action_set_stick_led_bool_toggle("set-seesaw")
 
 
+def action_set_stick_led_notify(request):
+    enabled = bool(request.get("enabled"))
+    run(["/usr/libexec/nebel/stick-led-color", "set-notify", "on" if enabled else "off"], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_notify_color(request):
+    value = str(request.get("value", ""))
+    if not re.fullmatch(r"[0-9A-Fa-f]{6}", value):
+        raise ValueError("invalid color")
+    run(["/usr/libexec/nebel/stick-led-color", "set-notify-color", value.upper()], timeout=5)
+    return _stick_led_state()
+
+
 def action_set_stick_led_flash_color(request):
     button = str(request.get("button", ""))
     value = str(request.get("value", ""))
@@ -438,12 +452,18 @@ def _default_stick_side_state():
 
 def _stick_led_state():
     result = subprocess.check_output(["/usr/libexec/nebel/stick-led-color", "get"], text=True, timeout=5)
-    state = {"screenLink": False, "enabled": True, "maxBrightness": 1.0, "sides": {"l": _default_stick_side_state(), "r": _default_stick_side_state()}, "flashColors": {}}
+    state = {"screenLink": False, "enabled": True, "maxBrightness": 1.0, "notifyEnabled": True, "notifyColor": "33AAFF", "sides": {"l": _default_stick_side_state(), "r": _default_stick_side_state()}, "flashColors": {}}
     for line in result.splitlines():
         key, sep, value = line.partition("=")
         if not sep:
             continue
         key, value = key.strip(), value.strip()
+        if key == "notify_enabled":
+            state["notifyEnabled"] = value == "1"
+            continue
+        if key == "notify_color" and re.fullmatch(r"[0-9A-Fa-f]{6}", value or ""):
+            state["notifyColor"] = value.upper()
+            continue
         if key == "screen_link":
             state["screenLink"] = value == "1"
             continue
@@ -596,6 +616,8 @@ ACTIONS = {
     "set_stick_led_chase": action_set_stick_led_chase,
     "set_stick_led_compass": action_set_stick_led_compass,
     "set_stick_led_seesaw": action_set_stick_led_seesaw,
+    "set_stick_led_notify": action_set_stick_led_notify,
+    "set_stick_led_notify_color": action_set_stick_led_notify_color,
     "list_displays": action_list_displays,
     "get_display_config": action_get_display_config,
     "set_display_config": action_set_display_config,

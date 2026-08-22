@@ -1,0 +1,30 @@
+#!/bin/bash
+# Flash the stick LEDs on desktop notifications: watch the session bus for
+# org.freedesktop.Notifications.Notify calls and poke the LED daemon's flag.
+# Runs as root (to reach the session user's bus); retries until a session
+# bus exists, so boot ordering vs sddm doesn't matter.
+set -u
+
+# The session user is "nebel" on current images, "armada" on pre-rename ones
+# mid-OTA - derive it from the runtime dir owner instead of hardcoding.
+RUNTIME=/run/user/1000
+SESSION_USER=$(stat -c %U "$RUNTIME" 2>/dev/null || echo nebel)
+FLAG=/run/nebel/stick-led-notify
+
+install -d -m 0755 /run/nebel
+
+while :; do
+    if [[ ! -S "${RUNTIME}/bus" ]]; then
+        sleep 2
+        continue
+    fi
+    runuser -u "${SESSION_USER}" -- env \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=${RUNTIME}/bus" \
+        busctl monitor --user --match "type='method_call',interface='org.freedesktop.Notifications',member='Notify'" 2>/dev/null |
+    while read -r line; do
+        case "$line" in
+            *Member=Notify*) touch "$FLAG" ;;
+        esac
+    done
+    sleep 2
+done
