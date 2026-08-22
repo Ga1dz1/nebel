@@ -67,6 +67,8 @@ const setSyncServiceEnabled = (enabled) => call("set_sync_service_enabled", enab
 const syncAddDevice = (deviceId, name) => call("sync_add_device", deviceId, name);
 const syncRemoveDevice = (deviceId) => call("sync_remove_device", deviceId);
 const syncSetFolderEnabled = (presetId, enabled) => call("sync_set_folder_enabled", presetId, enabled);
+const syncAddCustomFolder = (path, label) => call("sync_add_custom_folder", path, label);
+const syncRemoveCustomFolder = (folderId) => call("sync_remove_custom_folder", folderId);
 
 function useDebouncedSave(options) {
     const { config, field, snapshot, save, setConfig, onError, delay = 900 } = options;
@@ -2256,6 +2258,28 @@ function AddDeviceModal({ closeModal, onAdd }) {
                             });
                         }, children: "Add device" }) })] }) }));
 }
+function AddFolderModal({ closeModal, onAdd }) {
+    const [path, setPath] = SP_REACT.useState("");
+    const [label, setLabel] = SP_REACT.useState("");
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const inputStyle = {
+        width: "100%",
+        padding: "10px",
+        marginBottom: "12px",
+        background: "rgba(255,255,255,0.08)",
+        border: "1px solid rgba(255,255,255,0.2)",
+        borderRadius: "4px",
+        color: "inherit",
+        fontSize: "14px",
+    };
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: "Folder to sync (under ~ or /run/media)" }), SP_JSX.jsx("input", { type: "text", placeholder: "~/Games/Heroic", value: path, onChange: (e) => setPath(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: "Label (optional)", value: label, onChange: (e) => setLabel(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || path.trim().length < 2, onClick: () => {
+                            setBusy(true);
+                            void onAdd(path, label).finally(() => {
+                                setBusy(false);
+                                closeModal?.();
+                            });
+                        }, children: "Add folder" }) })] }) }));
+}
 function Sync() {
     const [state, setState] = SP_REACT.useState(null);
     const [error, setError] = SP_REACT.useState("");
@@ -2306,7 +2330,9 @@ function Sync() {
     const connectedCount = state.devices.filter((d) => d.connected).length;
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Syncthing", children: [!state.installed && SP_JSX.jsx(DFL.Field, { label: "Syncthing is not installed in this OS image" }), SP_JSX.jsx(ToggleRow, { label: "Sync service", description: state.serviceActive ? "Running" : "Stopped", value: state.serviceEnabled && state.serviceActive, disabled: busy || !state.installed, onChange: (enabled) => void run(async () => { await setSyncServiceEnabled(enabled); await refresh(); }) }), state.myId && (SP_JSX.jsx(DFL.Field, { label: "This device ID", description: state.myId })), state.devices.length > 0 && (SP_JSX.jsx(DFL.Field, { label: "Status", description: `${connectedCount} of ${state.devices.length} device(s) connected` })), !!error && SP_JSX.jsx(DFL.Field, { label: "Error", description: error })] }), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: "Devices", children: [state.devices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `${device.name}${device.connected ? " (connected)" : ""}`, description: device.id.slice(0, 13) + "...", children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveDevice(device.id)), children: "Remove" }) }) }, device.id))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddDeviceModal, { onAdd: async (deviceId, name) => {
                                     await run(() => syncAddDevice(deviceId, name));
-                                } })), children: "Add device" }) })] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: "Folders", children: [state.devices.length === 0 && (SP_JSX.jsx(DFL.Field, { label: "Add a device first - folders sync only to paired devices" })), state.folders.map((folder) => (SP_JSX.jsx(ToggleRow, { label: folder.label, description: folder.path.replace("/var/home/armada", "~"), value: folder.enabled, disabled: busy, onChange: (enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled)) }, folder.id)))] }))] }));
+                                } })), children: "Add device" }) })] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: "Folders", children: [state.devices.length === 0 && (SP_JSX.jsx(DFL.Field, { label: "Add a device first - folders sync only to paired devices" })), state.folders.map((folder) => folder.custom ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: folder.label, description: folder.path.replace("/var/home/armada", "~"), children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveCustomFolder(folder.id)), children: "Remove" }) }) }, folder.id)) : (SP_JSX.jsx(ToggleRow, { label: folder.label, description: folder.path.replace("/var/home/armada", "~"), value: folder.enabled, disabled: busy, onChange: (enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled)) }, folder.id))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddFolderModal, { onAdd: async (path, label) => {
+                                    await run(() => syncAddCustomFolder(path, label));
+                                } })), children: "Add custom folder" }) })] }))] }));
 }
 
 function Content() {

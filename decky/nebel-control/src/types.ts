@@ -156,6 +156,7 @@ export interface SyncFolder {
   enabled: boolean;
   pathExists: boolean;
   sharedWith: string[];
+  custom: boolean;
 }
 
 export interface SyncState {

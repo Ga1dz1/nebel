@@ -7,6 +7,7 @@ because the unit is a *user* service of the armada account.
 
 import shutil
 import subprocess
+import re
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -24,7 +25,10 @@ API_BASE = "http://127.0.0.1:8384"
 # Steam games themselves stay on Steam Cloud; these cover everything else.
 PRESET_FOLDERS = {
     "nebel-decky-settings": ("Decky Settings", "homebrew/settings"),
-    "nebel-heroic": ("Heroic (settings & games)", ".config/heroic"),
+    "nebel-heroic-config": ("Heroic (settings)", ".config/heroic"),
+    # Wine prefixes hold the actual save files; game files themselves
+    # (~/Games/Heroic) are way too large for sync - add manually if needed.
+    "nebel-heroic-saves": ("Heroic saves (Wine prefixes)", "Games/Heroic/Prefixes"),
     "nebel-pcsx2": ("PCSX2 (saves & settings)", ".config/PCSX2"),
     "nebel-eden-config": ("Eden settings", ".config/eden"),
     "nebel-eden-saves": ("Eden saves", ".local/share/eden/nand/user/save"),
@@ -164,6 +168,20 @@ def sync_state():
                 "enabled": current is not None,
                 "pathExists": (HOME / rel).exists(),
                 "sharedWith": [d.get("deviceID", "")[:7] for d in current.get("devices", [])] if current else [],
+                "custom": False,
+            })
+        # User-added folders (skip Syncthing's own "default" folder).
+        for folder_id, current in existing.items():
+            if folder_id in PRESET_FOLDERS or folder_id == "default":
+                continue
+            folders.append({
+                "id": folder_id,
+                "label": current.get("label") or folder_id,
+                "path": str(current.get("path", "")),
+                "enabled": True,
+                "pathExists": True,
+                "sharedWith": [d.get("deviceID", "")[:7] for d in current.get("devices", [])],
+                "custom": True,
             })
         state["folders"] = folders
     except Exception as exc:
@@ -216,4 +234,53 @@ def set_folder_enabled(preset_id, enabled):
             rest("POST", "/rest/config/folders", _folder_entry(preset_id))
     else:
         rest("DELETE", f"/rest/config/folders/{preset_id}")
+    return sync_state()
+
+
+ALLOWED_CUSTOM_ROOTS = (HOME, Path("/run/media"))
+
+
+def _validate_custom_path(path):
+    raw = str(path).strip()
+    if raw.startswith("~"):
+        raw = str(HOME) + raw[1:]
+    resolved = Path(raw).resolve()
+    if not any(resolved == root or root in resolved.parents for root in ALLOWED_CUSTOM_ROOTS):
+        raise ValueError("path must be under the home directory or /run/media")
+    return resolved
+
+
+def add_custom_folder(path, label):
+    resolved = _validate_custom_path(path)
+    resolved.mkdir(parents=True, exist_ok=True)
+    existing = {f.get("id") for f in (rest("GET", "/rest/config/folders") or [])}
+    folder_id = "custom-" + re.sub(r"[^a-z0-9]+", "-", resolved.name.lower()).strip("-")
+    if not folder_id or folder_id == "custom-":
+        folder_id = "custom-folder"
+    suffix = 2
+    candidate = folder_id
+    while candidate in existing or candidate in PRESET_FOLDERS:
+        candidate = f"{folder_id}-{suffix}"
+        suffix += 1
+    entry = {
+        "id": candidate,
+        "label": str(label).strip() or resolved.name,
+        "path": str(resolved),
+        "type": "sendreceive",
+        "devices": [{"deviceID": d["deviceID"]} for d in _remote_devices()],
+        "ignorePerms": True,
+        "fsWatcherEnabled": True,
+        "rescanIntervalS": 3600,
+        "paused": False,
+    }
+    rest("POST", "/rest/config/folders", entry)
+    return sync_state()
+
+
+def remove_custom_folder(folder_id):
+    folder_id = str(folder_id).strip()
+    if folder_id in PRESET_FOLDERS:
+        # Presets go through set_folder_enabled so the toggle state stays consistent.
+        return set_folder_enabled(folder_id, False)
+    rest("DELETE", f"/rest/config/folders/{folder_id}")
     return sync_state()

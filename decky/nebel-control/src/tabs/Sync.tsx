@@ -12,7 +12,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getSyncState,
   setSyncServiceEnabled,
+  syncAddCustomFolder,
   syncAddDevice,
+  syncRemoveCustomFolder,
   syncRemoveDevice,
   syncSetFolderEnabled,
 } from "../backend";
@@ -75,8 +77,63 @@ function AddDeviceModal({ closeModal, onAdd }: {
   );
 }
 
-export function Sync() {
-  const [state, setState] = useState<SyncState | null>(null);
+function AddFolderModal({ closeModal, onAdd }: {
+  closeModal?: () => void;
+  onAdd: (path: string, label: string) => Promise<void>;
+}) {
+  const [path, setPath] = useState("");
+  const [label, setLabel] = useState("");
+  const [busy, setBusy] = useState(false);
+  const inputStyle = {
+    width: "100%",
+    padding: "10px",
+    marginBottom: "12px",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.2)",
+    borderRadius: "4px",
+    color: "inherit",
+    fontSize: "14px",
+  } as const;
+  return (
+    <ModalRoot onCancel={closeModal}>
+      <DialogBody>
+        <div style={{ marginBottom: "6px", fontSize: "13px", opacity: 0.8 }}>
+          Folder to sync (under ~ or /run/media)
+        </div>
+        <input
+          type="text"
+          placeholder="~/Games/Heroic"
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          style={inputStyle}
+        />
+        <input
+          type="text"
+          placeholder="Label (optional)"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          style={inputStyle}
+        />
+        <DialogFooter>
+          <DialogButton
+            disabled={busy || path.trim().length < 2}
+            onClick={() => {
+              setBusy(true);
+              void onAdd(path, label).finally(() => {
+                setBusy(false);
+                closeModal?.();
+              });
+            }}
+          >
+            Add folder
+          </DialogButton>
+        </DialogFooter>
+      </DialogBody>
+    </ModalRoot>
+  );
+}
+
+export function Sync() {  const [state, setState] = useState<SyncState | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
@@ -184,16 +241,46 @@ export function Sync() {
           {state.devices.length === 0 && (
             <Field label="Add a device first - folders sync only to paired devices" />
           )}
-          {state.folders.map((folder) => (
-            <ToggleRow
-              key={folder.id}
-              label={folder.label}
-              description={folder.path.replace("/var/home/armada", "~")}
-              value={folder.enabled}
+          {state.folders.map((folder) =>
+            folder.custom ? (
+              <PanelSectionRow key={folder.id}>
+                <Field label={folder.label} description={folder.path.replace("/var/home/armada", "~")}>
+                  <DialogButton
+                    style={{ minWidth: "90px" }}
+                    disabled={busy}
+                    onClick={() => void run(() => syncRemoveCustomFolder(folder.id))}
+                  >
+                    Remove
+                  </DialogButton>
+                </Field>
+              </PanelSectionRow>
+            ) : (
+              <ToggleRow
+                key={folder.id}
+                label={folder.label}
+                description={folder.path.replace("/var/home/armada", "~")}
+                value={folder.enabled}
+                disabled={busy}
+                onChange={(enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled))}
+              />
+            ),
+          )}
+          <PanelSectionRow>
+            <DialogButton
               disabled={busy}
-              onChange={(enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled))}
-            />
-          ))}
+              onClick={() =>
+                showModal(
+                  <AddFolderModal
+                    onAdd={async (path, label) => {
+                      await run(() => syncAddCustomFolder(path, label));
+                    }}
+                  />,
+                )
+              }
+            >
+              Add custom folder
+            </DialogButton>
+          </PanelSectionRow>
         </PanelSection>
       )}
     </>

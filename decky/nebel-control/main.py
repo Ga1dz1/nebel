@@ -30,7 +30,15 @@ from nebel_control.lighting import (
 from nebel_control.power import save_power_config
 from nebel_control.shared_storage import set_shared_storage_enabled
 from nebel_control.steam import installed_games
-from nebel_control.sync import add_device, remove_device, set_folder_enabled, set_service_enabled, sync_state
+from nebel_control.sync import (
+    add_custom_folder,
+    add_device,
+    remove_custom_folder,
+    remove_device,
+    set_folder_enabled,
+    set_service_enabled,
+    sync_state,
+)
 from nebel_control.system import set_ssh_enabled
 from nebel_control.tweaks import load_compat_applied, save_compat_applied, save_tweaks
 
@@ -80,6 +88,12 @@ class Plugin:
 
     async def sync_set_folder_enabled(self, preset_id, enabled):
         return await asyncio.to_thread(set_folder_enabled, preset_id, enabled)
+
+    async def sync_add_custom_folder(self, path, label):
+        return await asyncio.to_thread(add_custom_folder, path, label)
+
+    async def sync_remove_custom_folder(self, folder_id):
+        return await asyncio.to_thread(remove_custom_folder, folder_id)
 
     async def set_stick_led_color(self, side, value):
         return await asyncio.to_thread(set_stick_led_color, side, value)
