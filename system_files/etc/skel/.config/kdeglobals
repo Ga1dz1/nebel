@@ -6,10 +6,10 @@ ColorScheme=Vapor
 Name=Vapor
 
 [Icons]
-Theme=breeze-dark
+Theme=Papirus-Dark
 
 [kcm_icons]
-Theme=breeze-dark
+Theme=Papirus-Dark
 
 [plasmarc][Theme]
 name=Vapor

@@ -45,6 +45,13 @@ tar -xf "steamdeck-kde-presets.pkg.tar" \
 # Merge into the root filesystem.
 cp -a etc usr /
 
+# Ship Papirus-Dark icons instead of the Valve preset's breeze-dark: on the
+# small handheld panel the Breeze glyphs read as generic KDE, Papirus matches
+# the dark Vapor look better. Patch the LNF defaults (not just skel) so a later
+# plasma-apply-lookandfeel run doesn't silently revert the icon theme.
+sed -i 's/^Theme=breeze-dark$/Theme=Papirus-Dark/' \
+    /usr/share/plasma/look-and-feel/com.valve.vapor.desktop/contents/defaults
+
 # Clean up.
 cd /
 rm -rf "${EXTRACT}" "${PKG}"

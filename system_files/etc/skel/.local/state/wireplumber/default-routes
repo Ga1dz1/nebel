@@ -1,0 +1,3 @@
+[default-routes]
+alsa_card.platform-sound:output:\oOut\c\sSpeaker={"channelVolumes":[0.042875, 0.042875], "channelMap":["FL", "FR"], "mute":false, "latencyOffsetNsec":0}
+alsa_card.platform-sound:output:\oOut\c\sHeadphones={"channelVolumes":[0.042875, 0.042875], "channelMap":["FL", "FR"], "mute":false, "latencyOffsetNsec":0}
