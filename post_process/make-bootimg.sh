@@ -42,13 +42,22 @@ STAMP_ID=$(nebel_bootimg_id "${LINUX_LINE}" "${INITRD_LINE}" "${OPTIONS_LINE}" "
 CMDLINE="${OPTIONS_LINE}"
 
 # Fit the 512-byte cmdline: drop serial console, ostree= first, keep splash kargs.
-_drop=" console=ttyS0 "
-_ostree=""; _rest=""
+# All rootflags= tokens must be merged into ONE (same as nebel-bootimg-update):
+# the kernel is last-wins per karg, and BIB's subvol= rootflags plus our kargs.d
+# mount-opts rootflags arrive as separate tokens - unmerged, the later one drops
+# subvol=/root and the boot dies in the initramfs emergency shell.
+_ostree=""; _rest=""; _rootflags=""
 for _t in ${CMDLINE}; do
-    case "${_drop}" in *" ${_t} "*) continue ;; esac
-    case "${_t}" in ostree=*) _ostree="${_t}" ;; *) _rest="${_rest} ${_t}" ;; esac
+    case "${_t}" in
+        console=ttyS0) continue ;;
+        ostree=*) _ostree="${_t}" ;;
+        rootflags=*) _rootflags="${_rootflags}${_rootflags:+,}${_t#rootflags=}" ;;
+        *) _rest="${_rest} ${_t}" ;;
+    esac
 done
+_rootflags=$(printf '%s' "${_rootflags}" | sed 's/,space_cache=v2//g; s/^space_cache=v2,\?//')
 CMDLINE="${_ostree}${_rest}"
+[[ -n "${_rootflags}" ]] && CMDLINE="${CMDLINE} rootflags=${_rootflags}"
 
 if [[ "${#CMDLINE}" -gt "${NEBEL_CMDLINE_MAX}" ]]; then
     echo "ERROR: cmdline is ${#CMDLINE}B, over the ${NEBEL_CMDLINE_MAX}B boot-header limit"; exit 1
