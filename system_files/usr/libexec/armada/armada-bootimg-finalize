@@ -1,42 +1,15 @@
 #!/bin/bash
-# Regenerate /KERNEL, and on SM8250 the staged GRUB config, after OSTree
-# finalizes a staged deployment - rolling back the BLS default if either
-# fails, while preserving the first failure's status. Both are no-ops
-# (exit 0) on a device/build they don't apply to.
+# Regenerate /KERNEL after OSTree finalizes a staged deployment.
+# bootc is bootloader=none; without this, upgrades/rollbacks would not take
+# effect because the ABL keeps booting the old /KERNEL.
 set -uo pipefail
-
-# On an SM8250 device with GRUB staged, /KERNEL (the Android-bootimg fallback
-# for SoCs whose ABL picks its own DTB) is never actually read to boot at all
-# - GRUB is. Confirmed live: a kargs change that pushed the assembled
-# cmdline past armada-bootimg-update's 512B limit made it exit 1 (correctly
-# - "fail loud rather than ship a silently-truncated, unbootable /KERNEL"),
-# which rolled the deployment back here before the device ever even
-# attempted to boot it - on hardware where that failure was for a file
-# nothing reads. Same root pattern as this morning's DTB-list bug: a
-# generic /KERNEL failure treated as fatal on a device where /KERNEL isn't
-# the boot path.
-grub_is_boot_path() {
-    eval "$(/usr/libexec/armada/device-env 2>/dev/null)" || true
-    [[ "${ARMADA_SOC_CLASS:-}" == SM8250 ]] || return 1
-    [[ -f /boot/efi/EFI/BOOT/BOOTAA64.EFI ]]
-}
 
 status=0
 
 if ! /usr/libexec/armada/armada-bootimg-update; then
     bootimg_status=$?
     echo "armada-bootimg-finalize: boot image update failed (${bootimg_status})" >&2
-    if grub_is_boot_path; then
-        echo "armada-bootimg-finalize: GRUB (not /KERNEL) is this device's actual boot path - not fatal" >&2
-    else
-        status=$bootimg_status
-    fi
-fi
-
-if ! /usr/libexec/armada/armada-grub-update; then
-    grub_status=$?
-    echo "armada-bootimg-finalize: GRUB update failed (${grub_status})" >&2
-    (( status == 0 )) && status=$grub_status
+    status=$bootimg_status
 fi
 
 (( status == 0 )) && exit 0

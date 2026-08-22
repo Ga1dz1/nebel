@@ -36,21 +36,13 @@ This fork adds **Retroid Pocket Mini V2 (SM8250)** support on top of upstream
 support for the SM8250 SoC, a device profile (panel, gamepad, audio), and a
 few fixes that ended up being generally useful beyond just this one device:
 
-- **A working GRUB boot menu for SM8250.** ABL has no per-device menu for this
-  SoC (unlike SM8550/8650/8750), so without it the wrong device tree boots and
-  no device profile applies at all. The menu is built dynamically from
-  whatever `sm8250-retroidpocket-*` device trees exist, so any future device
-  in that family gets a boot entry automatically.
-
-  > [!NOTE]
-  > [ROCKNIX's ABL](https://github.com/ROCKNIX/abl) (v1.1.6+) now ships a
-  > per-device selection menu for SM8250 too, confirmed working on real
-  > Retroid Pocket Mini V2 hardware. With it flashed, SM8250 devices can boot
-  > straight into the same qcom-abl image as SM8550/8650/8750 instead of
-  > needing the GRUB chainload above. If you're on Mini V2, Retroid Pocket 5,
-  > or Flip 2, please flash this ABL - future updates are moving toward one
-  > unified image for the whole ABL-supported device lineup instead of
-  > separate per-family builds.
+- **Unified ROCKNIX-ABL boot for all supported SoCs (no GRUB).** ROCKNIX's
+  [ABL](https://github.com/ROCKNIX/abl) (v1.1.6+) ships a per-device selection
+  menu for SM8250 too, confirmed working on real Retroid Pocket Mini V2
+  hardware, so every supported device now boots straight from the `/KERNEL`
+  Android bootimg on the ESP and the ABL picks the right device tree itself.
+  If you're on Mini V2, Retroid Pocket 5, or Flip 2, flash this ABL first
+  (the SD image carries it under `rocknix_abl/SM8250/`).
 - **A correct fix for Steam's oversized UI scale** on small high-DPI panels -
   the previous approach patched a part of Steam's config that gets recomputed
   from scratch on every launch, so it never survived a restart.
@@ -68,8 +60,8 @@ fork of virtudude's own
 [armada-packages](https://github.com/virtudude/armada-packages).
 
 **Retroid Pocket 5 and Retroid Pocket Flip2** (both SM8250) have their device
-trees ported from ROCKNIX and device profiles wired up, picked up
-automatically by the GRUB menu built for Mini V2 - but **completely
+trees ported from ROCKNIX and device profiles wired up, selectable from the
+ABL's per-device menu - but **completely
 unverified**, with no hardware to test any of it on yet. Panel orientation
 and physical size in particular are first guesses, not measured values;
 audio is assumed to work off the same generic UCM2 profile Mini V2 uses,

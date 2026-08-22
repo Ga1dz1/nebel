@@ -216,12 +216,7 @@ build-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_build
 build-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "iso" "disk_config/iso.toml")
 
 # Output: ./output/armada-<version>.img.gz  (version = container label, date.sha)
-# ARMADA_IMAGE_FAMILY, if already set in the environment, is left alone (lets
-# build-armada-image-arm-efi / -qcom-abl below reuse this same recipe) -
-# unset (plain `just build-armada-image`) keeps the legacy DTB-presence
-# auto-detect in finalize-armada-image.sh, which currently always resolves
-# to arm-efi/GRUB-on since the shared kernel package always bundles SM8250
-# DTBs. See BOOT_ARCHITECTURE.md for why this split exists.
+# All supported devices boot via ROCKNIX ABL from /KERNEL; GRUB is not used.
 [group('Armada')]
 build-armada-image $target_image=("localhost/" + image_name) $tag=default_tag: (build-raw target_image tag)
     #!/usr/bin/env bash
@@ -236,21 +231,6 @@ build-armada-image $target_image=("localhost/" + image_name) $tag=default_tag: (
         export OUT="output/armada-${version}.img.gz"
     fi
     ./post_process/finalize-armada-image.sh output/image/disk.raw
-
-# For SM8250 (Mini V2, RP5, Flip2): their ABL has no per-device DTB auto-pick,
-# so it must chainload GRUB - keeps the existing per-device GRUB menu.
-[group('Armada')]
-build-armada-image-arm-efi $target_image=("localhost/" + image_name) $tag=default_tag:
-    ARMADA_IMAGE_FAMILY=arm-efi just build-armada-image "{{target_image}}" "{{tag}}"
-
-# For SM8550/SM8650/SM8750 (RP6, AYN Odin 2/Mini/Portal/Thor, AYANEO Pocket*,
-# KONKR Pocket FIT): their ABL boots /KERNEL directly and picks the right DTB
-# itself - GRUB must stay off, or ABL chainloads a menu with no correct entry
-# for these devices (see BOOT_ARCHITECTURE.md - this was live-confirmed broken
-# on RP6 before this split existed).
-[group('Armada')]
-build-armada-image-qcom-abl $target_image=("localhost/" + image_name) $tag=default_tag:
-    ARMADA_IMAGE_FAMILY=qcom-abl just build-armada-image "{{target_image}}" "{{tag}}"
 
 [group('Build Virtual Machine Image')]
 rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "qcow2" "disk_config/disk.toml")

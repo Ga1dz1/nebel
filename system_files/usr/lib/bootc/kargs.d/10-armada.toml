@@ -17,19 +17,12 @@ kargs = [
     # on a boot failure strands a player, only recoverable with a forced
     # power-off - so this pair is a real, wanted fix. But it pushed the
     # assembled /KERNEL cmdline past armada-bootimg-update's 512B limit,
-    # which the OLD armada-bootimg-finalize (still the ACTIVE deployment's
-    # copy at the moment a staged update finalizes - deployments are
-    # immutable, so it's always the CURRENTLY BOOTED version's script that
-    # runs the transition AWAY from itself, never the incoming one's)
-    # treated as unconditionally fatal and rolled back - confirmed live,
-    # before that old script even knew armada-grub-update existed, let
-    # alone that GRUB (not /KERNEL) is this device's real boot path. The
-    # newer armada-bootimg-finalize (this same commit) fixes that
-    # classification, but can't retroactively apply to the transition INTO
-    # itself - a chicken-and-egg problem only solved by shipping one build
-    # that fits under the old limit first. Once that build is what's
-    # actually running, add these back; the now-current finalize script
-    # will correctly not roll back over them even if cmdline grows again.
+    # which an older armada-bootimg-finalize treated as unconditionally fatal
+    # and rolled back. The current armada-bootimg-finalize no longer does
+    # that, but can't retroactively apply to the transition INTO itself -
+    # a chicken-and-egg problem only solved by shipping one build that fits
+    # under the old limit first. Once that build is what's actually running,
+    # add these back.
     "allow_mismatched_32bit_el0",
     "fw_devlink.strict=1",
     "pcie_ports=compat",

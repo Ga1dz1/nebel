@@ -560,18 +560,6 @@ fdtdir ${bootdir}/dtb
 EOF
 }
 
-stage_sm8250_grub() {
-    # SM8250's ABL has no working per-device DTB auto-pick (see
-    # finalize-armada-image.sh's fdtdir-detection comment) - an explicit GRUB
-    # devicetree line is the only way this family boots the right hardware.
-    # armada-grub-update does the actual staging (device-model matching,
-    # GRUB config generation) - it's the same logic armada-bootimg-finalize
-    # now re-runs on every OTA update, so a later update can't leave this
-    # install pointing at a pruned deployment's files (see that script's own
-    # comment for why that matters and how it was confirmed live).
-    BOOTROOT="$TARGET/boot" ESP="$TARGET/boot/efi" /usr/libexec/armada/armada-grub-update
-}
-
 format_root() {
     local tmp
     mkfs.btrfs -f -L root "$ROOT_PART" >/dev/null
@@ -645,7 +633,6 @@ deploy_to_internal() {
     set_origin
     rewrite_bls
     seed_kernel
-    stage_sm8250_grub
     sync
 }
 
