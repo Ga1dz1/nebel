@@ -115,7 +115,8 @@ dnf5 -y install --setopt=install_weak_deps=False /packages/powerdevil/powerdevil
 
 dnf5 -y install --setopt=install_weak_deps=False \
     protonplus \
-    heroic-games-launcher
+    heroic-games-launcher \
+    syncthing
 
 dnf5 -y install --setopt=install_weak_deps=False --skip-unavailable \
     --repofrompath 'copr-ublue-os-packages,https://download.copr.fedorainfracloud.org/results/ublue-os/packages/fedora-$releasever-$basearch/' \
