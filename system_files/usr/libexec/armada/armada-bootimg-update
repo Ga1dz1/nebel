@@ -45,16 +45,25 @@ fi
 
 # Fit the header-v0 512-byte cmdline: drop the serial console and redundant
 # Btrfs defaults, then put ostree first.
-ostree_arg=""; rest=""
+#
+# All rootflags= tokens must be merged into ONE: the kernel is last-wins per
+# karg, and bootc emits the BIB subvol= rootflags and our kargs.d mount-opts
+# rootflags as separate tokens - unmerged, the later one (no subvol=) would
+# drop the subvol=/root the ostree initramfs needs, and the boot dies in the
+# emergency shell (seen live on Mini V2: "root account is locked").
+ostree_arg=""; rest=""; rootflags=""
 for t in ${options}; do
     case "${t}" in
         console=ttyS0) continue ;;
         ostree=*) ostree_arg="${t}" ;;
-        rootflags=*,space_cache=v2) rest="${rest} ${t%,space_cache=v2}" ;;
+        rootflags=*) rootflags="${rootflags}${rootflags:+,}${t#rootflags=}" ;;
         *) rest="${rest} ${t}" ;;
     esac
 done
+# space_cache=v2 has been the btrfs default for ages; dropping it saves bytes.
+rootflags=$(printf '%s' "${rootflags}" | sed 's/,space_cache=v2//g; s/^space_cache=v2,\?//')
 cmdline="${ostree_arg}${rest}"
+[ -n "${rootflags}" ] && cmdline="${cmdline} rootflags=${rootflags}"
 
 # Fail loud rather than ship a silently-truncated, unbootable /KERNEL that can
 # only be recovered via fastboot. Limit is single-sourced (see bootimg-args).
