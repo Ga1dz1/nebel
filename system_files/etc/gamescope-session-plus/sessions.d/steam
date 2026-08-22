@@ -94,7 +94,7 @@ fi
 
 export STEAM_EXTRA_COMPAT_TOOLS_PATHS="/usr/share/steam/compatibilitytools.d:${HOME}/.local/share/Steam/compatibilitytools.d"
 
-CLIENTCMD='/usr/libexec/armada/launch-steam -gamepadui -steamos3 -steampal -steamdeck -noverifyfiles'
+CLIENTCMD='/usr/libexec/armada/launch-steam -gamepadui -steamos3 -steampal -steamdeck -noverifyfiles -noshaders'
 
 # gamescope-session-plus (/usr/share/gamescope-session-plus/gamescope-session-plus)
 # has no passthrough for the extra flags we need (e.g. --mangoapp). The only
