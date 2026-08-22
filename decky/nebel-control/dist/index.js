@@ -38,6 +38,7 @@ const saveCompatApplied = (appids) => {
 };
 const setSshEnabled = (enabled) => call("set_ssh_enabled", enabled);
 const setControllerType = (value) => call("set_controller_type", value);
+const setSharedStorageEnabled = (enabled) => call("set_shared_storage_enabled", enabled);
 const setStickLedColor = (side, value) => call("set_stick_led_color", side, value);
 const setStickLedMode = (side, mode) => call("set_stick_led_mode", side, mode);
 const setStickLedScreenLink = (enabled) => call("set_stick_led_screen_link", enabled);
@@ -47,6 +48,12 @@ const setStickLedDuotoneColor = (side, slot, value) => call("set_stick_led_duoto
 const setStickLedDuotoneOrientation = (side, orientation) => call("set_stick_led_duotone_orientation", side, orientation);
 const setStickLedColorSource = (side, source) => call("set_stick_led_color_source", side, source);
 const setStickLedChargingIndicator = (side, enabled) => call("set_stick_led_charging_indicator", side, enabled);
+const setStickLedChase = (side, enabled) => call("set_stick_led_chase", side, enabled);
+const setStickLedCompass = (side, enabled) => call("set_stick_led_compass", side, enabled);
+const setStickLedSeesaw = (side, enabled) => call("set_stick_led_seesaw", side, enabled);
+const setStickLedFlip = (side, enabled) => call("set_stick_led_flip", side, enabled);
+const setStickLedEnabled = (enabled) => call("set_stick_led_enabled", enabled);
+const setStickLedMaxBrightness = (value) => call("set_stick_led_max_brightness", value);
 const getControllerState = () => call("get_controller_state");
 const saveCalibration = (capture) => call("save_calibration", capture);
 const resetCalibration = () => call("reset_calibration");
@@ -55,6 +62,11 @@ const endCalibrationSession = (token) => call("end_calibration_session", token);
 const getDisplayState = () => call("get_display_state");
 const setDisplayConfig = (useExternal, connector, width, height, orientation) => call("set_display_config", useExternal, connector, width, height, orientation);
 const restartGamescopeSession = () => call("restart_gamescope_session");
+const getSyncState = () => call("get_sync_state");
+const setSyncServiceEnabled = (enabled) => call("set_sync_service_enabled", enabled);
+const syncAddDevice = (deviceId, name) => call("sync_add_device", deviceId, name);
+const syncRemoveDevice = (deviceId) => call("sync_remove_device", deviceId);
+const syncSetFolderEnabled = (presetId, enabled) => call("sync_set_folder_enabled", presetId, enabled);
 
 function useDebouncedSave(options) {
     const { config, field, snapshot, save, setConfig, onError, delay = 900 } = options;
@@ -93,6 +105,8 @@ const tabIcons = {
     Compatibility: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("line", { x1: "6", x2: "10", y1: "11", y2: "11" }), SP_JSX.jsx("line", { x1: "8", x2: "8", y1: "9", y2: "13" }), SP_JSX.jsx("line", { x1: "15", x2: "15.01", y1: "12", y2: "12" }), SP_JSX.jsx("line", { x1: "18", x2: "18.01", y1: "10", y2: "10" }), SP_JSX.jsx("path", { d: "M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" })] }) })),
     Power: (SP_JSX.jsx(Icon, { path: SP_JSX.jsx(SP_JSX.Fragment, { children: SP_JSX.jsx("path", { d: "M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" }) }) })),
     Display: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("rect", { width: "20", height: "14", x: "2", y: "3", rx: "2" }), SP_JSX.jsx("line", { x1: "8", x2: "16", y1: "21", y2: "21" }), SP_JSX.jsx("line", { x1: "12", x2: "12", y1: "17", y2: "21" })] }) })),
+    Lighting: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5" }), SP_JSX.jsx("path", { d: "M9 18h6" }), SP_JSX.jsx("path", { d: "M10 22h4" })] }) })),
+    Sync: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M21 12a9 9 0 0 1-15.5 6.2L3 16" }), SP_JSX.jsx("path", { d: "M3 12a9 9 0 0 1 15.5-6.2L21 8" }), SP_JSX.jsx("path", { d: "M3 11v5h5" }), SP_JSX.jsx("path", { d: "M21 13V8h-5" })] }) })),
     Advanced: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" }), SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "3" })] }) })),
 };
 
@@ -100,8 +114,28 @@ const apps = () => window.SteamClient?.Apps;
 const settings = () => window.SteamClient?.Settings;
 // Keep in sync with PROTON_TOOL_NAME (build) and PROTON_11_STABLE (nebel-fixups).
 const DEFAULT_WINDOWS_COMPAT_TOOL = "proton-cachyos-11.0-arm64";
+// Valve's own actively-maintained catalog entry - unlike our bundled ARM64
+// build, Steam can auto-download this one itself once it's selected, no
+// manual fetch needed. Used as the default for "x86_64 (emulated)" mode.
+const DEFAULT_X86_64_COMPAT_TOOL = "proton_experimental";
 const USE_DEFAULT_COMPAT = "__nebel_default__";
 const FOLLOW_STEAM_COMPAT = "__steam_default__";
+// Confirmed live against a working ROCKNIX SM8550 install (same FEX build,
+// same pressure-vessel/SLR runtime shape): running with every one of these
+// thunks on was a plausible cause of x86_64-routed games failing to launch
+// at all - thunking swaps a guest (x86) library for a host-native one at
+// dlopen, which can fight pressure-vessel's own bundled x86_64 runtime
+// libraries for the same symbols. Our native ARM64 Proton build needs none
+// of these (its own binaries call the host GPU/audio stack directly, no
+// FEX involved), so they're off in that mode; a genuinely x86_64-routed
+// Proton's own Wine/Proton binaries DO need FEX to bridge those calls to
+// the ARM64 host, so they're on in that mode.
+const ARM64_MODE_THUNKS = {
+    Vulkan: false, GL: false, EGL: false, drm: false, WaylandClient: false, asound: false,
+};
+const X86_64_MODE_THUNKS = {
+    Vulkan: true, GL: true, EGL: true, drm: true, WaylandClient: true, asound: true,
+};
 let windowsCompatTool = DEFAULT_WINDOWS_COMPAT_TOOL;
 let autoApplyCompat = true;
 const handledAppids = new Set();
@@ -635,6 +669,94 @@ const styles = `
       .nebel-control-tabs .nebel-reset-row {
         padding: 0 14px 8px;
       }
+      .nebel-control-tabs .nebel-color-preview-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 4px 0;
+      }
+      .nebel-control-tabs .nebel-color-preview-label {
+        flex: 1 1 auto;
+        opacity: 0.87;
+      }
+      .nebel-control-tabs .nebel-color-swatch {
+        flex: 0 0 auto;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+      }
+      .nebel-control-tabs .nebel-color-preview-hex {
+        flex: 0 0 auto;
+        font-variant-numeric: tabular-nums;
+        opacity: 0.62;
+        font-size: 12px;
+      }
+      .nebel-control-tabs .nebel-mode-preview-wrap {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        padding: 4px 0 8px;
+      }
+      .nebel-control-tabs .nebel-mode-preview-canvas {
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 8px;
+      }
+      .nebel-control-tabs .nebel-preset-swatch {
+        width: 34px;
+        height: 34px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+        cursor: pointer;
+      }
+      .nebel-control-tabs .nebel-color-picker {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        width: 100%;
+      }
+      .nebel-control-tabs .nebel-color-sv-wrap,
+      .nebel-control-tabs .nebel-color-hue-wrap {
+        position: relative;
+      }
+      .nebel-control-tabs .nebel-color-sv-canvas {
+        display: block;
+        border-radius: 6px;
+        touch-action: none;
+        cursor: crosshair;
+      }
+      .nebel-control-tabs .nebel-color-hue-canvas {
+        display: block;
+        border-radius: 4px;
+        touch-action: none;
+        cursor: ew-resize;
+      }
+      .nebel-control-tabs .nebel-color-cursor {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        margin-left: -6px;
+        margin-top: -6px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+      }
+      .nebel-control-tabs .nebel-color-hue-cursor {
+        position: absolute;
+        top: -2px;
+        width: 4px;
+        height: calc(100% + 4px);
+        margin-left: -2px;
+        border-radius: 2px;
+        background: white;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+      }
       .nebel-control-tabs .nebel-compat-note {
         box-sizing: border-box;
         width: 100%;
@@ -654,6 +776,17 @@ function SelectEdit({ label, value, options, onChange, labelBelow, disabled }) {
 }
 function ToggleRow({ label, value, onChange, disabled, description }) {
     return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: !!value, disabled: disabled, onChange: onChange }) }));
+}
+// A compact, wrapping grid of tappable color swatches - replaces a long
+// column of full-width preset buttons (one per color, "Blue"/"Cyan"/...)
+// that took ten rows to scroll through. flow-children="row" keeps gamepad
+// D-pad navigation moving sensibly across the grid instead of only up/down
+// through what used to be a single column of buttons.
+function PresetSwatchGrid({ colors, selected, onSelect }) {
+    return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Focusable, { style: { display: "flex", flexWrap: "wrap", gap: 8 }, "flow-children": "row", children: colors.map((color) => (SP_JSX.jsx(DFL.Focusable, { className: "nebel-preset-swatch", style: {
+                    backgroundColor: `#${color.value}`,
+                    outline: selected === color.value ? "2px solid white" : undefined,
+                }, title: color.label, onActivate: () => onSelect(color.value), onClick: () => onSelect(color.value), children: null }, color.value))) }) }));
 }
 function SliderEdit({ label, value, min, max, step, onChange, format }) {
     const numeric = Number(value);
@@ -694,6 +827,17 @@ const resolutionOptions = [
     { data: "Native", label: "Native" },
     { data: "1280x720", label: "1280x720" },
     { data: "960x540", label: "960x540" },
+];
+const compatModeOptions = [
+    { data: "arm64", label: "ARM64 (native, recommended)" },
+    { data: "x86_64", label: "x86_64 (emulated via FEX)" },
+];
+// SM8250's cpu0-3 are the 1.8GHz LITTLE cluster, cpu4-7 the 2.4-2.84GHz
+// big+prime cluster - same split ROCKNIX's own SM8250 profile uses.
+const cpuAffinityOptions = [
+    { data: "", label: "Default (any core)" },
+    { data: "big", label: "Big cores only (cpu4-7)" },
+    { data: "little", label: "Little cores only (cpu0-3)" },
 ];
 const fexKnobs = [
     { key: "TSOEnabled", label: "TSO Enabled" },
@@ -964,6 +1108,19 @@ function Compatibility({ config, setConfig }) {
         await migrateWindowsCompatTool(config.installedGames.map((installed) => installed.appid), oldTool, name);
         persistHandledGames();
     };
+    // Not a separate stored field - inferred from which default Proton is
+    // selected, since that's what actually drives behavior. Anything other
+    // than our own bundled ARM64 build counts as "x86_64 mode" for this
+    // switch's purposes, even if the user picked a specific tool by hand via
+    // "Default Proton" below rather than through this switch.
+    const compatMode = globalTool === DEFAULT_WINDOWS_COMPAT_TOOL ? "arm64" : "x86_64";
+    const onSelectCompatMode = async (choice) => {
+        const mode = String(choice);
+        if (mode === compatMode)
+            return;
+        patchSettings({ thunks: mode === "arm64" ? ARM64_MODE_THUNKS : X86_64_MODE_THUNKS });
+        await onSelectGlobalDefault(mode === "arm64" ? DEFAULT_WINDOWS_COMPAT_TOOL : DEFAULT_X86_64_COMPAT_TOOL);
+    };
     const selectableTools = new Map();
     for (const tool of [...perGameTools, ...compatTools])
         selectableTools.set(tool.id, tool);
@@ -1017,12 +1174,12 @@ function Compatibility({ config, setConfig }) {
     const setKnob = (key, on) => patchSettings({ fexProfile: "custom", fexConfig: { ...fexConfig, [key]: on ? "1" : "0" } });
     const thunks = values.thunks || {};
     const setThunk = (module, on) => patchSettings({ thunks: { ...thunks, [module]: on } });
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "EDIT GAME PROFILE", children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: "Compatibility changes apply on next launch" })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "PROFILE SETTINGS", children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Default Proton", value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: "Apply to New Games", checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "EDIT GAME PROFILE", children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: "Compatibility changes apply on next launch" })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "PROFILE SETTINGS", children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Compatibility Mode", value: compatMode, options: compatModeOptions, onChange: onSelectCompatMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Default Proton", value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: "Apply to New Games", checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
                                     setAutoApplyCompat(enabled);
                                     patchSettings({ autoApplyCompat: enabled });
-                                } }), SP_JSX.jsx(SelectEdit, { label: "Game Resolution", value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution })] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Compatibility Tool", value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { label: "Game Resolution", value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: "Status", description: resolutionMessage }) : null, SP_JSX.jsx(SelectEdit, { label: "FEX Preset", value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
+                                } }), SP_JSX.jsx(SelectEdit, { label: "Game Resolution", value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), SP_JSX.jsx(DFL.ToggleField, { label: "Performance Overlay", description: "FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart", checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) })] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Compatibility Tool", value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { label: "Game Resolution", value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: "Status", description: resolutionMessage }) : null, SP_JSX.jsx(SelectEdit, { label: "FEX Preset", value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                         ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
-                        : null] }), SP_JSX.jsxs(DFL.PanelSection, { title: "ADVANCED", children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? "Hide Host Thunks" : "Host Thunks" }), showThunks
+                        : null] }), SP_JSX.jsxs(DFL.PanelSection, { title: "ADVANCED", children: [SP_JSX.jsx(SelectEdit, { label: "CPU Cores", value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? "Hide Host Thunks" : "Host Thunks" }), showThunks
                         ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
                         : null] }), !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: "Reset to Default" }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? "Resetting..." : "Reset All Games" }) }))] }));
 }
@@ -1033,20 +1190,6 @@ function Compatibility({ config, setConfig }) {
 // which single connector the whole game-mode session targets, not an
 // extend/mirror choice.
 const INTERNAL = "__internal__";
-// A display whose EDID advertises only portrait modes (confirmed live on
-// the official Retroid Screen Add-on: exactly one mode, 1080x1920) can
-// never look right in game mode. Confirmed live, not just from gamescope's
-// --help text: made DP-1 the genuinely active output (DSI-1 disabled) and
-// tried --force-orientation both directions (right, then left) - neither
-// changed anything on the actual panel. The flag only ever affects the
-// internal panel, even when it isn't the one gamescope is driving, so a
-// landscape-composited session on a portrait-only external output comes
-// out sideways with no way to correct it.
-const isPortraitOnly = (c) => c.modes.length > 0 &&
-    c.modes.every((mode) => {
-        const [w, h] = mode.split("x").map(Number);
-        return w > 0 && h > 0 && w < h;
-    });
 function Display() {
     const [state, setState] = SP_REACT.useState(null);
     const [loadMessage, setLoadMessage] = SP_REACT.useState("Loading");
@@ -1067,11 +1210,7 @@ function Display() {
         { data: INTERNAL, label: "Internal Screen" },
         ...externals.map((c) => ({
             data: c.connector,
-            label: !c.connected
-                ? `${c.connector} (disconnected)`
-                : isPortraitOnly(c)
-                    ? `${c.connector} (portrait-only, unsupported)`
-                    : c.connector,
+            label: !c.connected ? `${c.connector} (disconnected)` : c.connector,
         })),
     ];
     const activeExternal = externals.find((c) => c.connector === state.connector);
@@ -1096,10 +1235,6 @@ function Display() {
             return;
         }
         const target = externals.find((c) => c.connector === connector);
-        if (target && isPortraitOnly(target)) {
-            setErrorMessage(`${connector} only reports a portrait mode, and gamescope can't rotate an external display - game mode would show sideways. Staying on the internal screen.`);
-            return;
-        }
         const previous = state.remembered[connector];
         const [w, h] = (target?.modes[0] || "1920x1080").split("x").map(Number);
         persist({
@@ -1131,6 +1266,701 @@ function Display() {
                             .catch((error) => setErrorMessage(String(error)))
                             .finally(() => setRestarting(false));
                     }, children: "Apply & Restart Game Mode" }) })] }));
+}
+
+// RRGGBB hex <-> RGB <-> HSB conversions shared by every color picker in
+// the Lighting tab (base color, flash colors, duotone A/B).
+function hexToRgb(hex) {
+    const clean = /^[0-9A-Fa-f]{6}$/.test(hex) ? hex : "0050FF";
+    return [parseInt(clean.slice(0, 2), 16), parseInt(clean.slice(2, 4), 16), parseInt(clean.slice(4, 6), 16)];
+}
+function rgbToHex(r, g, b) {
+    const clamp = (n) => Math.max(0, Math.min(255, Math.round(n)));
+    return [clamp(r), clamp(g), clamp(b)].map((n) => n.toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+// h: 0-360, s/v: 0-100 (percent) - the ranges people actually think in when
+// picking a color, unlike 0-255 RGB channels that don't map to anything
+// intuitive (hue, how saturated, how bright).
+function rgbToHsb(r, g, b) {
+    const rn = r / 255;
+    const gn = g / 255;
+    const bn = b / 255;
+    const max = Math.max(rn, gn, bn);
+    const min = Math.min(rn, gn, bn);
+    const delta = max - min;
+    let h = 0;
+    if (delta !== 0) {
+        if (max === rn)
+            h = 60 * (((gn - bn) / delta) % 6);
+        else if (max === gn)
+            h = 60 * ((bn - rn) / delta + 2);
+        else
+            h = 60 * ((rn - gn) / delta + 4);
+    }
+    if (h < 0)
+        h += 360;
+    const s = max === 0 ? 0 : delta / max;
+    const v = max;
+    return [h, s * 100, v * 100];
+}
+function hsbToRgb(h, s, v) {
+    const hn = ((h % 360) + 360) % 360;
+    const sn = Math.max(0, Math.min(100, s)) / 100;
+    const vn = Math.max(0, Math.min(100, v)) / 100;
+    const c = vn * sn;
+    const x = c * (1 - Math.abs(((hn / 60) % 2) - 1));
+    const m = vn - c;
+    let [r1, g1, b1] = [0, 0, 0];
+    if (hn < 60)
+        [r1, g1, b1] = [c, x, 0];
+    else if (hn < 120)
+        [r1, g1, b1] = [x, c, 0];
+    else if (hn < 180)
+        [r1, g1, b1] = [0, c, x];
+    else if (hn < 240)
+        [r1, g1, b1] = [0, x, c];
+    else if (hn < 300)
+        [r1, g1, b1] = [x, 0, c];
+    else
+        [r1, g1, b1] = [c, 0, x];
+    return [(r1 + m) * 255, (g1 + m) * 255, (b1 + m) * 255];
+}
+function hexToHsb(hex) {
+    const [r, g, b] = hexToRgb(hex);
+    return rgbToHsb(r, g, b);
+}
+function hsbToHex(h, s, v) {
+    const [r, g, b] = hsbToRgb(h, s, v);
+    return rgbToHex(r, g, b);
+}
+
+// Photoshop-style graphical color picker: a saturation/brightness square
+// (drag anywhere to pick both at once) plus a separate hue strip below it,
+// replacing the old plain R/G/B sliders. Used for every color picker in the
+// Lighting tab (base color, flash colors, duotone A/B) - the swatch+hex
+// preview up top gives an at-a-glance readout to go with it.
+const SV_WIDTH = 252;
+const SV_HEIGHT = 140;
+const HUE_HEIGHT = 18;
+const CURSOR_RADIUS = 6;
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+// Position within an element's own box, clamped to [0, size] on each axis -
+// shared by both the SV square and the hue strip's pointer handlers.
+function pointerOffset(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+        x: clamp(event.clientX - rect.left, 0, rect.width),
+        y: clamp(event.clientY - rect.top, 0, rect.height),
+    };
+}
+function ColorPicker({ label, hex, onChange }) {
+    const [h, s, v] = hexToHsb(hex);
+    const svCanvasRef = SP_REACT.useRef(null);
+    const hueCanvasRef = SP_REACT.useRef(null);
+    // The SV square's own gradient depends on the current hue (it's a
+    // gradient of "this hue" from white/black to fully saturated/bright), so
+    // it has to redraw whenever h changes - the hue strip itself is the same
+    // full rainbow regardless of the current color, so it only draws once.
+    SP_REACT.useEffect(() => {
+        const canvas = svCanvasRef.current;
+        const ctx = canvas?.getContext("2d");
+        if (!canvas || !ctx)
+            return;
+        const [r, g, b] = hsbToRgb(h, 100, 100);
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillRect(0, 0, SV_WIDTH, SV_HEIGHT);
+        // Left (white, s=0) -> right (pure hue, s=100).
+        const satGradient = ctx.createLinearGradient(0, 0, SV_WIDTH, 0);
+        satGradient.addColorStop(0, "rgba(255,255,255,1)");
+        satGradient.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = satGradient;
+        ctx.fillRect(0, 0, SV_WIDTH, SV_HEIGHT);
+        // Top (v=100) -> bottom (black, v=0).
+        const valGradient = ctx.createLinearGradient(0, 0, 0, SV_HEIGHT);
+        valGradient.addColorStop(0, "rgba(0,0,0,0)");
+        valGradient.addColorStop(1, "rgba(0,0,0,1)");
+        ctx.fillStyle = valGradient;
+        ctx.fillRect(0, 0, SV_WIDTH, SV_HEIGHT);
+    }, [h]);
+    SP_REACT.useEffect(() => {
+        const canvas = hueCanvasRef.current;
+        const ctx = canvas?.getContext("2d");
+        if (!canvas || !ctx)
+            return;
+        const gradient = ctx.createLinearGradient(0, 0, SV_WIDTH, 0);
+        for (const stop of [0, 60, 120, 180, 240, 300, 360]) {
+            const [r, g, b] = hsbToRgb(stop, 100, 100);
+            gradient.addColorStop(stop / 360, `rgb(${r}, ${g}, ${b})`);
+        }
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, SV_WIDTH, HUE_HEIGHT);
+    }, []);
+    const handleSvPointer = SP_REACT.useCallback((event) => {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        const { x, y } = pointerOffset(event);
+        const nextS = (x / SV_WIDTH) * 100;
+        const nextV = 100 - (y / SV_HEIGHT) * 100;
+        onChange(hsbToHex(h, nextS, nextV));
+    }, [h, onChange]);
+    const handleHuePointer = SP_REACT.useCallback((event) => {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        const { x } = pointerOffset(event);
+        // 359.999 rather than 360 - hue wraps, and 360 would round-trip to the
+        // same red as 0 anyway, so clamping there just avoids an off-by-one at
+        // the strip's rightmost pixel.
+        const nextH = clamp((x / SV_WIDTH) * 360, 0, 359.999);
+        onChange(hsbToHex(nextH, s, v));
+    }, [s, v, onChange]);
+    const svCursorX = clamp((s / 100) * SV_WIDTH, CURSOR_RADIUS, SV_WIDTH - CURSOR_RADIUS);
+    const svCursorY = clamp((1 - v / 100) * SV_HEIGHT, CURSOR_RADIUS, SV_HEIGHT - CURSOR_RADIUS);
+    const hueCursorX = clamp((h / 360) * SV_WIDTH, 0, SV_WIDTH);
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-preview-row", children: [label !== undefined && SP_JSX.jsx("span", { className: "nebel-color-preview-label", children: label }), SP_JSX.jsx("div", { className: "nebel-color-swatch", style: { backgroundColor: `#${hex}` } }), SP_JSX.jsxs("span", { className: "nebel-color-preview-hex", children: ["#", hex] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-picker", children: [SP_JSX.jsxs("div", { className: "nebel-color-sv-wrap", style: { width: SV_WIDTH, height: SV_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: svCanvasRef, width: SV_WIDTH, height: SV_HEIGHT, className: "nebel-color-sv-canvas", onPointerDown: handleSvPointer, onPointerMove: (event) => event.buttons === 1 && handleSvPointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-cursor", style: { left: svCursorX, top: svCursorY, backgroundColor: `#${hex}` } })] }), SP_JSX.jsxs("div", { className: "nebel-color-hue-wrap", style: { width: SV_WIDTH, height: HUE_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: hueCanvasRef, width: SV_WIDTH, height: HUE_HEIGHT, className: "nebel-color-hue-canvas", onPointerDown: handleHuePointer, onPointerMove: (event) => event.buttons === 1 && handleHuePointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-hue-cursor", style: { left: hueCursorX } })] })] }) })] }));
+}
+
+// Small animated preview of the selected stick-lighting mode: four dots
+// arranged like the real HTR3212 LED ring (N/E/S/W, matching the actual
+// 4-zone-per-stick hardware layout), animated with a simplified version of
+// each mode's real algorithm. Not a pixel-exact simulation of the backend
+// (ambilight in particular can't be, since it mirrors the screen) - just
+// enough motion to tell the modes apart at a glance before committing to one,
+// same job Steam's own settings previews do.
+const SIZE = 96;
+const CENTER = SIZE / 2;
+const DOT_RADIUS = 10;
+const RING_RADIUS = SIZE / 2 - DOT_RADIUS - 4;
+// Two dots on top, two on the bottom - matches the physical HTR3212 ring
+// layout (zones 1=SW, 2=NW, 3=NE, 4=SE) when the stick is viewed from above.
+// Ordered clockwise: NE (top-right), SE (bottom-right), SW (bottom-left), NW (top-left).
+const ZONE_ANGLES = [-45, 45, 135, 225];
+function rgbCss([r, g, b], alpha = 1) {
+    return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`;
+}
+function zonePosition(angleDeg) {
+    const rad = (angleDeg * Math.PI) / 180;
+    return { x: CENTER + RING_RADIUS * Math.cos(rad), y: CENTER + RING_RADIUS * Math.sin(rad) };
+}
+function ModePreview({ mode, color, duotoneColorA, duotoneColorB }) {
+    const canvasRef = SP_REACT.useRef(null);
+    SP_REACT.useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext("2d");
+        if (!canvas || !ctx)
+            return;
+        const base = hexToRgb(color);
+        const colorA = hexToRgb(duotoneColorA);
+        const colorB = hexToRgb(duotoneColorB);
+        let raf = 0;
+        const start = performance.now();
+        // A handful of fixed pseudo-random phases so "starlight" twinkles look
+        // scattered instead of perfectly synchronized - not meant to match the
+        // backend's actual RNG, just to avoid an obviously-fake unison blink.
+        const twinklePhases = [0.15, 0.6, 0.35, 0.85];
+        function zoneColor(i, t) {
+            switch (mode) {
+                case "static":
+                    return base;
+                case "breathing": {
+                    const level = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 2.2));
+                    return [base[0] * level, base[1] * level, base[2] * level];
+                }
+                case "rainbow": {
+                    const [r, g, b] = hsbToRgb((t * 70) % 360, 100, 100);
+                    return [r, g, b];
+                }
+                case "wave": {
+                    const [r, g, b] = hsbToRgb((t * 70 + i * 90) % 360, 100, 100);
+                    return [r, g, b];
+                }
+                case "starlight": {
+                    const phase = twinklePhases[i];
+                    const level = 0.15 + 0.85 * Math.max(0, Math.sin((t * 1.4 + phase * 8) % (Math.PI * 2)));
+                    return [base[0] * level, base[1] * level, base[2] * level];
+                }
+                case "spin": {
+                    const litIndex = Math.floor((t * 1.6) % 4);
+                    const dist = Math.min((i - litIndex + 4) % 4, (litIndex - i + 4) % 4);
+                    const level = dist === 0 ? 1 : dist === 1 ? 0.25 : 0.05;
+                    return [base[0] * level, base[1] * level, base[2] * level];
+                }
+                case "reactive": {
+                    // Simplified stand-in for a button flash: a soft pulse every ~1.6s
+                    // rather than a real input event, since there's nothing to react to here.
+                    const pulse = Math.max(0, Math.sin(t * 1.2 - Math.PI / 2));
+                    const level = 0.2 + 0.8 * Math.pow(pulse, 3);
+                    return [base[0] * level, base[1] * level, base[2] * level];
+                }
+                case "multidot": {
+                    const litIndex = Math.floor((t * 2.4) % 4);
+                    const trailIndex = (litIndex + 3) % 4;
+                    if (i === litIndex)
+                        return base;
+                    if (i === trailIndex)
+                        return [base[0] * 0.35, base[1] * 0.35, base[2] * 0.35];
+                    return [0, 0, 0];
+                }
+                case "ambilight": {
+                    // Real mode mirrors the screen - approximated here with a slow,
+                    // generic hue drift so it still reads as "alive" rather than static.
+                    const [r, g, b] = hsbToRgb((t * 25 + i * 30) % 360, 70, 90);
+                    return [r, g, b];
+                }
+                case "duotone": {
+                    const level = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 1.8));
+                    const [pr, pg, pb] = i % 2 === 0 ? colorA : colorB;
+                    return i % 2 === 0
+                        ? [pr, pg, pb]
+                        : [pr * level, pg * level, pb * level];
+                }
+                default:
+                    return base;
+            }
+        }
+        function draw(now) {
+            const t = (now - start) / 1000;
+            ctx.clearRect(0, 0, SIZE, SIZE);
+            // Faint ring guide so empty/dim zones still read as "part of the stick".
+            ctx.strokeStyle = "rgba(255,255,255,0.08)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(CENTER, CENTER, RING_RADIUS, 0, Math.PI * 2);
+            ctx.stroke();
+            ZONE_ANGLES.forEach((angle, i) => {
+                const { x, y } = zonePosition(angle);
+                const rgb = zoneColor(i, t);
+                ctx.beginPath();
+                ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = rgbCss(rgb);
+                ctx.shadowColor = rgbCss(rgb, 0.9);
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+            raf = requestAnimationFrame(draw);
+        }
+        raf = requestAnimationFrame(draw);
+        return () => cancelAnimationFrame(raf);
+    }, [mode, color, duotoneColorA, duotoneColorB]);
+    return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "nebel-mode-preview-wrap", children: SP_JSX.jsx("canvas", { ref: canvasRef, width: SIZE, height: SIZE, className: "nebel-mode-preview-canvas" }) }) }));
+}
+
+const PRESET_COLORS = [
+    { label: "Blue", value: "0050FF" },
+    { label: "Cyan", value: "00E5FF" },
+    { label: "Purple", value: "8000FF" },
+    { label: "Pink", value: "FF0080" },
+    { label: "Red", value: "FF0000" },
+    { label: "Orange", value: "FF8000" },
+    // Matches stick-led-color's DEFAULT_DUOTONE_COLOR_B - pure gold (FFD700)
+    // read as noticeably greenish on this LED.
+    { label: "Yellow", value: "FFAA00" },
+    { label: "Green", value: "00FF00" },
+    { label: "White", value: "FFFFFF" },
+];
+function patchSide(stickLed, side, patch) {
+    return { ...stickLed, sides: { ...stickLed.sides, [side]: { ...stickLed.sides[side], ...patch } } };
+}
+const SIDE_OPTIONS = [
+    { data: "l", label: "Left Stick" },
+    { data: "r", label: "Right Stick" },
+];
+const MODE_OPTIONS = [
+    { data: "static", label: "Static" },
+    { data: "breathing", label: "Breathing" },
+    { data: "rainbow", label: "Rainbow" },
+    { data: "wave", label: "Wave (rainbow spread around the ring)" },
+    { data: "starlight", label: "Starlight (random zone twinkle)" },
+    { data: "spin", label: "Spin" },
+    { data: "reactive", label: "Reactive (sticks + buttons)" },
+    { data: "multidot", label: "Multidot (RGB chase)" },
+    { data: "ambilight", label: "Ambilight (matches screen)" },
+    { data: "duotone", label: "Duotone (two-color split)" },
+];
+const COLOR_VISIBLE_MODES = new Set(["static", "breathing", "spin"]);
+const COLOR_SOURCE_OPTIONS = [
+    { data: "static", label: "Custom color" },
+    { data: "battery", label: "Battery level" },
+    { data: "random", label: "Random (unpredictable color shift)" },
+    { data: "shimmer", label: "Shimmer (pale/cool to rich/warm)" },
+];
+const DUOTONE_ORIENTATION_OPTIONS = [
+    { data: "horizontal", label: "Horizontal" },
+    { data: "vertical", label: "Vertical" },
+    { data: "diagonal", label: "Diagonal" },
+];
+const FLASH_BUTTON_OPTIONS = [
+    { data: "south", label: "South" },
+    { data: "east", label: "East" },
+    { data: "north", label: "North" },
+    { data: "west", label: "West" },
+    { data: "l1", label: "L1" },
+    { data: "r1", label: "R1" },
+    { data: "l3", label: "L3 (left stick click)" },
+    { data: "r3", label: "R3 (right stick click)" },
+    { data: "l4", label: "L4 (left paddle)" },
+    { data: "r4", label: "R4 (right paddle)" },
+    { data: "start", label: "Start" },
+    { data: "select", label: "Select" },
+    { data: "dpad_up", label: "D-Pad Up" },
+    { data: "dpad_down", label: "D-Pad Down" },
+    { data: "dpad_left", label: "D-Pad Left" },
+    { data: "dpad_right", label: "D-Pad Right" },
+    { data: "other", label: "Other buttons" },
+];
+const DEFAULT_FLASH_COLOR = "FFFFFF";
+const PARAM_UI = {
+    speed: {
+        label: "Speed",
+        min: 25,
+        max: 300,
+        step: 25,
+        modes: new Set(["breathing", "rainbow", "spin", "multidot", "ambilight", "duotone", "wave", "starlight"]),
+        toBackend: (v) => v / 100,
+        fromBackend: (v) => Math.round(v * 100),
+    },
+    intensity: {
+        label: "Intensity (min brightness)",
+        min: 0,
+        max: 50,
+        step: 5,
+        modes: new Set(["breathing", "spin", "multidot", "reactive", "duotone", "starlight"]),
+        toBackend: (v) => v / 100,
+        fromBackend: (v) => Math.round(v * 100),
+    },
+    size: {
+        label: "Size",
+        min: 1,
+        max: 3,
+        step: 1,
+        modes: new Set(["spin", "multidot", "reactive"]),
+        toBackend: (v) => v,
+        fromBackend: (v) => v,
+    },
+};
+const PARAM_DEFAULTS = { speed: 1.0, intensity: 0.15, size: 2 };
+function Lighting({ config, setConfig }) {
+    const [colorsExpanded, setColorsExpanded] = SP_REACT.useState(false);
+    const [customColorExpanded, setCustomColorExpanded] = SP_REACT.useState(false);
+    const [flashExpanded, setFlashExpanded] = SP_REACT.useState(false);
+    const [flashButton, setFlashButton] = SP_REACT.useState("south");
+    const [selectedSide, setSelectedSide] = SP_REACT.useState("l");
+    const [separate, setSeparate] = SP_REACT.useState(false);
+    const stickLed = config.stickLed;
+    const sideState = stickLed?.sides?.[selectedSide];
+    const mode = sideState?.mode || "static";
+    // When not "separate", every stick-lighting action targets both sticks at
+    // once (mirrored) so the panel behaves like a single combined control -
+    // the simpler default most people expect. Ticking "separate" scopes
+    // everything below to just the selected stick, matching the underlying
+    // backend state, which is always independent per stick regardless of
+    // this toggle.
+    const targetSides = separate ? [selectedSide] : ["l", "r"];
+    const setStickLedMode$1 = async (nextMode) => {
+        if (!stickLed)
+            return;
+        const sides = targetSides;
+        const previous = sides.map((s) => stickLed.sides[s].mode);
+        setConfig((current) => {
+            if (!current)
+                return current;
+            let sl = current.stickLed;
+            for (const s of sides)
+                sl = patchSide(sl, s, { mode: nextMode });
+            return { ...current, stickLed: sl };
+        });
+        try {
+            let applied = stickLed;
+            for (const s of sides)
+                applied = await setStickLedMode(s, nextMode);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => {
+                if (!current)
+                    return current;
+                let sl = current.stickLed;
+                sides.forEach((s, i) => { sl = patchSide(sl, s, { mode: previous[i] }); });
+                return { ...current, stickLed: sl };
+            });
+        }
+    };
+    const setStickLedScreenLink$1 = async (value) => {
+        if (!stickLed)
+            return;
+        const previous = stickLed.screenLink;
+        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, screenLink: value } } : current));
+        try {
+            const applied = await setStickLedScreenLink(value);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, screenLink: previous } } : current));
+        }
+    };
+    const setStickLedEnabled$1 = async (value) => {
+        if (!stickLed)
+            return;
+        const previous = stickLed.enabled;
+        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, enabled: value } } : current));
+        try {
+            const applied = await setStickLedEnabled(value);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, enabled: previous } } : current));
+        }
+    };
+    const setStickLedMaxBrightness$1 = async (value) => {
+        if (!stickLed)
+            return;
+        const previous = stickLed.maxBrightness;
+        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, maxBrightness: value } } : current));
+        try {
+            const applied = await setStickLedMaxBrightness(value);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, maxBrightness: previous } } : current));
+        }
+    };
+    const setStickLedColor$1 = async (hex) => {
+        if (!stickLed || !sideState)
+            return;
+        const sides = targetSides;
+        const previous = sides.map((s) => stickLed.sides[s].color);
+        setConfig((current) => {
+            if (!current)
+                return current;
+            let sl = current.stickLed;
+            for (const s of sides)
+                sl = patchSide(sl, s, { mode: "static", color: hex });
+            return { ...current, stickLed: sl };
+        });
+        try {
+            let applied = stickLed;
+            for (const s of sides)
+                applied = await setStickLedColor(s, hex);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => {
+                if (!current)
+                    return current;
+                let sl = current.stickLed;
+                sides.forEach((s, i) => { sl = patchSide(sl, s, { color: previous[i] }); });
+                return { ...current, stickLed: sl };
+            });
+        }
+    };
+    const setStickLedFlashColor$1 = async (hex) => {
+        if (!stickLed)
+            return;
+        const previous = stickLed.flashColors[flashButton];
+        setConfig((current) => current
+            ? { ...current, stickLed: { ...current.stickLed, flashColors: { ...current.stickLed.flashColors, [flashButton]: hex } } }
+            : current);
+        try {
+            const applied = await setStickLedFlashColor(flashButton, hex);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => current
+                ? { ...current, stickLed: { ...current.stickLed, flashColors: { ...current.stickLed.flashColors, [flashButton]: previous } } }
+                : current);
+        }
+    };
+    const setStickLedParam$1 = async (param, backendValue) => {
+        if (!stickLed || !sideState)
+            return;
+        const effectiveMode = mode;
+        const key = `${param}_${effectiveMode}`;
+        const sides = targetSides;
+        const previous = sides.map((s) => stickLed.sides[s].params[key]);
+        setConfig((current) => {
+            if (!current)
+                return current;
+            let sl = current.stickLed;
+            for (const s of sides)
+                sl = patchSide(sl, s, { params: { ...sl.sides[s].params, [key]: backendValue } });
+            return { ...current, stickLed: sl };
+        });
+        try {
+            let applied = stickLed;
+            for (const s of sides)
+                applied = await setStickLedParam(s, param, effectiveMode, backendValue);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => {
+                if (!current)
+                    return current;
+                let sl = current.stickLed;
+                sides.forEach((s, i) => { sl = patchSide(sl, s, { params: { ...sl.sides[s].params, [key]: previous[i] } }); });
+                return { ...current, stickLed: sl };
+            });
+        }
+    };
+    const setStickLedDuotoneColor$1 = async (slot, hex) => {
+        if (!stickLed || !sideState)
+            return;
+        const field = slot === "a" ? "duotoneColorA" : "duotoneColorB";
+        const sides = targetSides;
+        const previous = sides.map((s) => stickLed.sides[s][field]);
+        setConfig((current) => {
+            if (!current)
+                return current;
+            let sl = current.stickLed;
+            for (const s of sides)
+                sl = patchSide(sl, s, { [field]: hex });
+            return { ...current, stickLed: sl };
+        });
+        try {
+            let applied = stickLed;
+            for (const s of sides)
+                applied = await setStickLedDuotoneColor(s, slot, hex);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => {
+                if (!current)
+                    return current;
+                let sl = current.stickLed;
+                sides.forEach((s, i) => { sl = patchSide(sl, s, { [field]: previous[i] }); });
+                return { ...current, stickLed: sl };
+            });
+        }
+    };
+    const setStickLedDuotoneOrientation$1 = async (orientation) => {
+        if (!stickLed || !sideState)
+            return;
+        const sides = targetSides;
+        const previous = sides.map((s) => stickLed.sides[s].duotoneOrientation);
+        setConfig((current) => {
+            if (!current)
+                return current;
+            let sl = current.stickLed;
+            for (const s of sides)
+                sl = patchSide(sl, s, { duotoneOrientation: orientation });
+            return { ...current, stickLed: sl };
+        });
+        try {
+            let applied = stickLed;
+            for (const s of sides)
+                applied = await setStickLedDuotoneOrientation(s, orientation);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => {
+                if (!current)
+                    return current;
+                let sl = current.stickLed;
+                sides.forEach((s, i) => { sl = patchSide(sl, s, { duotoneOrientation: previous[i] }); });
+                return { ...current, stickLed: sl };
+            });
+        }
+    };
+    const setStickLedColorSource$1 = async (source) => {
+        if (!stickLed || !sideState)
+            return;
+        const sides = targetSides;
+        const previous = sides.map((s) => stickLed.sides[s].colorSource);
+        setConfig((current) => {
+            if (!current)
+                return current;
+            let sl = current.stickLed;
+            for (const s of sides)
+                sl = patchSide(sl, s, { colorSource: source });
+            return { ...current, stickLed: sl };
+        });
+        try {
+            let applied = stickLed;
+            for (const s of sides)
+                applied = await setStickLedColorSource(s, source);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => {
+                if (!current)
+                    return current;
+                let sl = current.stickLed;
+                sides.forEach((s, i) => { sl = patchSide(sl, s, { colorSource: previous[i] }); });
+                return { ...current, stickLed: sl };
+            });
+        }
+    };
+    const setStickLedChargingIndicator$1 = async (value) => {
+        if (!stickLed || !sideState)
+            return;
+        const sides = targetSides;
+        const previous = sides.map((s) => stickLed.sides[s].chargingIndicator);
+        setConfig((current) => {
+            if (!current)
+                return current;
+            let sl = current.stickLed;
+            for (const s of sides)
+                sl = patchSide(sl, s, { chargingIndicator: value });
+            return { ...current, stickLed: sl };
+        });
+        try {
+            let applied = stickLed;
+            for (const s of sides)
+                applied = await setStickLedChargingIndicator(s, value);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => {
+                if (!current)
+                    return current;
+                let sl = current.stickLed;
+                sides.forEach((s, i) => { sl = patchSide(sl, s, { chargingIndicator: previous[i] }); });
+                return { ...current, stickLed: sl };
+            });
+        }
+    };
+    const makeToggleSetter = (field, apply) => async (value) => {
+        if (!stickLed || !sideState)
+            return;
+        const sides = targetSides;
+        const previous = sides.map((s) => stickLed.sides[s][field]);
+        setConfig((current) => {
+            if (!current)
+                return current;
+            let sl = current.stickLed;
+            for (const s of sides)
+                sl = patchSide(sl, s, { [field]: value });
+            return { ...current, stickLed: sl };
+        });
+        try {
+            let applied = stickLed;
+            for (const s of sides)
+                applied = await apply(s, value);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => {
+                if (!current)
+                    return current;
+                let sl = current.stickLed;
+                sides.forEach((s, i) => { sl = patchSide(sl, s, { [field]: previous[i] }); });
+                return { ...current, stickLed: sl };
+            });
+        }
+    };
+    const setStickLedChase$1 = makeToggleSetter("chase", setStickLedChase);
+    const setStickLedCompass$1 = makeToggleSetter("compass", setStickLedCompass);
+    const setStickLedSeesaw$1 = makeToggleSetter("seesaw", setStickLedSeesaw);
+    const setStickLedFlip$1 = makeToggleSetter("flip", setStickLedFlip);
+    if (!stickLed?.supported || !sideState) {
+        return (SP_JSX.jsx(DFL.PanelSection, { title: "Stick Lighting", children: SP_JSX.jsx(DFL.Field, { label: "No addressable stick lighting hardware detected on this device." }) }));
+    }
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Stick Lighting", children: [SP_JSX.jsx(ToggleRow, { label: "Enable", description: "Turn both sticks off entirely, without losing the mode/color settings below", value: stickLed.enabled, onChange: setStickLedEnabled$1 }), !stickLed.enabled && SP_JSX.jsx(DFL.Field, { label: "Sticks are off - settings below are kept, not applied." }), stickLed.enabled && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: "Follow screen brightness", description: "Dim both sticks along with the display backlight", value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: "Max Brightness", value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => setStickLedMaxBrightness$1(value / 100) })), SP_JSX.jsx(ToggleRow, { label: "Configure each stick separately", description: "Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.", value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: "Stick", value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) })), SP_JSX.jsx(SelectEdit, { label: "Mode", value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), SP_JSX.jsx(ModePreview, { mode: mode, color: sideState.color, duotoneColorA: sideState.duotoneColorA, duotoneColorB: sideState.duotoneColorB }), mode === "spin" && (SP_JSX.jsx(ToggleRow, { label: "Soft trail", description: "Trailing fade (uses Size below) instead of a single hard-edged dot", value: !!sideState.chase, onChange: setStickLedChase$1 })), mode === "reactive" && (SP_JSX.jsx(ToggleRow, { label: "Compass", description: "Point the lit zone(s) at the stick's push direction instead of lighting evenly", value: !!sideState.compass, onChange: setStickLedCompass$1 })), mode === "duotone" && (SP_JSX.jsx(ToggleRow, { label: "Seesaw", description: "Breathe the two color groups against each other instead of a static split", value: !!sideState.seesaw, onChange: setStickLedSeesaw$1 })), Object.entries(PARAM_UI)
+                        .filter(([, spec]) => spec.modes.has(mode))
+                        .map(([param, spec]) => {
+                        const key = `${param}_${mode}`;
+                        const raw = sideState.params[key] ?? PARAM_DEFAULTS[param];
+                        return (SP_JSX.jsx(SliderEdit, { label: spec.label, value: spec.fromBackend(raw), min: spec.min, max: spec.max, step: spec.step, onChange: (value) => setStickLedParam$1(param, spec.toBackend(value)) }, param));
+                    }), COLOR_VISIBLE_MODES.has(mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setColorsExpanded((expanded) => !expanded), children: colorsExpanded ? "Hide colors ▲" : "Colors ▼" }), colorsExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Color Source", value: sideState.colorSource || "static", options: COLOR_SOURCE_OPTIONS, onChange: setStickLedColorSource$1 }), sideState.colorSource === "battery" && (SP_JSX.jsx(ToggleRow, { label: "Charging indicator", description: "Spin a blue dot around the stick while charging", value: sideState.chargingIndicator, onChange: setStickLedChargingIndicator$1 })), sideState.colorSource !== "battery" && sideState.colorSource !== "random" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: sideState.color, onSelect: setStickLedColor$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setCustomColorExpanded((expanded) => !expanded), children: customColorExpanded ? "Hide custom color ▲" : "Custom color (advanced) ▼" }), customColorExpanded && (SP_JSX.jsx(ColorPicker, { hex: sideState.color, onChange: setStickLedColor$1 }))] }))] }))] })), mode === "reactive" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setFlashExpanded((expanded) => !expanded), children: flashExpanded ? "Hide flash colors ▲" : "Show flash colors ▼" }), flashExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Button", value: flashButton, options: FLASH_BUTTON_OPTIONS, onChange: setFlashButton }), SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onSelect: setStickLedFlashColor$1 }), SP_JSX.jsx(ColorPicker, { hex: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onChange: setStickLedFlashColor$1 })] }))] })), mode === "duotone" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Split", value: sideState.duotoneOrientation || "horizontal", options: DUOTONE_ORIENTATION_OPTIONS, onChange: setStickLedDuotoneOrientation$1 }), SP_JSX.jsx(ColorPicker, { label: "Color A", hex: sideState.duotoneColorA, onChange: (hex) => setStickLedDuotoneColor$1("a", hex) }), SP_JSX.jsx(ColorPicker, { label: "Color B", hex: sideState.duotoneColorB, onChange: (hex) => setStickLedDuotoneColor$1("b", hex) })] })), SP_JSX.jsx(ToggleRow, { label: "Flip stick ring", description: "Rotate the LED ring 180\u00B0 for stick variants wired upside-down (fixes compass/direction on some RP6 units)", value: !!sideState.flip, onChange: setStickLedFlip$1 })] }))] }));
 }
 
 const underclocks = [
@@ -1363,100 +2193,6 @@ function openCalibration() {
     DFL.showModal(SP_JSX.jsx(CalibrationModal, {}));
 }
 
-const PRESET_COLORS = [
-    { label: "Blue", value: "0050FF" },
-    { label: "Purple", value: "8000FF" },
-    { label: "Red", value: "FF0000" },
-    { label: "Green", value: "00FF00" },
-    { label: "White", value: "FFFFFF" },
-    { label: "Off", value: "000000" },
-];
-function hexToRgb(hex) {
-    const clean = /^[0-9A-Fa-f]{6}$/.test(hex) ? hex : "0050FF";
-    return [parseInt(clean.slice(0, 2), 16), parseInt(clean.slice(2, 4), 16), parseInt(clean.slice(4, 6), 16)];
-}
-function rgbToHex(r, g, b) {
-    const clamp = (n) => Math.max(0, Math.min(255, Math.round(n)));
-    return [clamp(r), clamp(g), clamp(b)].map((n) => n.toString(16).padStart(2, "0")).join("").toUpperCase();
-}
-function patchSide(stickLed, side, patch) {
-    return { ...stickLed, sides: { ...stickLed.sides, [side]: { ...stickLed.sides[side], ...patch } } };
-}
-const SIDE_OPTIONS = [
-    { data: "l", label: "Left Stick" },
-    { data: "r", label: "Right Stick" },
-];
-const MODE_OPTIONS = [
-    { data: "static", label: "Static" },
-    { data: "breathing", label: "Breathing" },
-    { data: "rainbow", label: "Rainbow" },
-    { data: "chase", label: "Chase" },
-    { data: "spin", label: "Spin" },
-    { data: "reactive", label: "Reactive (sticks + buttons)" },
-    { data: "multidot", label: "Multidot (RGB chase)" },
-    { data: "ambilight", label: "Ambilight (matches screen)" },
-    { data: "duotone", label: "Duotone (two-color split)" },
-];
-const COLOR_VISIBLE_MODES = new Set(["static", "breathing", "chase", "spin"]);
-const COLOR_SOURCE_OPTIONS = [
-    { data: "static", label: "Custom color" },
-    { data: "battery", label: "Battery level" },
-];
-const DUOTONE_ORIENTATION_OPTIONS = [
-    { data: "horizontal", label: "Horizontal" },
-    { data: "vertical", label: "Vertical" },
-    { data: "diagonal", label: "Diagonal" },
-];
-const FLASH_BUTTON_OPTIONS = [
-    { data: "south", label: "South" },
-    { data: "east", label: "East" },
-    { data: "north", label: "North" },
-    { data: "west", label: "West" },
-    { data: "l1", label: "L1" },
-    { data: "r1", label: "R1" },
-    { data: "l3", label: "L3 (left stick click)" },
-    { data: "r3", label: "R3 (right stick click)" },
-    { data: "l4", label: "L4 (left paddle)" },
-    { data: "r4", label: "R4 (right paddle)" },
-    { data: "start", label: "Start" },
-    { data: "select", label: "Select" },
-    { data: "dpad_up", label: "D-Pad Up" },
-    { data: "dpad_down", label: "D-Pad Down" },
-    { data: "dpad_left", label: "D-Pad Left" },
-    { data: "dpad_right", label: "D-Pad Right" },
-    { data: "other", label: "Other buttons" },
-];
-const DEFAULT_FLASH_COLOR = "FFFFFF";
-const PARAM_UI = {
-    speed: {
-        label: "Speed",
-        min: 25,
-        max: 300,
-        step: 25,
-        modes: new Set(["breathing", "chase", "rainbow", "spin", "multidot", "ambilight"]),
-        toBackend: (v) => v / 100,
-        fromBackend: (v) => Math.round(v * 100),
-    },
-    intensity: {
-        label: "Intensity (min brightness)",
-        min: 0,
-        max: 50,
-        step: 5,
-        modes: new Set(["breathing", "spin", "chase", "multidot", "reactive"]),
-        toBackend: (v) => v / 100,
-        fromBackend: (v) => Math.round(v * 100),
-    },
-    size: {
-        label: "Size",
-        min: 1,
-        max: 3,
-        step: 1,
-        modes: new Set(["chase", "multidot"]),
-        toBackend: (v) => v,
-        fromBackend: (v) => v,
-    },
-};
-const PARAM_DEFAULTS = { speed: 1.0, intensity: 0.15, size: 2 };
 function Settings({ config, setConfig }) {
     const setSshEnabled$1 = async (enabled) => {
         if (enabled === !!config.sshEnabled) {
@@ -1482,285 +2218,95 @@ function Settings({ config, setConfig }) {
             setConfig((current) => (current ? { ...current, controllerType: previous } : current));
         }
     };
-    const [colorsExpanded, setColorsExpanded] = SP_REACT.useState(false);
-    const [flashExpanded, setFlashExpanded] = SP_REACT.useState(false);
-    const [flashButton, setFlashButton] = SP_REACT.useState("south");
-    const [selectedSide, setSelectedSide] = SP_REACT.useState("l");
-    const [separate, setSeparate] = SP_REACT.useState(false);
-    const stickLed = config.stickLed;
-    const sideState = stickLed?.sides?.[selectedSide];
-    const mode = sideState?.mode || "static";
-    // When not "separate", every stick-lighting action targets both sticks at
-    // once (mirrored) so the panel behaves like a single combined control -
-    // the simpler default most people expect. Ticking "separate" scopes
-    // everything below to just the selected stick, matching the underlying
-    // backend state, which is always independent per stick regardless of
-    // this toggle.
-    const targetSides = separate ? [selectedSide] : ["l", "r"];
-    const setStickLedMode$1 = async (nextMode) => {
-        if (!stickLed)
+    const setSharedStorageEnabled$1 = async (enabled) => {
+        if (enabled === !!config.sharedStorageEnabled) {
             return;
-        const sides = targetSides;
-        const previous = sides.map((s) => stickLed.sides[s].mode);
-        setConfig((current) => {
-            if (!current)
-                return current;
-            let sl = current.stickLed;
-            for (const s of sides)
-                sl = patchSide(sl, s, { mode: nextMode });
-            return { ...current, stickLed: sl };
-        });
+        }
+        setConfig((current) => (current ? { ...current, sharedStorageEnabled: enabled } : current));
         try {
-            let applied = stickLed;
-            for (const s of sides)
-                applied = await setStickLedMode(s, nextMode);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+            const applied = await setSharedStorageEnabled(enabled);
+            setConfig((current) => (current ? { ...current, sharedStorageEnabled: applied } : current));
         }
         catch (error) {
-            setConfig((current) => {
-                if (!current)
-                    return current;
-                let sl = current.stickLed;
-                sides.forEach((s, i) => { sl = patchSide(sl, s, { mode: previous[i] }); });
-                return { ...current, stickLed: sl };
-            });
+            setConfig((current) => (current ? { ...current, sharedStorageEnabled: !enabled } : current));
         }
     };
-    const setStickLedScreenLink$1 = async (value) => {
-        if (!stickLed)
-            return;
-        const previous = stickLed.screenLink;
-        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, screenLink: value } } : current));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Controller", children: [SP_JSX.jsx(SelectEdit, { label: "Emulation", value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: "Launch Calibration" })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "System", children: [SP_JSX.jsx(ToggleRow, { label: "Enable SSH", value: !!config.sshEnabled, onChange: setSshEnabled$1 }), SP_JSX.jsx(ToggleRow, { label: "Mount shared storage", description: "Mount ARMADA_SHARED partition at ~/Shared", value: !!config.sharedStorageEnabled, onChange: setSharedStorageEnabled$1 }), SP_JSX.jsx(DFL.Field, { label: "OS Version", description: config.osVersion || "unknown" })] })] }));
+}
+
+function AddDeviceModal({ closeModal, onAdd }) {
+    const [deviceId, setDeviceId] = SP_REACT.useState("");
+    const [name, setName] = SP_REACT.useState("");
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const inputStyle = {
+        width: "100%",
+        padding: "10px",
+        marginBottom: "12px",
+        background: "rgba(255,255,255,0.08)",
+        border: "1px solid rgba(255,255,255,0.2)",
+        borderRadius: "4px",
+        color: "inherit",
+        fontSize: "14px",
+    };
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: "Device ID of the other console (shown on its Sync tab)" }), SP_JSX.jsx("input", { type: "text", placeholder: "XXXXXXX-XXXXXXX-...", value: deviceId, onChange: (e) => setDeviceId(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: "Name (e.g. Mini V2)", value: name, onChange: (e) => setName(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || deviceId.trim().length < 20, onClick: () => {
+                            setBusy(true);
+                            void onAdd(deviceId, name).finally(() => {
+                                setBusy(false);
+                                closeModal?.();
+                            });
+                        }, children: "Add device" }) })] }) }));
+}
+function Sync() {
+    const [state, setState] = SP_REACT.useState(null);
+    const [error, setError] = SP_REACT.useState("");
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(true);
+    SP_REACT.useEffect(() => {
+        mounted.current = true;
+        return () => {
+            mounted.current = false;
+        };
+    }, []);
+    const refresh = SP_REACT.useCallback(async () => {
         try {
-            const applied = await setStickLedScreenLink(value);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+            const next = await getSyncState();
+            if (mounted.current) {
+                setState(next);
+                setError(next.error || "");
+            }
         }
-        catch (error) {
-            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, screenLink: previous } } : current));
+        catch (e) {
+            if (mounted.current)
+                setError(String(e));
         }
-    };
-    const setStickLedColor$1 = async (hex) => {
-        if (!stickLed || !sideState)
-            return;
-        const sides = targetSides;
-        const previous = sides.map((s) => stickLed.sides[s].color);
-        setConfig((current) => {
-            if (!current)
-                return current;
-            let sl = current.stickLed;
-            for (const s of sides)
-                sl = patchSide(sl, s, { mode: "static", color: hex });
-            return { ...current, stickLed: sl };
-        });
+    }, []);
+    SP_REACT.useEffect(() => {
+        void refresh();
+        const timer = window.setInterval(() => void refresh(), 5000);
+        return () => window.clearInterval(timer);
+    }, [refresh]);
+    const run = SP_REACT.useCallback(async (action) => {
+        setBusy(true);
         try {
-            let applied = stickLed;
-            for (const s of sides)
-                applied = await setStickLedColor(s, hex);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+            const next = await action();
+            if (next && mounted.current)
+                setState(next);
         }
-        catch (error) {
-            setConfig((current) => {
-                if (!current)
-                    return current;
-                let sl = current.stickLed;
-                sides.forEach((s, i) => { sl = patchSide(sl, s, { color: previous[i] }); });
-                return { ...current, stickLed: sl };
-            });
+        catch (e) {
+            if (mounted.current)
+                setError(String(e));
         }
-    };
-    const setStickLedChannel = (channel, value) => {
-        if (!sideState)
-            return;
-        const rgb = hexToRgb(sideState.color);
-        rgb[channel] = value;
-        void setStickLedColor$1(rgbToHex(rgb[0], rgb[1], rgb[2]));
-    };
-    const setStickLedFlashColor$1 = async (hex) => {
-        if (!stickLed)
-            return;
-        const previous = stickLed.flashColors[flashButton];
-        setConfig((current) => current
-            ? { ...current, stickLed: { ...current.stickLed, flashColors: { ...current.stickLed.flashColors, [flashButton]: hex } } }
-            : current);
-        try {
-            const applied = await setStickLedFlashColor(flashButton, hex);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        finally {
+            if (mounted.current)
+                setBusy(false);
         }
-        catch (error) {
-            setConfig((current) => current
-                ? { ...current, stickLed: { ...current.stickLed, flashColors: { ...current.stickLed.flashColors, [flashButton]: previous } } }
-                : current);
-        }
-    };
-    const setFlashChannel = (channel, value) => {
-        if (!stickLed)
-            return;
-        const rgb = hexToRgb(stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR);
-        rgb[channel] = value;
-        void setStickLedFlashColor$1(rgbToHex(rgb[0], rgb[1], rgb[2]));
-    };
-    const setStickLedParam$1 = async (param, backendValue) => {
-        if (!stickLed || !sideState)
-            return;
-        const effectiveMode = mode;
-        const key = `${param}_${effectiveMode}`;
-        const sides = targetSides;
-        const previous = sides.map((s) => stickLed.sides[s].params[key]);
-        setConfig((current) => {
-            if (!current)
-                return current;
-            let sl = current.stickLed;
-            for (const s of sides)
-                sl = patchSide(sl, s, { params: { ...sl.sides[s].params, [key]: backendValue } });
-            return { ...current, stickLed: sl };
-        });
-        try {
-            let applied = stickLed;
-            for (const s of sides)
-                applied = await setStickLedParam(s, param, effectiveMode, backendValue);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-        }
-        catch (error) {
-            setConfig((current) => {
-                if (!current)
-                    return current;
-                let sl = current.stickLed;
-                sides.forEach((s, i) => { sl = patchSide(sl, s, { params: { ...sl.sides[s].params, [key]: previous[i] } }); });
-                return { ...current, stickLed: sl };
-            });
-        }
-    };
-    const setStickLedDuotoneColor$1 = async (slot, hex) => {
-        if (!stickLed || !sideState)
-            return;
-        const field = slot === "a" ? "duotoneColorA" : "duotoneColorB";
-        const sides = targetSides;
-        const previous = sides.map((s) => stickLed.sides[s][field]);
-        setConfig((current) => {
-            if (!current)
-                return current;
-            let sl = current.stickLed;
-            for (const s of sides)
-                sl = patchSide(sl, s, { [field]: hex });
-            return { ...current, stickLed: sl };
-        });
-        try {
-            let applied = stickLed;
-            for (const s of sides)
-                applied = await setStickLedDuotoneColor(s, slot, hex);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-        }
-        catch (error) {
-            setConfig((current) => {
-                if (!current)
-                    return current;
-                let sl = current.stickLed;
-                sides.forEach((s, i) => { sl = patchSide(sl, s, { [field]: previous[i] }); });
-                return { ...current, stickLed: sl };
-            });
-        }
-    };
-    const setDuotoneChannel = (slot, channel, value) => {
-        if (!sideState)
-            return;
-        const rgb = hexToRgb(slot === "a" ? sideState.duotoneColorA : sideState.duotoneColorB);
-        rgb[channel] = value;
-        void setStickLedDuotoneColor$1(slot, rgbToHex(rgb[0], rgb[1], rgb[2]));
-    };
-    const setStickLedDuotoneOrientation$1 = async (orientation) => {
-        if (!stickLed || !sideState)
-            return;
-        const sides = targetSides;
-        const previous = sides.map((s) => stickLed.sides[s].duotoneOrientation);
-        setConfig((current) => {
-            if (!current)
-                return current;
-            let sl = current.stickLed;
-            for (const s of sides)
-                sl = patchSide(sl, s, { duotoneOrientation: orientation });
-            return { ...current, stickLed: sl };
-        });
-        try {
-            let applied = stickLed;
-            for (const s of sides)
-                applied = await setStickLedDuotoneOrientation(s, orientation);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-        }
-        catch (error) {
-            setConfig((current) => {
-                if (!current)
-                    return current;
-                let sl = current.stickLed;
-                sides.forEach((s, i) => { sl = patchSide(sl, s, { duotoneOrientation: previous[i] }); });
-                return { ...current, stickLed: sl };
-            });
-        }
-    };
-    const setStickLedColorSource$1 = async (source) => {
-        if (!stickLed || !sideState)
-            return;
-        const sides = targetSides;
-        const previous = sides.map((s) => stickLed.sides[s].colorSource);
-        setConfig((current) => {
-            if (!current)
-                return current;
-            let sl = current.stickLed;
-            for (const s of sides)
-                sl = patchSide(sl, s, { colorSource: source });
-            return { ...current, stickLed: sl };
-        });
-        try {
-            let applied = stickLed;
-            for (const s of sides)
-                applied = await setStickLedColorSource(s, source);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-        }
-        catch (error) {
-            setConfig((current) => {
-                if (!current)
-                    return current;
-                let sl = current.stickLed;
-                sides.forEach((s, i) => { sl = patchSide(sl, s, { colorSource: previous[i] }); });
-                return { ...current, stickLed: sl };
-            });
-        }
-    };
-    const setStickLedChargingIndicator$1 = async (value) => {
-        if (!stickLed || !sideState)
-            return;
-        const sides = targetSides;
-        const previous = sides.map((s) => stickLed.sides[s].chargingIndicator);
-        setConfig((current) => {
-            if (!current)
-                return current;
-            let sl = current.stickLed;
-            for (const s of sides)
-                sl = patchSide(sl, s, { chargingIndicator: value });
-            return { ...current, stickLed: sl };
-        });
-        try {
-            let applied = stickLed;
-            for (const s of sides)
-                applied = await setStickLedChargingIndicator(s, value);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-        }
-        catch (error) {
-            setConfig((current) => {
-                if (!current)
-                    return current;
-                let sl = current.stickLed;
-                sides.forEach((s, i) => { sl = patchSide(sl, s, { chargingIndicator: previous[i] }); });
-                return { ...current, stickLed: sl };
-            });
-        }
-    };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Controller", children: [SP_JSX.jsx(SelectEdit, { label: "Emulation", value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: "Launch Calibration" })] }), stickLed?.supported && sideState && (SP_JSX.jsxs(DFL.PanelSection, { title: "Stick Lighting", children: [SP_JSX.jsx(ToggleRow, { label: "Configure each stick separately", description: "Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.", value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: "Stick", value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) })), SP_JSX.jsx(SelectEdit, { label: "Mode", value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), Object.entries(PARAM_UI)
-                        .filter(([, spec]) => spec.modes.has(mode))
-                        .map(([param, spec]) => {
-                        const key = `${param}_${mode}`;
-                        const raw = sideState.params[key] ?? PARAM_DEFAULTS[param];
-                        return (SP_JSX.jsx(SliderEdit, { label: spec.label, value: spec.fromBackend(raw), min: spec.min, max: spec.max, step: spec.step, onChange: (value) => setStickLedParam$1(param, spec.toBackend(value)) }, param));
-                    }), SP_JSX.jsx(ToggleRow, { label: "Follow screen brightness", description: "Dim both sticks along with the display backlight", value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), COLOR_VISIBLE_MODES.has(mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Color Source", value: sideState.colorSource || "static", options: COLOR_SOURCE_OPTIONS, onChange: setStickLedColorSource$1 }), sideState.colorSource === "battery" && (SP_JSX.jsx(ToggleRow, { label: "Charging indicator", description: "Spin a blue dot around the stick while charging", value: sideState.chargingIndicator, onChange: setStickLedChargingIndicator$1 }))] })), COLOR_VISIBLE_MODES.has(mode) && sideState.colorSource !== "battery" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setColorsExpanded((expanded) => !expanded), children: colorsExpanded ? "Hide colors ▲" : "Show colors ▼" }), colorsExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [PRESET_COLORS.map((preset) => (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setStickLedColor$1(preset.value), children: preset.label }, preset.value))), SP_JSX.jsx(SliderEdit, { label: "Red", value: hexToRgb(sideState.color)[0], min: 0, max: 255, step: 1, onChange: (value) => setStickLedChannel(0, value) }), SP_JSX.jsx(SliderEdit, { label: "Green", value: hexToRgb(sideState.color)[1], min: 0, max: 255, step: 1, onChange: (value) => setStickLedChannel(1, value) }), SP_JSX.jsx(SliderEdit, { label: "Blue", value: hexToRgb(sideState.color)[2], min: 0, max: 255, step: 1, onChange: (value) => setStickLedChannel(2, value) })] }))] })), mode === "reactive" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setFlashExpanded((expanded) => !expanded), children: flashExpanded ? "Hide flash colors ▲" : "Show flash colors ▼" }), flashExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Button", value: flashButton, options: FLASH_BUTTON_OPTIONS, onChange: setFlashButton }), PRESET_COLORS.map((preset) => (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setStickLedFlashColor$1(preset.value), children: preset.label }, preset.value))), SP_JSX.jsx(SliderEdit, { label: "Red", value: hexToRgb(stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR)[0], min: 0, max: 255, step: 1, onChange: (value) => setFlashChannel(0, value) }), SP_JSX.jsx(SliderEdit, { label: "Green", value: hexToRgb(stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR)[1], min: 0, max: 255, step: 1, onChange: (value) => setFlashChannel(1, value) }), SP_JSX.jsx(SliderEdit, { label: "Blue", value: hexToRgb(stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR)[2], min: 0, max: 255, step: 1, onChange: (value) => setFlashChannel(2, value) })] }))] })), mode === "duotone" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Split", value: sideState.duotoneOrientation || "horizontal", options: DUOTONE_ORIENTATION_OPTIONS, onChange: setStickLedDuotoneOrientation$1 }), SP_JSX.jsx(DFL.Field, { label: "Color A" }), SP_JSX.jsx(SliderEdit, { label: "A: Red", value: hexToRgb(sideState.duotoneColorA)[0], min: 0, max: 255, step: 1, onChange: (value) => setDuotoneChannel("a", 0, value) }), SP_JSX.jsx(SliderEdit, { label: "A: Green", value: hexToRgb(sideState.duotoneColorA)[1], min: 0, max: 255, step: 1, onChange: (value) => setDuotoneChannel("a", 1, value) }), SP_JSX.jsx(SliderEdit, { label: "A: Blue", value: hexToRgb(sideState.duotoneColorA)[2], min: 0, max: 255, step: 1, onChange: (value) => setDuotoneChannel("a", 2, value) }), SP_JSX.jsx(DFL.Field, { label: "Color B" }), SP_JSX.jsx(SliderEdit, { label: "B: Red", value: hexToRgb(sideState.duotoneColorB)[0], min: 0, max: 255, step: 1, onChange: (value) => setDuotoneChannel("b", 0, value) }), SP_JSX.jsx(SliderEdit, { label: "B: Green", value: hexToRgb(sideState.duotoneColorB)[1], min: 0, max: 255, step: 1, onChange: (value) => setDuotoneChannel("b", 1, value) }), SP_JSX.jsx(SliderEdit, { label: "B: Blue", value: hexToRgb(sideState.duotoneColorB)[2], min: 0, max: 255, step: 1, onChange: (value) => setDuotoneChannel("b", 2, value) })] }))] })), SP_JSX.jsxs(DFL.PanelSection, { title: "System", children: [SP_JSX.jsx(ToggleRow, { label: "Enable SSH", value: !!config.sshEnabled, onChange: setSshEnabled$1 }), SP_JSX.jsx(DFL.Field, { label: "OS Version", description: config.osVersion || "unknown" })] })] }));
+    }, []);
+    if (!state)
+        return SP_JSX.jsx(DFL.PanelSection, { title: "Sync", children: SP_JSX.jsx(DFL.Field, { label: "Loading" }) });
+    const connectedCount = state.devices.filter((d) => d.connected).length;
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Syncthing", children: [!state.installed && SP_JSX.jsx(DFL.Field, { label: "Syncthing is not installed in this OS image" }), SP_JSX.jsx(ToggleRow, { label: "Sync service", description: state.serviceActive ? "Running" : "Stopped", value: state.serviceEnabled && state.serviceActive, disabled: busy || !state.installed, onChange: (enabled) => void run(async () => { await setSyncServiceEnabled(enabled); await refresh(); }) }), state.myId && (SP_JSX.jsx(DFL.Field, { label: "This device ID", description: state.myId })), state.devices.length > 0 && (SP_JSX.jsx(DFL.Field, { label: "Status", description: `${connectedCount} of ${state.devices.length} device(s) connected` })), !!error && SP_JSX.jsx(DFL.Field, { label: "Error", description: error })] }), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: "Devices", children: [state.devices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `${device.name}${device.connected ? " (connected)" : ""}`, description: device.id.slice(0, 13) + "...", children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveDevice(device.id)), children: "Remove" }) }) }, device.id))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddDeviceModal, { onAdd: async (deviceId, name) => {
+                                    await run(() => syncAddDevice(deviceId, name));
+                                } })), children: "Add device" }) })] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: "Folders", children: [state.devices.length === 0 && (SP_JSX.jsx(DFL.Field, { label: "Add a device first - folders sync only to paired devices" })), state.folders.map((folder) => (SP_JSX.jsx(ToggleRow, { label: folder.label, description: folder.path.replace("/var/home/armada", "~"), value: folder.enabled, disabled: busy, onChange: (enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled)) }, folder.id)))] }))] }));
 }
 
 function Content() {
@@ -1842,6 +2388,8 @@ function Content() {
                     { id: "Compatibility", title: tabIcons.Compatibility, content: tabContent(SP_JSX.jsx(Compatibility, { config: config, setConfig: setConfig })) },
                     { id: "Power", title: tabIcons.Power, content: tabContent(SP_JSX.jsx(Power, { config: config, setConfig: setConfig })) },
                     { id: "Display", title: tabIcons.Display, content: tabContent(SP_JSX.jsx(Display, {})) },
+                    { id: "Lighting", title: tabIcons.Lighting, content: tabContent(SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig })) },
+                    { id: "Sync", title: tabIcons.Sync, content: tabContent(SP_JSX.jsx(Sync, {})) },
                     { id: "Advanced", title: tabIcons.Advanced, content: tabContent(SP_JSX.jsx(Settings, { config: config, setConfig: setConfig })) },
                 ] })] }));
 }
@@ -1849,14 +2397,41 @@ function Content() {
 var index = definePlugin(() => {
     let unregisterDownloadWatcher = () => { };
     const persistHandledGames = () => {
-        saveCompatApplied(handledGameAppids()).catch(() => { });
+        saveCompatApplied(handledGameAppids()).catch((error) => {
+            console.error("[Nebel Control] saveCompatApplied failed", error);
+        });
     };
     let cancelled = false;
-    const handledRequest = getCompatApplied()
-        .then((appids) => ({ appids, loaded: true }))
-        .catch(() => ({ appids: [], loaded: false }));
-    Promise.all([getConfig(), getInstalledGames(), handledRequest])
-        .then(([config, games, handled]) => {
+    const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+    // getConfig/getInstalledGames run this early in session startup, when the
+    // backend socket or Steam's own library scan can still be warming up - a
+    // single transient failure here used to silently disable auto-apply for
+    // the rest of the session (this whole block was one Promise.all with no
+    // retry and a swallowed .catch), which is indistinguishable from the
+    // feature just not working at all. Retries give a slow-starting backend
+    // a real chance instead of one shot.
+    const bootstrap = async (attempt = 1) => {
+        if (cancelled)
+            return;
+        const handledRequest = getCompatApplied()
+            .then((appids) => ({ appids, loaded: true }))
+            .catch((error) => {
+            console.error("[Nebel Control] getCompatApplied failed", error);
+            return { appids: [], loaded: false };
+        });
+        let config;
+        let games;
+        let handled;
+        try {
+            [config, games, handled] = await Promise.all([getConfig(), getInstalledGames(), handledRequest]);
+        }
+        catch (error) {
+            console.error(`[Nebel Control] compat bootstrap failed (attempt ${attempt})`, error);
+            if (attempt >= 5 || cancelled)
+                return;
+            await delay(Math.min(30000, 2000 * attempt));
+            return bootstrap(attempt + 1);
+        }
         if (cancelled)
             return;
         configureCompatPolicy(config.tweaks?.global?.windowsCompatTool, handled.loaded && config.tweaks?.global?.autoApplyCompat !== false, handled.appids);
@@ -1867,10 +2442,12 @@ var index = definePlugin(() => {
                 return;
             sweepInstalledGames(games.map((game) => game.appid))
                 .then(persist)
-                .catch(() => { });
+                .catch((error) => {
+                console.error("[Nebel Control] sweepInstalledGames failed", error);
+            });
         }, 3000);
-    })
-        .catch(() => { });
+    };
+    bootstrap();
     return {
         name: "Nebel Control",
         content: SP_JSX.jsx(Content, {}),

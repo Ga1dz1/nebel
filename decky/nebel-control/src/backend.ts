@@ -1,5 +1,5 @@
 import { call } from "@decky/api";
-import type { CalibrationState, Capture, Config, DisplayState, InstalledGame, PowerConfig, StickLedState, Tweaks } from "./types";
+import type { CalibrationState, Capture, Config, DisplayState, InstalledGame, PowerConfig, StickLedState, SyncState, Tweaks } from "./types";
 
 export const getConfig = () => call<[], Config>("get_config");
 export const getInstalledGames = () => call<[], InstalledGame[]>("get_installed_games");
@@ -56,3 +56,11 @@ export const getDisplayState = () => call<[], DisplayState>("get_display_state")
 export const setDisplayConfig = (useExternal: boolean, connector: string, width: number, height: number, orientation: string) =>
   call<[boolean, string, number, number, string], DisplayState>("set_display_config", useExternal, connector, width, height, orientation);
 export const restartGamescopeSession = () => call<[], { ok: boolean }>("restart_gamescope_session");
+export const getSyncState = () => call<[], SyncState>("get_sync_state");
+export const setSyncServiceEnabled = (enabled: boolean) =>
+  call<[boolean], { enabled: boolean; active: boolean }>("set_sync_service_enabled", enabled);
+export const syncAddDevice = (deviceId: string, name: string) =>
+  call<[string, string], SyncState>("sync_add_device", deviceId, name);
+export const syncRemoveDevice = (deviceId: string) => call<[string], SyncState>("sync_remove_device", deviceId);
+export const syncSetFolderEnabled = (presetId: string, enabled: boolean) =>
+  call<[string, boolean], SyncState>("sync_set_folder_enabled", presetId, enabled);

@@ -142,3 +142,29 @@ export interface DropdownChoice {
   data: string;
   label: string;
 }
+
+export interface SyncDevice {
+  id: string;
+  name: string;
+  connected: boolean;
+}
+
+export interface SyncFolder {
+  id: string;
+  label: string;
+  path: string;
+  enabled: boolean;
+  pathExists: boolean;
+  sharedWith: string[];
+}
+
+export interface SyncState {
+  installed: boolean;
+  serviceEnabled: boolean;
+  serviceActive: boolean;
+  configReady: boolean;
+  myId: string;
+  devices: SyncDevice[];
+  folders: SyncFolder[];
+  error: string;
+}

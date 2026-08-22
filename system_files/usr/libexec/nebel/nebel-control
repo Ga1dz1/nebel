@@ -87,6 +87,36 @@ def ssh_enabled():
     return result.stdout.strip() == "active"
 
 
+USER_SYSTEMCTL = ["/usr/bin/systemctl", "--machine=armada@", "--user"]
+
+
+def syncthing_service_state():
+    def probe(*args):
+        result = subprocess.run(
+            USER_SYSTEMCTL + list(args),
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+        )
+        return result.stdout.strip()
+
+    return {"enabled": probe("is-enabled", "syncthing.service") == "enabled",
+            "active": probe("is-active", "syncthing.service") == "active"}
+
+
+def action_set_syncthing_enabled(request):
+    enabled = bool(request.get("enabled"))
+    action = "enable" if enabled else "disable"
+    run(USER_SYSTEMCTL + [action, "--now", "syncthing.service"], timeout=30)
+    return syncthing_service_state()
+
+
+def action_get_syncthing_enabled(request):
+    return syncthing_service_state()
+
+
 def device_env():
     result = subprocess.check_output(["/usr/libexec/nebel/device-env"], text=True, timeout=5)
     env = {}
@@ -548,6 +578,8 @@ ACTIONS = {
     "get_ssh_enabled": action_get_ssh_enabled,
     "inputplumber_intercept": action_inputplumber_intercept,
     "set_ssh_enabled": action_set_ssh_enabled,
+    "set_syncthing_enabled": action_set_syncthing_enabled,
+    "get_syncthing_enabled": action_get_syncthing_enabled,
     "write_config": action_write_config,
     "get_stick_led": action_get_stick_led,
     "set_stick_led_color": action_set_stick_led_color,

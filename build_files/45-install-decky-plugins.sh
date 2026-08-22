@@ -11,15 +11,6 @@ rm -f /usr/share/decky-plugins/nebel-control/dist/*.map
 find /usr/share/decky-plugins/nebel-control -name __pycache__ -type d -prune -exec rm -rf {} +
 chmod 0755 /usr/lib/decky-loader/nebel-decky-sync
 
-# Syncthing Decky plugin (Capypara). The store zip ships an x86-64-only
-# watchdog binary; build_files/vendor/decky-syncthing.zip is that same zip
-# (sha256 27e47379..., store v0.2.7) with the watchdog rebuilt for aarch64.
-install -d -m 0755 /usr/share/decky-plugins/syncthing
-syncthing_tmp="$(mktemp -d)"
-unzip -q -o /build_files/vendor/decky-syncthing.zip -d "${syncthing_tmp}"
-cp -a "${syncthing_tmp}/decky-syncthing/." /usr/share/decky-plugins/syncthing/
-rm -rf "${syncthing_tmp}"
-
 decky_release="$(
     curl --retry 3 --retry-delay 2 -fsSL \
         https://api.github.com/repos/SteamDeckHomebrew/decky-loader/releases |

@@ -11,6 +11,7 @@ import { Display } from "./tabs/Display";
 import { Lighting } from "./tabs/Lighting";
 import { Power } from "./tabs/Power";
 import { Settings } from "./tabs/Settings";
+import { Sync } from "./tabs/Sync";
 import type { Config } from "./types";
 
 export function Content() {
@@ -92,6 +93,7 @@ export function Content() {
           { id: "Power", title: tabIcons.Power, content: tabContent(<Power config={config} setConfig={setConfig} />) },
           { id: "Display", title: tabIcons.Display, content: tabContent(<Display />) },
           { id: "Lighting", title: tabIcons.Lighting, content: tabContent(<Lighting config={config} setConfig={setConfig} />) },
+          { id: "Sync", title: tabIcons.Sync, content: tabContent(<Sync />) },
           { id: "Advanced", title: tabIcons.Advanced, content: tabContent(<Settings config={config} setConfig={setConfig} />) },
         ]}
       />
