@@ -32,7 +32,7 @@ case "${NEBEL_SOC_CLASS:-}" in
     *) keylayout_variant="ayn" ;;
 esac
 keylayout_source="/usr/share/nebel/waydroid/keylayout/${keylayout_variant}.Vendor_2020_Product_3001.kl"
-keylayout_target_dir=/var/home/armada/.local/share/waydroid/data/system/devices/keylayout
+keylayout_target_dir=/var/home/nebel/.local/share/waydroid/data/system/devices/keylayout
 if [[ -f "$keylayout_source" ]]; then
     install -d -m 0755 "$keylayout_target_dir"
     install -m 0644 "$keylayout_source" "$keylayout_target_dir/Vendor_2020_Product_3001.kl"

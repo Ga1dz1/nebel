@@ -13,7 +13,7 @@ for arg in "$@"; do
 done
 
 # Defer updates until a user has signed into Steam, so an update never downloads mid-onboarding.
-if ! grep -qs '"AccountName"' /var/home/armada/.local/share/Steam/config/loginusers.vdf; then
+if ! grep -qs '"AccountName"' /var/home/nebel/.local/share/Steam/config/loginusers.vdf; then
     exit 7
 fi
 

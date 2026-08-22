@@ -1,7 +1,7 @@
 [Unit]
 Description=Apply Nebel state fixups
 After=local-fs.target
-RequiresMountsFor=/var/home/armada
+RequiresMountsFor=/var/home/nebel
 Before=display-manager.service
 
 [Service]

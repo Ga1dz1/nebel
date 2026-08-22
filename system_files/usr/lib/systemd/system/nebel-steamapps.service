@@ -1,9 +1,9 @@
 [Unit]
 Description=nebel: create the Steam library as a btrfs nodatacow subvolume
 After=local-fs.target
-RequiresMountsFor=/var/home/armada
+RequiresMountsFor=/var/home/nebel
 Before=sddm.service
-ConditionPathExists=!/var/home/armada/.local/share/Steam/steamapps
+ConditionPathExists=!/var/home/nebel/.local/share/Steam/steamapps
 
 [Service]
 Type=oneshot

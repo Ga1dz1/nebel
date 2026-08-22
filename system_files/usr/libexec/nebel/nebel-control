@@ -87,7 +87,7 @@ def ssh_enabled():
     return result.stdout.strip() == "active"
 
 
-USER_SYSTEMCTL = ["/usr/bin/systemctl", "--machine=armada@", "--user"]
+USER_SYSTEMCTL = ["/usr/bin/systemctl", "--machine=nebel@", "--user"]
 
 
 def syncthing_service_state():

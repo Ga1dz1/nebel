@@ -20,7 +20,7 @@ set -u
 eval "$(/usr/libexec/nebel/device-env 2>/dev/null)" || true
 [ "${NEBEL_SOC_CLASS:-}" = "SM8250" ] || exit 0
 
-SESSION_USER="${NEBEL_SESSION_USER:-armada}"
+SESSION_USER="${NEBEL_SESSION_USER:-nebel}"
 SESSION_UID="$(id -u "$SESSION_USER" 2>/dev/null || echo 1000)"
 RUNDIR="/run/user/${SESSION_UID}"
 

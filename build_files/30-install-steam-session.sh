@@ -94,7 +94,7 @@ dnf5 download --enable-repo=terra --destdir=/tmp/gss-rpm gamescope-session-steam
 rpm -ivh --nodeps /tmp/gss-rpm/gamescope-session-steam-*.rpm
 rm -rf /tmp/gss-rpm
 
-STEAM_BOOTSTRAP_HOME=/var/home/armada
+STEAM_BOOTSTRAP_HOME=/var/home/nebel
 STEAM_HOME="${STEAM_BOOTSTRAP_HOME}/.local/share/Steam"
 
 STEAM_BOOTSTRAP_HOME="${STEAM_BOOTSTRAP_HOME}" bash /ctx/build_files/generate-steam-bootstrap.sh

@@ -2,7 +2,7 @@
 # Power button + lid -> Steam's sleep flow (steam://shortpowerpress), launched by
 # launch-steam as the user. fake-suspend owns wake.
 set -uo pipefail
-SESSION_USER="${NEBEL_SESSION_USER:-armada}"
+SESSION_USER="${NEBEL_SESSION_USER:-nebel}"
 STEAM_DIR="/var/home/${SESSION_USER}/.local/share/Steam/steamrtarm64"
 STEAM_BIN="${STEAM_DIR}/steam"
 log() { logger -t nebel-powerbuttond -- "$*"; }

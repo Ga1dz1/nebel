@@ -623,7 +623,7 @@ deploy_to_internal() {
     # system's /etc edits (the default upgrade-style merge would carry them over).
     ostree admin deploy --no-merge --sysroot="$TARGET" --os=default "$commit"
 
-    # Seed /var from the image commit (it carries the armada user's /var/home/armada);
+    # Seed /var from the image commit (it carries the nebel user's /var/home/nebel);
     # ostree admin deploy doesn't populate /var, so the home would land root-owned.
     local varseed
     varseed=$(mktemp -d -t nebel-var.XXXXXX)

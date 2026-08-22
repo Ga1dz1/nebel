@@ -11,7 +11,7 @@ LOG_TAG="nebel-fake-suspend"
 log() { logger -t "$LOG_TAG" -- "$*"; echo "$LOG_TAG: $*" >&2; }
 source /usr/lib/nebel/input-lib
 
-SESSION_USER="${NEBEL_SESSION_USER:-armada}"
+SESSION_USER="${NEBEL_SESSION_USER:-nebel}"
 SESSION_UID="$(id -u "$SESSION_USER" 2>/dev/null || echo 1000)"
 SESSION_RUNTIME="/run/user/${SESSION_UID}"
 

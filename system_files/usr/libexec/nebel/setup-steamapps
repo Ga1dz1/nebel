@@ -1,7 +1,7 @@
 #!/bin/bash
 set -uo pipefail
 
-USER=armada
+USER=nebel
 HOME_DIR="/var/home/${USER}"
 SA="${HOME_DIR}/.local/share/Steam/steamapps"
 

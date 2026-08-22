@@ -29,7 +29,7 @@ chmod 0755 /usr/share/decky-loader/PluginLoader
 printf '%s\n' "${decky_version}" > /usr/share/decky-loader/.loader.version
 decky_service_tmp="$(mktemp)"
 curl --retry 3 --retry-delay 2 -fsSL "${decky_service_url}" |
-    sed 's#${HOMEBREW_FOLDER}#/var/home/armada/homebrew#g' \
+    sed 's#${HOMEBREW_FOLDER}#/var/home/nebel/homebrew#g' \
         >"${decky_service_tmp}"
 # Ship the unit under /usr/lib/systemd/system (the read-only, versioned OS
 # tree) like every other nebel unit, not /etc/systemd/system: a unit *file*

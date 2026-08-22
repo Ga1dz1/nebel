@@ -56,7 +56,7 @@ log() { logger -t "$LOG_TAG" -- "$*"; }
 
 STICK_LED_FLAG="/run/nebel/fake-suspend.active"
 RESUME_FLAG="/run/nebel/real-suspend.resumed-at"
-SESSION_USER="${NEBEL_SESSION_USER:-armada}"
+SESSION_USER="${NEBEL_SESSION_USER:-nebel}"
 SESSION_UID="$(id -u "$SESSION_USER" 2>/dev/null || echo 1000)"
 SESSION_RUNTIME="/run/user/${SESSION_UID}"
 

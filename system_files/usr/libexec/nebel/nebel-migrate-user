@@ -1,0 +1,16 @@
+#!/bin/bash
+# One-time rename of the legacy "armada" user to "nebel" after an OTA from an
+# armada-era image. Runs very early (before sddm), when the user has no
+# processes and no active session.
+set -u
+
+id -u nebel &>/dev/null && exit 0
+id -u armada &>/dev/null || exit 0
+
+loginctl kill-user armada 2>/dev/null || true
+groupmod -n nebel armada 2>/dev/null || true
+usermod -l nebel -d /var/home/nebel -m armada || exit 1
+echo 'nebel:nebel' | chpasswd
+rm -f /etc/sudoers.d/armada-user
+# Re-apply sysusers so group memberships from the new config are in place.
+systemd-sysusers || true

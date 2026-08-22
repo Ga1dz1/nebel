@@ -18,6 +18,6 @@
 # targeted it without a process restart).
 set -euo pipefail
 
-session_id=$(loginctl show-user armada -p Display --value)
+session_id=$(loginctl show-user nebel -p Display --value)
 [[ -n "$session_id" ]] || { echo "restart-gamescope-session: no active graphical session found for nebel" >&2; exit 1; }
 exec loginctl terminate-session "$session_id"

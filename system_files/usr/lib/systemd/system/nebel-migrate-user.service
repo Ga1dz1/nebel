@@ -1,0 +1,14 @@
+[Unit]
+Description=Rename the legacy armada user to nebel (one-time OTA migration)
+DefaultDependencies=no
+After=local-fs.target systemd-sysusers.service
+Before=sysinit.target sddm.service display-manager.service systemd-user-sessions.service
+ConditionPathExists=/var/home/armada
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nebel/nebel-migrate-user
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

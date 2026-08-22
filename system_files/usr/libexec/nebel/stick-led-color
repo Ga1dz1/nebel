@@ -464,7 +464,7 @@ AMBILIGHT_EDGE_WIDTH_PX = 100  # sample this many pixels beyond the margin
 AMBILIGHT_TOP_EXCLUDE = 0.40  # fraction of screen height excluded from the top
 AMBILIGHT_BOTTOM_EXCLUDE = 0.05  # fraction of screen height excluded from the bottom
 AMBILIGHT_DEFAULT = (0, 80, 255)
-AMBILIGHT_SESSION_USER = "armada"
+AMBILIGHT_SESSION_USER = "nebel"
 # gamescopectl screenshot + ffmpeg decode confirmed live on a Retroid
 # Pocket Mini V2 (2026-07-23): the screenshot lands as a valid PNG at the
 # requested path and ffmpeg decodes it to PPM cleanly. Capture is enabled;

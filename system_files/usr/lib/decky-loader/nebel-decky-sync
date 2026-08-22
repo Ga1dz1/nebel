@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-user_name=armada
+user_name=nebel
 homebrew="/var/home/${user_name}/homebrew"
 loader_src=/usr/share/decky-loader/PluginLoader
 loader_version_src=/usr/share/decky-loader/.loader.version

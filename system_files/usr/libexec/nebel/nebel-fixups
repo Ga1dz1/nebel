@@ -6,8 +6,8 @@ import stat
 
 
 STEAM_CONFIGS = (
-    pathlib.Path("/var/home/armada/.local/share/Steam/config/config.vdf"),
-    pathlib.Path("/var/home/armada/.steam/root/config/config.vdf"),
+    pathlib.Path("/var/home/nebel/.local/share/Steam/config/config.vdf"),
+    pathlib.Path("/var/home/nebel/.steam/root/config/config.vdf"),
 )
 
 PROTON_11_VERSIONED = re.compile(r"proton-cachyos-11\.0-[^\"\s]+-arm64")

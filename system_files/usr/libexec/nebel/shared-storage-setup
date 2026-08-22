@@ -7,7 +7,7 @@
 set -euo pipefail
 
 MOUNT_POINT=/mnt/shared
-SHARE_DIR=/var/home/armada/Shared
+SHARE_DIR=/var/home/nebel/Shared
 LABEL=ARMADA_SHARED
 CONFIG=/etc/nebel/shared-storage.conf
 

@@ -81,7 +81,7 @@ CHORD_FUNCS = {}
 
 def session_busctl(*args):
     """Run busctl against the Plasma user session bus; None on failure."""
-    user = "armada"
+    user = "nebel"
     uid = 1000
     bus = f"/run/user/{uid}/bus"
     if not os.path.exists(bus):

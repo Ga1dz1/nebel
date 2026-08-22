@@ -24,6 +24,7 @@ chmod 0440 /etc/sudoers.d/nebel-shared-storage 2>/dev/null || true
 systemctl disable getty@tty1.service || true
 systemctl disable sshd.service || true
 systemctl enable sddm.service
+systemctl enable nebel-migrate-user.service
 systemctl enable nebel-session-default.service
 systemctl enable seatd.service
 systemctl enable nebel-input-calibration.service
