@@ -10,7 +10,6 @@ import subprocess
 import re
 import urllib.error
 import urllib.request
-import xml.etree.ElementTree as ET
 import json
 from pathlib import Path
 
@@ -44,13 +43,14 @@ def installed():
 
 
 def api_key():
+    # No xml.etree here: Decky's sandboxed Python ships a reduced stdlib.
+    # The apikey element is flat and attribute-free, a regex is enough.
     try:
-        root = ET.parse(CONFIG_XML).getroot()
-        gui = root.find("gui")
-        key = gui.findtext("apikey") if gui is not None else None
-        return key or ""
-    except (OSError, ET.ParseError):
+        text = CONFIG_XML.read_text(encoding="utf-8", errors="replace")
+    except OSError:
         return ""
+    match = re.search(r"<apikey>([^<]+)</apikey>", text)
+    return match.group(1).strip() if match else ""
 
 
 def rest(method, path, body=None, timeout=8):
