@@ -109,6 +109,9 @@ dnf5 -y install --setopt=install_weak_deps=False \
     plasma-workspace-wallpapers \
     breeze-icon-theme
 
+# PowerDevil's KWin backend treats 0 as safe; reserve 5% for internal panels.
+dnf5 -y install --setopt=install_weak_deps=False /packages/powerdevil/powerdevil-*.fc44.armada.*.rpm
+
 dnf5 -y install --setopt=install_weak_deps=False \
     protonplus \
     heroic-games-launcher

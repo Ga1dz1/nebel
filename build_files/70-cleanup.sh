@@ -26,21 +26,24 @@ dnf5 -y remove --no-autoremove \
 
 dnf5 -y remove --no-autoremove binutils
 
-for required in qcom-firmware atheros-firmware bootc podman skopeo gamescope gamescope-session fex-emu-utils mangohud; do
+for required in qcom-firmware atheros-firmware bootc podman skopeo gamescope-session; do
     rpm -q "$required" >/dev/null || { echo "ERROR: $required got removed"; exit 1; }
 done
 
-# The patched Turnip (Mesa #14656 fix) must be the installed one, not stock Fedora.
-case "$(rpm -q --qf '%{release}' mesa-vulkan-drivers)" in
-    *armada*) ;;
-    *) echo "ERROR: stock mesa-vulkan-drivers installed; patched .armada Turnip lost"; exit 1 ;;
-esac
-
-# The patched mangohud (Adreno SM8550 sysfs repoints) must be the installed one.
-case "$(rpm -q --qf '%{release}' mangohud)" in
-    *armada*) ;;
-    *) echo "ERROR: stock mangohud installed; patched .armada mangohud lost"; exit 1 ;;
-esac
+for package in \
+    armada-jupiter-hw-support \
+    fex-emu-utils \
+    gamescope \
+    inputplumber \
+    mangohud \
+    mesa-vulkan-drivers \
+    NetworkManager \
+    powerdevil; do
+    case "$(rpm -q --qf '%{release}' "$package" 2>/dev/null)" in
+        *armada*) ;;
+        *) echo "ERROR: patched .armada package not installed: $package"; exit 1 ;;
+    esac
+done
 
 rm -rf \
     /usr/lib/firmware/amdgpu \
