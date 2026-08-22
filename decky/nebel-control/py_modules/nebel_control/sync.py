@@ -17,7 +17,11 @@ from .privileged import call
 from .system import run_cmd
 
 HOME = Path("/var/home/armada")
-CONFIG_XML = HOME / ".config" / "syncthing" / "config.xml"
+# Syncthing v2 stores config under ~/.local/state, v1 under ~/.config.
+CONFIG_CANDIDATES = (
+    HOME / ".local" / "state" / "syncthing" / "config.xml",
+    HOME / ".config" / "syncthing" / "config.xml",
+)
 API_BASE = "http://127.0.0.1:8384"
 
 # Preset folders the user can toggle. Paths are relative to the armada home.
@@ -42,11 +46,18 @@ def installed():
     return shutil.which("syncthing") is not None or Path("/usr/bin/syncthing").exists()
 
 
+def _config_xml():
+    for candidate in CONFIG_CANDIDATES:
+        if candidate.exists():
+            return candidate
+    return CONFIG_CANDIDATES[0]
+
+
 def api_key():
     # No xml.etree here: Decky's sandboxed Python ships a reduced stdlib.
     # The apikey element is flat and attribute-free, a regex is enough.
     try:
-        text = CONFIG_XML.read_text(encoding="utf-8", errors="replace")
+        text = _config_xml().read_text(encoding="utf-8", errors="replace")
     except OSError:
         return ""
     match = re.search(r"<apikey>([^<]+)</apikey>", text)
