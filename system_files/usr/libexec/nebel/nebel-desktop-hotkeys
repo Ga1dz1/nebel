@@ -7,7 +7,7 @@ desktop session is active; in gaming mode the raw events pass through untouched
 for Steam/gamescope to handle.
 
 Chords (Home + button):
-  X (West)        -> KEY_ONSCREEN_KEYBOARD
+  X (West)        -> toggle KWin virtual keyboard (OSK)
   Y (North)       -> KEY_PRINT          (screenshot)
   A (South)       -> KEY_LEFTMETA       (overview/activities)
   B (East)        -> KEY_ESC
@@ -45,7 +45,6 @@ ABS_Y = 0x01
 ABS_RX = 0x03
 ABS_RY = 0x04
 
-KEY_ONSCREEN_KEYBOARD = 0x17B
 KEY_PRINT = 0xD8
 KEY_LEFTMETA = 0x7D
 KEY_ESC = 0x01
@@ -65,8 +64,7 @@ CHORD_HOLD_MS = 300
 POLL_INTERVAL_S = 0.05
 
 CHORD_MAP = {
-    BTN_NORTH: KEY_ONSCREEN_KEYBOARD,
-    BTN_WEST: KEY_PRINT,
+    BTN_NORTH: KEY_PRINT,
     BTN_SOUTH: KEY_LEFTMETA,
     BTN_EAST: KEY_ESC,
     BTN_DPAD_UP: KEY_VOLUMEUP,
@@ -76,6 +74,49 @@ CHORD_MAP = {
     BTN_START: KEY_F12,
     BTN_SELECT: KEY_MENU,
 }
+
+# Chord buttons that trigger an action instead of a uinput key press.
+CHORD_FUNCS = {}
+
+
+def session_busctl(*args):
+    """Run busctl against the Plasma user session bus; None on failure."""
+    user = "armada"
+    uid = 1000
+    bus = f"/run/user/{uid}/bus"
+    if not os.path.exists(bus):
+        return None
+    try:
+        out = subprocess.run(
+            [
+                "sudo", "-Eu", user, "env",
+                f"XDG_RUNTIME_DIR=/run/user/{uid}",
+                f"DBUS_SESSION_BUS_ADDRESS=unix:path={bus}",
+                "busctl", "--user", *args,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0:
+        return None
+    return out.stdout.strip()
+
+
+def toggle_osk():
+    """Toggle the KWin virtual keyboard (plasma-keyboard input method)."""
+    vk_path = "/VirtualKeyboard"
+    vk_iface = "org.kde.kwin.VirtualKeyboard"
+    active = session_busctl("get-property", "org.kde.KWin", vk_path, vk_iface, "active")
+    if active is not None and active.endswith("true"):
+        session_busctl("set-property", "org.kde.KWin", vk_path, vk_iface, "active", "b", "false")
+    else:
+        session_busctl("call", "org.kde.KWin", vk_path, vk_iface, "forceActivate")
+
+
+CHORD_FUNCS[BTN_WEST] = toggle_osk
 
 # uinput ioctls (standard Linux values)
 UINPUT_IOCTL_BASE = ord("U")
@@ -239,7 +280,7 @@ def run():
             keyboard.close()
             time.sleep(POLL_INTERVAL_S)
             continue
-        if not reader.open():
+        if reader.fd is None and not reader.open():
             time.sleep(POLL_INTERVAL_S)
             continue
         if keyboard.fd is None:
@@ -261,12 +302,20 @@ def run():
             if chord_buttons:
                 # Use the newest pressed button as the chord partner.
                 btn = max(chord_buttons)
-                key = CHORD_MAP.get(btn)
-                if key is not None:
+                func = CHORD_FUNCS.get(btn)
+                if func is not None:
                     try:
-                        keyboard.send_key(key)
-                    except OSError:
-                        keyboard.close()
+                        func()
+                        print(f"desktop-hotkeys: chord button {btn:#x} action fired", flush=True)
+                    except Exception:
+                        pass
+                else:
+                    key = CHORD_MAP.get(btn)
+                    if key is not None:
+                        try:
+                            keyboard.send_key(key)
+                        except OSError:
+                            keyboard.close()
                 # Swallow the release of the chord partner so InputPlumber/Steam
                 # doesn't also act on it.
                 reader.buttons.discard(btn)

@@ -41,6 +41,7 @@ systemctl enable nebel-powerd.service
 systemctl enable nebel-audio-resume.service
 systemctl enable nebel-audio-heal.service
 systemctl enable nebel-abl-update.service
+systemctl enable nebel-desktop-hotkeys.service
 # Disabled - see git history: suspected of causing a full, unrecoverable
 # system hang (not just gamescope) on Desktop <-> Gaming Mode transitions.
 # An unthrottled (kernel.sched_rt_runtime_us=-1, reverted alongside this)
