@@ -19,7 +19,7 @@ fi
 # handheld can be navigated without a paired controller. Switch InputPlumber to
 # the desktop profile while Plasma is running and restore the gamepad profile on
 # exit.
-DESKTOP_PROFILE="/usr/share/inputplumber/profiles/mouse_keyboard_wasd.yaml"
+DESKTOP_PROFILE="/usr/share/inputplumber/profiles/mouse_keyboard.yaml"
 GAMEPAD_PROFILE="/usr/share/inputplumber/profiles/default.yaml"
 IPLUMBER_DEVICE="/org/shadowblip/InputPlumber/CompositeDevice0"
 IPLUMBER_IFACE="org.shadowblip.Input.CompositeDevice"

@@ -1,0 +1,199 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ShadowBlip/InputPlumber/main/rootfs/usr/share/inputplumber/schema/device_profile_v1.json
+# Schema version number
+version: 1
+
+# The type of configuration schema
+kind: DeviceProfile
+
+# Name of the device profile
+name: Mouse and Keyboard (Desktop)
+
+# Description of the device profile
+description: Gamepad mapping for Plasma desktop use, mirroring the Steam Deck "Desktop Layout" defaults where the hardware allows
+
+# Profile mappings (Steam Deck desktop-layout parity: PCGamingWiki "Steam Deck → Desktop mode")
+mapping:
+  # Guide to DBus
+  - name: Guide
+    source_event:
+      gamepad:
+        button: Guide
+    target_events:
+      - dbus: ui_guide
+
+  - name: Quick Access
+    source_event:
+      gamepad:
+        button: QuickAccess
+    target_events:
+      - dbus: ui_quick
+
+  # Dpad = arrow keys (as on Deck)
+  - name: D-Up
+    source_event:
+      gamepad:
+        button: DPadUp
+    target_events:
+      - keyboard: KeyUp
+  - name: D-Down
+    source_event:
+      gamepad:
+        button: DPadDown
+    target_events:
+      - keyboard: KeyDown
+  - name: D-Left
+    source_event:
+      gamepad:
+        button: DPadLeft
+    target_events:
+      - keyboard: KeyLeft
+  - name: D-Right
+    source_event:
+      gamepad:
+        button: DPadRight
+    target_events:
+      - keyboard: KeyRight
+
+  # Left Stick = arrow keys (as on Deck; upstream profile uses WASD instead)
+  - name: Left
+    source_event:
+      gamepad:
+        axis:
+          name: LeftStick
+          direction: left
+          deadzone: 0.3
+    target_events:
+      - keyboard: KeyLeft
+
+  - name: Right
+    source_event:
+      gamepad:
+        axis:
+          name: LeftStick
+          direction: right
+          deadzone: 0.3
+    target_events:
+      - keyboard: KeyRight
+
+  - name: Up
+    source_event:
+      gamepad:
+        axis:
+          name: LeftStick
+          direction: up
+          deadzone: 0.3
+    target_events:
+      - keyboard: KeyUp
+
+  - name: Down
+    source_event:
+      gamepad:
+        axis:
+          name: LeftStick
+          direction: down
+          deadzone: 0.3
+    target_events:
+      - keyboard: KeyDown
+
+  # Right Stick = joystick mouse (as on Deck)
+  - name: Joystick Mouse
+    source_event:
+      gamepad:
+        axis:
+          name: RightStick
+    target_events:
+      - mouse:
+          motion:
+            speed_pps: 800 # default to 800pps
+
+  # R3 = left mouse click (as on Deck)
+  - name: R3
+    source_event:
+      gamepad:
+        button: RightStick
+    target_events:
+      - mouse:
+          button: Left
+
+  # Buttons
+  - name: Menu
+    source_event:
+      gamepad:
+        button: Start
+    target_events:
+      - keyboard: KeyEsc
+
+  - name: Select
+    source_event:
+      gamepad:
+        button: Select
+    target_events:
+      - keyboard: KeyTab
+
+  # A = Enter (as on Deck)
+  - name: A Button
+    source_event:
+      gamepad:
+        button: South
+    target_events:
+      - keyboard: KeyReturn
+
+  # X = on-screen keyboard (as on Deck)
+  - name: X Button
+    source_event:
+      gamepad:
+        button: North
+    target_events:
+      - dbus: ui_osk
+
+  # Y = Space (as on Deck)
+  - name: Y Button
+    source_event:
+      gamepad:
+        button: West
+    target_events:
+      - keyboard: KeySpace
+
+  # B = Escape (as on Deck)
+  - name: B Button
+    source_event:
+      gamepad:
+        button: East
+    target_events:
+      - keyboard: KeyEsc
+
+  # Triggers (as on Deck: R2 = left click, L2 = right click)
+  - name: Right Trigger
+    source_event:
+      gamepad:
+        trigger:
+          name: RightTrigger
+          deadzone: 0.2
+    target_events:
+      - mouse:
+          button: Left
+
+  - name: Left Trigger
+    source_event:
+      gamepad:
+        trigger:
+          name: LeftTrigger
+          deadzone: 0.2
+    target_events:
+      - mouse:
+          button: Right
+
+  # Bumpers (as on Deck: R1 = Left Alt, L1 = Left Ctrl)
+  - name: RB
+    source_event:
+      gamepad:
+        button: RightBumper
+    target_events:
+      - keyboard: KeyLeftAlt
+
+  - name: LB
+    source_event:
+      gamepad:
+        button: LeftBumper
+    target_events:
+      - keyboard: KeyLeftCtrl
