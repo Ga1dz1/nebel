@@ -10,6 +10,7 @@ from nebel_control.calibration import (
 from nebel_control.config import build_config
 from nebel_control.controller import set_controller_type
 from nebel_control.display import display_state, restart_gamescope_session, set_display_config
+from nebel_control.filepick import list_dir
 from nebel_control.lighting import (
     set_stick_led_charging_indicator,
     set_stick_led_chase,
@@ -76,6 +77,9 @@ class Plugin:
 
     async def set_shared_storage_enabled(self, enabled):
         return await asyncio.to_thread(set_shared_storage_enabled, enabled)
+
+    async def list_dir(self, path):
+        return await asyncio.to_thread(list_dir, path)
 
     async def get_sync_state(self):
         return await asyncio.to_thread(sync_state)

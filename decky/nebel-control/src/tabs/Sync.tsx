@@ -301,7 +301,7 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
                   ? " • " + t("in sync")
                   : ""
               : "";
-            const description = folder.path.replace("/var/home/armada", "~") + statusSuffix;
+            const description = folder.path.replace("/var/home/nebel", "~") + statusSuffix;
             return folder.custom ? (
               <PanelSectionRow key={folder.id}>
                 <Field label={folder.label} description={description}>

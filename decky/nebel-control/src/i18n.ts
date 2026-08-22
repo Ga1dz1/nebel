@@ -180,6 +180,20 @@ const uk: Dictionary = {
   "Save Calibration": "Зберегти калібрування",
   "Start Calibration": "Почати калібрування",
   "Reset to Defaults": "Скинути до типових",
+  "Library": "Бібліотека",
+  "TabGame": "Гра",
+  "TabPower": "Живлення",
+  "TabDisplay": "Екран",
+  "TabLighting": "Світло",
+  "TabSync": "Синк",
+  "TabMore": "Ще",
+  "Add non-Steam game": "Додати сторонню гру",
+  "Select the game's executable": "Виберіть виконуваний файл гри",
+  "Added to Steam library": "Додано до бібліотеки Steam",
+  "SD card": "Карта SD",
+  "Internal storage": "Встроенная память",
+  "Internal storage": "Внутрішня пам'ять",
+  "Failed to add shortcut": "Не вдалося додати ярлик",
 };
 
 const ru: Dictionary = {
@@ -356,6 +370,18 @@ const ru: Dictionary = {
   "Save Calibration": "Сохранить калибровку",
   "Start Calibration": "Начать калибровку",
   "Reset to Defaults": "Сбросить к настройкам по умолчанию",
+  "Library": "Библиотека",
+  "TabGame": "Игра",
+  "TabPower": "Питание",
+  "TabDisplay": "Экран",
+  "TabLighting": "Свет",
+  "TabSync": "Синк",
+  "TabMore": "Ещё",
+  "Add non-Steam game": "Добавить стороннюю игру",
+  "Select the game's executable": "Выберите исполняемый файл игры",
+  "Added to Steam library": "Добавлено в библиотеку Steam",
+  "SD card": "Карта SD",
+  "Failed to add shortcut": "Не удалось добавить ярлык",
 };
 
 const es: Dictionary = {
@@ -532,6 +558,19 @@ const es: Dictionary = {
   "Save Calibration": "Guardar calibración",
   "Start Calibration": "Iniciar calibración",
   "Reset to Defaults": "Restablecer valores predeterminados",
+  "Library": "Biblioteca",
+  "TabGame": "Juego",
+  "TabPower": "Energía",
+  "TabDisplay": "Pantalla",
+  "TabLighting": "Luces",
+  "TabSync": "Sync",
+  "TabMore": "Más",
+  "Add non-Steam game": "Añadir juego externo",
+  "Select the game's executable": "Selecciona el ejecutable del juego",
+  "Added to Steam library": "Añadido a la biblioteca de Steam",
+  "SD card": "Tarjeta SD",
+  "Internal storage": "Almacenamiento interno",
+  "Failed to add shortcut": "No se pudo añadir el acceso directo",
 };
 
 const fr: Dictionary = {
@@ -708,6 +747,19 @@ const fr: Dictionary = {
   "Save Calibration": "Enregistrer l'étalonnage",
   "Start Calibration": "Démarrer l'étalonnage",
   "Reset to Defaults": "Réinitialiser par défaut",
+  "Library": "Bibliothèque",
+  "TabGame": "Jeu",
+  "TabPower": "Énergie",
+  "TabDisplay": "Écran",
+  "TabLighting": "Lumière",
+  "TabSync": "Sync",
+  "TabMore": "Plus",
+  "Add non-Steam game": "Ajouter un jeu externe",
+  "Select the game's executable": "Sélectionnez l'exécutable du jeu",
+  "Added to Steam library": "Ajouté à la bibliothèque Steam",
+  "SD card": "Carte SD",
+  "Internal storage": "Stockage interne",
+  "Failed to add shortcut": "Échec de l'ajout du raccourci",
 };
 
 const dictionaries: Partial<Record<Locale, Dictionary>> = { uk, ru, es, fr };

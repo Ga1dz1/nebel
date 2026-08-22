@@ -2,7 +2,7 @@
 
 Talks to Syncthing's REST API on 127.0.0.1:8384 using the API key from the
 user's config.xml. Service enable/start goes through the privileged helper
-because the unit is a *user* service of the armada account.
+because the unit is a *user* service of the nebel account.
 """
 
 import shutil
@@ -16,7 +16,7 @@ from pathlib import Path
 from .privileged import call
 from .system import run_cmd
 
-HOME = Path("/var/home/armada")
+HOME = Path("/var/home/nebel")
 # Syncthing v2 stores config under ~/.local/state, v1 under ~/.config.
 CONFIG_CANDIDATES = (
     HOME / ".local" / "state" / "syncthing" / "config.xml",
@@ -91,7 +91,7 @@ def service_state():
     except Exception:
         pass
     # Fallback: ask the user manager directly.
-    base = ["/usr/bin/systemctl", "--machine=armada@", "--user"]
+    base = ["/usr/bin/systemctl", "--machine=nebel@", "--user"]
     enabled = run_cmd(base + ["is-enabled", "syncthing.service"])
     active = run_cmd(base + ["is-active", "syncthing.service"])
     return {

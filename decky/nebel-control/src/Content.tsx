@@ -9,6 +9,7 @@ import { currentGame } from "./lib/games";
 import { styles } from "./styles";
 import { Compatibility } from "./tabs/Compatibility";
 import { Display } from "./tabs/Display";
+import { AddGame } from "./tabs/AddGame";
 import { Lighting } from "./tabs/Lighting";
 import { Power } from "./tabs/Power";
 import { Settings } from "./tabs/Settings";
@@ -83,6 +84,9 @@ export function Content() {
   const tabContent = (content: ReactNode) => (
     <div className="nebel-control-tab-content">{content}</div>
   );
+  const tabTitle = (icon: ReactNode, label: string) => (
+    <div className="nc-tab-title">{icon}<span>{label}</span></div>
+  );
   return (
     <div className="nebel-control-tabs">
       <style>{styles}</style>
@@ -90,12 +94,13 @@ export function Content() {
         activeTab={tab}
         onShowTab={setTab}
         tabs={[
-          { id: "Compatibility", title: tabIcons.Compatibility, content: tabContent(<Compatibility config={config} setConfig={setConfig} />) },
-          { id: "Power", title: tabIcons.Power, content: tabContent(<Power config={config} setConfig={setConfig} />) },
-          { id: "Display", title: tabIcons.Display, content: tabContent(<Display />) },
-          { id: "Lighting", title: tabIcons.Lighting, content: tabContent(<Lighting config={config} setConfig={setConfig} />) },
-          { id: "Sync", title: tabIcons.Sync, content: tabContent(<Sync />) },
-          { id: "Advanced", title: tabIcons.Advanced, content: tabContent(<Settings config={config} setConfig={setConfig} />) },
+          { id: "Compatibility", title: tabTitle(tabIcons.Compatibility, t("TabGame")), content: tabContent(<Compatibility config={config} setConfig={setConfig} />) },
+          { id: "Power", title: tabTitle(tabIcons.Power, t("TabPower")), content: tabContent(<Power config={config} setConfig={setConfig} />) },
+          { id: "Display", title: tabTitle(tabIcons.Display, t("TabDisplay")), content: tabContent(<Display />) },
+          { id: "Lighting", title: tabTitle(tabIcons.Lighting, t("TabLighting")), content: tabContent(<Lighting config={config} setConfig={setConfig} />) },
+          { id: "Library", title: tabTitle(tabIcons.Library, t("Library")), content: tabContent(<AddGame />) },
+          { id: "Sync", title: tabTitle(tabIcons.Sync, t("TabSync")), content: tabContent(<Sync />) },
+          { id: "Advanced", title: tabTitle(tabIcons.Advanced, t("TabMore")), content: tabContent(<Settings config={config} setConfig={setConfig} />) },
         ]}
       />
     </div>

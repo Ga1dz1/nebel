@@ -18,6 +18,14 @@ export const saveCompatApplied = (appids: string[]) => {
 export const setSshEnabled = (enabled: boolean) => call<[boolean], boolean>("set_ssh_enabled", enabled);
 export const setControllerType = (value: string) => call<[string], string>("set_controller_type", value);
 export const setSharedStorageEnabled = (enabled: boolean) => call<[boolean], boolean>("set_shared_storage_enabled", enabled);
+export interface DirListing {
+  path: string;
+  parent: string | null;
+  dirs: string[];
+  files: string[];
+  shortcuts: { id: string; label: string; path: string }[];
+}
+export const listDir = (path: string) => call<[string], DirListing>("list_dir", path);
 export const setStickLedColor = (side: "l" | "r", value: string) =>
   call<[string, string], StickLedState>("set_stick_led_color", side, value);
 export const setStickLedMode = (side: "l" | "r", mode: string) =>

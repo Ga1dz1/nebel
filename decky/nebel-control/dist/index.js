@@ -39,6 +39,7 @@ const saveCompatApplied = (appids) => {
 const setSshEnabled = (enabled) => call("set_ssh_enabled", enabled);
 const setControllerType = (value) => call("set_controller_type", value);
 const setSharedStorageEnabled = (enabled) => call("set_shared_storage_enabled", enabled);
+const listDir = (path) => call("list_dir", path);
 const setStickLedColor = (side, value) => call("set_stick_led_color", side, value);
 const setStickLedMode = (side, mode) => call("set_stick_led_mode", side, mode);
 const setStickLedScreenLink = (enabled) => call("set_stick_led_screen_link", enabled);
@@ -277,6 +278,20 @@ const uk = {
     "Save Calibration": "Зберегти калібрування",
     "Start Calibration": "Почати калібрування",
     "Reset to Defaults": "Скинути до типових",
+    "Library": "Бібліотека",
+    "TabGame": "Гра",
+    "TabPower": "Живлення",
+    "TabDisplay": "Екран",
+    "TabLighting": "Світло",
+    "TabSync": "Синк",
+    "TabMore": "Ще",
+    "Add non-Steam game": "Додати сторонню гру",
+    "Select the game's executable": "Виберіть виконуваний файл гри",
+    "Added to Steam library": "Додано до бібліотеки Steam",
+    "SD card": "Карта SD",
+    "Internal storage": "Встроенная память",
+    "Internal storage": "Внутрішня пам'ять",
+    "Failed to add shortcut": "Не вдалося додати ярлик",
 };
 const ru = {
     "Loading": "Загрузка",
@@ -452,6 +467,18 @@ const ru = {
     "Save Calibration": "Сохранить калибровку",
     "Start Calibration": "Начать калибровку",
     "Reset to Defaults": "Сбросить к настройкам по умолчанию",
+    "Library": "Библиотека",
+    "TabGame": "Игра",
+    "TabPower": "Питание",
+    "TabDisplay": "Экран",
+    "TabLighting": "Свет",
+    "TabSync": "Синк",
+    "TabMore": "Ещё",
+    "Add non-Steam game": "Добавить стороннюю игру",
+    "Select the game's executable": "Выберите исполняемый файл игры",
+    "Added to Steam library": "Добавлено в библиотеку Steam",
+    "SD card": "Карта SD",
+    "Failed to add shortcut": "Не удалось добавить ярлык",
 };
 const es = {
     "Loading": "Cargando",
@@ -627,6 +654,19 @@ const es = {
     "Save Calibration": "Guardar calibración",
     "Start Calibration": "Iniciar calibración",
     "Reset to Defaults": "Restablecer valores predeterminados",
+    "Library": "Biblioteca",
+    "TabGame": "Juego",
+    "TabPower": "Energía",
+    "TabDisplay": "Pantalla",
+    "TabLighting": "Luces",
+    "TabSync": "Sync",
+    "TabMore": "Más",
+    "Add non-Steam game": "Añadir juego externo",
+    "Select the game's executable": "Selecciona el ejecutable del juego",
+    "Added to Steam library": "Añadido a la biblioteca de Steam",
+    "SD card": "Tarjeta SD",
+    "Internal storage": "Almacenamiento interno",
+    "Failed to add shortcut": "No se pudo añadir el acceso directo",
 };
 const fr = {
     "Loading": "Chargement",
@@ -802,6 +842,19 @@ const fr = {
     "Save Calibration": "Enregistrer l'étalonnage",
     "Start Calibration": "Démarrer l'étalonnage",
     "Reset to Defaults": "Réinitialiser par défaut",
+    "Library": "Bibliothèque",
+    "TabGame": "Jeu",
+    "TabPower": "Énergie",
+    "TabDisplay": "Écran",
+    "TabLighting": "Lumière",
+    "TabSync": "Sync",
+    "TabMore": "Plus",
+    "Add non-Steam game": "Ajouter un jeu externe",
+    "Select the game's executable": "Sélectionnez l'exécutable du jeu",
+    "Added to Steam library": "Ajouté à la bibliothèque Steam",
+    "SD card": "Carte SD",
+    "Internal storage": "Stockage interne",
+    "Failed to add shortcut": "Échec de l'ajout du raccourci",
 };
 const dictionaries = { uk, ru, es, fr };
 // CEF's navigator.language follows the Steam UI language in game mode, which
@@ -833,6 +886,7 @@ const tabIcons = {
     Display: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("rect", { width: "20", height: "14", x: "2", y: "3", rx: "2" }), SP_JSX.jsx("line", { x1: "8", x2: "16", y1: "21", y2: "21" }), SP_JSX.jsx("line", { x1: "12", x2: "12", y1: "17", y2: "21" })] }) })),
     Lighting: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5" }), SP_JSX.jsx("path", { d: "M9 18h6" }), SP_JSX.jsx("path", { d: "M10 22h4" })] }) })),
     Sync: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M21 12a9 9 0 0 1-15.5 6.2L3 16" }), SP_JSX.jsx("path", { d: "M3 12a9 9 0 0 1 15.5-6.2L21 8" }), SP_JSX.jsx("path", { d: "M3 11v5h5" }), SP_JSX.jsx("path", { d: "M21 13V8h-5" })] }) })),
+    Library: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" }), SP_JSX.jsx("path", { d: "M12 7v6" }), SP_JSX.jsx("path", { d: "M9 10h6" })] }) })),
     Advanced: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" }), SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "3" })] }) })),
 };
 
@@ -1370,6 +1424,28 @@ const styles = `
         margin-top: -12px;
         margin-left: -8px;
         overflow: hidden;
+      }
+      .nc-tab-title {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 2px 0;
+      }
+      .nc-tab-title svg {
+        width: 18px;
+        height: 18px;
+      }
+      .nc-tab-title span {
+        font-size: 8px;
+        line-height: 1;
+        letter-spacing: -0.1px;
+        opacity: 0.75;
+        max-width: 44px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .nebel-control-tabs > div > div:first-child::before {
         background: #0D141C;
@@ -1992,6 +2068,42 @@ function Display() {
                             .catch((error) => setErrorMessage(String(error)))
                             .finally(() => setRestarting(false));
                     }, children: t("Apply & Restart Game Mode") }) })] }));
+}
+
+// The stock "Browse..." button in Steam's Add Non-Steam Game dialog is broken
+// in the ARM64 client (OpenFileDialog fails before reaching the portal), and
+// native dialogs never appear in the gamescope session — so the picker lives
+// right here and the pick is registered through Steam's AddShortcut API.
+function AddGame() {
+    const [picker, setPicker] = SP_REACT.useState(null);
+    const [addResult, setAddResult] = SP_REACT.useState("");
+    const navigate = async (path) => {
+        try {
+            setPicker(await listDir(path));
+        }
+        catch {
+            setAddResult(t("Failed to add shortcut"));
+            setPicker(null);
+        }
+    };
+    const pick = async (fullPath) => {
+        setPicker(null);
+        setAddResult("");
+        try {
+            const name = fullPath.split("/").pop()?.replace(/\.[^.]+$/, "") || fullPath;
+            // Steam quotes the Exe field itself — passing a pre-quoted path yields ""..."".
+            const appid = await SteamClient?.Apps?.AddShortcut?.(name, fullPath, "", "");
+            setAddResult(typeof appid === "number" && appid > 0 ? t("Added to Steam library") : t("Failed to add shortcut"));
+        }
+        catch {
+            setAddResult(t("Failed to add shortcut"));
+        }
+    };
+    const shortcutLabel = (s) => s.id === "home" ? t("Internal storage") : `${t("SD card")}: ${s.label}`;
+    if (picker) {
+        return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Select the game's executable"), children: [SP_JSX.jsx(DFL.Field, { label: picker.path }), (picker.shortcuts || []).map((s) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(s.path), children: [shortcutLabel(s), "/"] }, `s:${s.path}`))), picker.parent !== null && (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(picker.parent || "/"), children: ".." })), picker.dirs.map((dir) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(`${picker.path}/${dir}`), children: [dir, "/"] }, `d:${dir}`))), picker.files.map((file) => (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => pick(`${picker.path}/${file}`), children: file }, `f:${file}`))), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setPicker(null), children: t("Cancel") })] }));
+    }
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Library"), children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(""), children: t("Add non-Steam game") }), addResult && SP_JSX.jsx(DFL.Field, { label: addResult })] }));
 }
 
 // RRGGBB hex <-> RGB <-> HSB conversions shared by every color picker in
@@ -3144,13 +3256,15 @@ function Content() {
     if (!config)
         return SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) });
     const tabContent = (content) => (SP_JSX.jsx("div", { className: "nebel-control-tab-content", children: content }));
+    const tabTitle = (icon, label) => (SP_JSX.jsxs("div", { className: "nc-tab-title", children: [icon, SP_JSX.jsx("span", { children: label })] }));
     return (SP_JSX.jsxs("div", { className: "nebel-control-tabs", children: [SP_JSX.jsx("style", { children: styles }), SP_JSX.jsx(DFL.Tabs, { activeTab: tab, onShowTab: setTab, tabs: [
-                    { id: "Compatibility", title: tabIcons.Compatibility, content: tabContent(SP_JSX.jsx(Compatibility, { config: config, setConfig: setConfig })) },
-                    { id: "Power", title: tabIcons.Power, content: tabContent(SP_JSX.jsx(Power, { config: config, setConfig: setConfig })) },
-                    { id: "Display", title: tabIcons.Display, content: tabContent(SP_JSX.jsx(Display, {})) },
-                    { id: "Lighting", title: tabIcons.Lighting, content: tabContent(SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig })) },
-                    { id: "Sync", title: tabIcons.Sync, content: tabContent(SP_JSX.jsx(Sync, {})) },
-                    { id: "Advanced", title: tabIcons.Advanced, content: tabContent(SP_JSX.jsx(Settings, { config: config, setConfig: setConfig })) },
+                    { id: "Compatibility", title: tabTitle(tabIcons.Compatibility, t("TabGame")), content: tabContent(SP_JSX.jsx(Compatibility, { config: config, setConfig: setConfig })) },
+                    { id: "Power", title: tabTitle(tabIcons.Power, t("TabPower")), content: tabContent(SP_JSX.jsx(Power, { config: config, setConfig: setConfig })) },
+                    { id: "Display", title: tabTitle(tabIcons.Display, t("TabDisplay")), content: tabContent(SP_JSX.jsx(Display, {})) },
+                    { id: "Lighting", title: tabTitle(tabIcons.Lighting, t("TabLighting")), content: tabContent(SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig })) },
+                    { id: "Library", title: tabTitle(tabIcons.Library, t("Library")), content: tabContent(SP_JSX.jsx(AddGame, {})) },
+                    { id: "Sync", title: tabTitle(tabIcons.Sync, t("TabSync")), content: tabContent(SP_JSX.jsx(Sync, {})) },
+                    { id: "Advanced", title: tabTitle(tabIcons.Advanced, t("TabMore")), content: tabContent(SP_JSX.jsx(Settings, { config: config, setConfig: setConfig })) },
                 ] })] }));
 }
 

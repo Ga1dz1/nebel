@@ -1,6 +1,6 @@
 from pathlib import Path
 
-STEAM_ROOT = Path("/var/home/armada/.local/share/Steam")
+STEAM_ROOT = Path("/var/home/nebel/.local/share/Steam")
 STEAM_APPS_DIR = STEAM_ROOT / "steamapps"
 
 

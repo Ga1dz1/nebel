@@ -7,6 +7,28 @@ export const styles = `
         margin-left: -8px;
         overflow: hidden;
       }
+      .nc-tab-title {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 2px 0;
+      }
+      .nc-tab-title svg {
+        width: 18px;
+        height: 18px;
+      }
+      .nc-tab-title span {
+        font-size: 8px;
+        line-height: 1;
+        letter-spacing: -0.1px;
+        opacity: 0.75;
+        max-width: 44px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       .nebel-control-tabs > div > div:first-child::before {
         background: #0D141C;
         box-shadow: none;
