@@ -12,8 +12,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getSyncState,
   setSyncServiceEnabled,
+  syncAcceptFolder,
   syncAddCustomFolder,
   syncAddDevice,
+  syncDismissDevice,
+  syncDismissFolder,
   syncRemoveCustomFolder,
   syncRemoveDevice,
   syncSetFolderEnabled,
@@ -200,6 +203,54 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
         )}
         {!!error && <Field label="Error" description={error} />}
       </PanelSection>
+      {state.serviceActive && (state.pendingDevices.length > 0 || state.pendingFolders.length > 0) && (
+        <PanelSection title="Requests">
+          {state.pendingDevices.map((device) => (
+            <PanelSectionRow key={device.id}>
+              <Field label={`Device "${device.name}" wants to pair`} description={device.id.slice(0, 13) + "..."}>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <DialogButton
+                    style={{ minWidth: "80px" }}
+                    disabled={busy}
+                    onClick={() => void run(() => syncAddDevice(device.id, device.name))}
+                  >
+                    Accept
+                  </DialogButton>
+                  <DialogButton
+                    style={{ minWidth: "80px" }}
+                    disabled={busy}
+                    onClick={() => void run(() => syncDismissDevice(device.id))}
+                  >
+                    Dismiss
+                  </DialogButton>
+                </div>
+              </Field>
+            </PanelSectionRow>
+          ))}
+          {state.pendingFolders.map((folder) => (
+            <PanelSectionRow key={folder.id}>
+              <Field label={`Folder "${folder.label}" was shared with you`} description={folder.id}>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <DialogButton
+                    style={{ minWidth: "80px" }}
+                    disabled={busy}
+                    onClick={() => void run(() => syncAcceptFolder(folder.id))}
+                  >
+                    Accept
+                  </DialogButton>
+                  <DialogButton
+                    style={{ minWidth: "80px" }}
+                    disabled={busy}
+                    onClick={() => void run(() => syncDismissFolder(folder.id, folder.offeredBy[0] || ""))}
+                  >
+                    Dismiss
+                  </DialogButton>
+                </div>
+              </Field>
+            </PanelSectionRow>
+          ))}
+        </PanelSection>
+      )}
       {state.serviceActive && (
         <PanelSection title="Devices">
           {state.devices.map((device) => (
@@ -241,10 +292,18 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
           {state.devices.length === 0 && (
             <Field label="Add a device first - folders sync only to paired devices" />
           )}
-          {state.folders.map((folder) =>
-            folder.custom ? (
+          {state.folders.map((folder) => {
+            const statusSuffix = folder.enabled
+              ? folder.syncState === "syncing"
+                ? " • syncing…"
+                : folder.syncState === "idle"
+                  ? " • in sync"
+                  : ""
+              : "";
+            const description = folder.path.replace("/var/home/armada", "~") + statusSuffix;
+            return folder.custom ? (
               <PanelSectionRow key={folder.id}>
-                <Field label={folder.label} description={folder.path.replace("/var/home/armada", "~")}>
+                <Field label={folder.label} description={description}>
                   <DialogButton
                     style={{ minWidth: "90px" }}
                     disabled={busy}
@@ -258,13 +317,13 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
               <ToggleRow
                 key={folder.id}
                 label={folder.label}
-                description={folder.path.replace("/var/home/armada", "~")}
+                description={description}
                 value={folder.enabled}
                 disabled={busy}
                 onChange={(enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled))}
               />
-            ),
-          )}
+            );
+          })}
           <PanelSectionRow>
             <DialogButton
               disabled={busy}

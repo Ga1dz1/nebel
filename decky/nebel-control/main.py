@@ -31,8 +31,11 @@ from nebel_control.power import save_power_config
 from nebel_control.shared_storage import set_shared_storage_enabled
 from nebel_control.steam import installed_games
 from nebel_control.sync import (
+    accept_pending_folder,
     add_custom_folder,
     add_device,
+    dismiss_pending_device,
+    dismiss_pending_folder,
     remove_custom_folder,
     remove_device,
     set_folder_enabled,
@@ -94,6 +97,15 @@ class Plugin:
 
     async def sync_remove_custom_folder(self, folder_id):
         return await asyncio.to_thread(remove_custom_folder, folder_id)
+
+    async def sync_dismiss_device(self, device_id):
+        return await asyncio.to_thread(dismiss_pending_device, device_id)
+
+    async def sync_accept_folder(self, folder_id):
+        return await asyncio.to_thread(accept_pending_folder, folder_id)
+
+    async def sync_dismiss_folder(self, folder_id, device_id):
+        return await asyncio.to_thread(dismiss_pending_folder, folder_id, device_id)
 
     async def set_stick_led_color(self, side, value):
         return await asyncio.to_thread(set_stick_led_color, side, value)

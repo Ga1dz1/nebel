@@ -157,6 +157,18 @@ export interface SyncFolder {
   pathExists: boolean;
   sharedWith: string[];
   custom: boolean;
+  syncState?: string;
+}
+
+export interface SyncPendingDevice {
+  id: string;
+  name: string;
+}
+
+export interface SyncPendingFolder {
+  id: string;
+  label: string;
+  offeredBy: string[];
 }
 
 export interface SyncState {
@@ -167,5 +179,7 @@ export interface SyncState {
   myId: string;
   devices: SyncDevice[];
   folders: SyncFolder[];
+  pendingDevices: SyncPendingDevice[];
+  pendingFolders: SyncPendingFolder[];
   error: string;
 }

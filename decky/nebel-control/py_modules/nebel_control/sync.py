@@ -101,6 +101,11 @@ def set_service_enabled(enabled):
                 break
             except Exception:
                 time.sleep(0.5)
+        # Drop the stock ~/Sync folder Syncthing auto-creates on first run.
+        try:
+            rest("DELETE", "/rest/config/folders/default")
+        except Exception:
+            pass
     return result
 
 
@@ -109,17 +114,44 @@ def _remote_devices():
     return [d for d in devices if isinstance(d, dict) and d.get("deviceID")]
 
 
+# Safety net for a two-way sync: deletions and bad overwrites land in the
+# folder's trash for two weeks instead of vanishing from both consoles.
+FOLDER_VERSIONING = {"type": "trashcan", "params": {"cleanoutDays": "14"}, "cleanupIntervalS": 3600}
+
+# Per-preset ignore patterns (written as .stignore into the folder root).
+FOLDER_IGNORES = {
+    "nebel-pcsx2": ["logs/"],
+}
+
+
+def _write_ignores(preset_id, path):
+    patterns = FOLDER_IGNORES.get(preset_id)
+    if not patterns:
+        return
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        stignore = path / ".stignore"
+        existing = stignore.read_text(encoding="utf-8", errors="replace").splitlines() if stignore.exists() else []
+        merged = existing + [p for p in patterns if p not in existing]
+        stignore.write_text("\n".join(merged) + "\n", encoding="utf-8")
+    except OSError:
+        pass
+
+
 def _folder_entry(preset_id):
     label, rel = PRESET_FOLDERS[preset_id]
+    path = HOME / rel
+    _write_ignores(preset_id, path)
     return {
         "id": preset_id,
         "label": label,
-        "path": str(HOME / rel),
+        "path": str(path),
         "type": "sendreceive",
         "devices": [{"deviceID": d["deviceID"]} for d in _remote_devices()],
         "ignorePerms": True,
         "fsWatcherEnabled": True,
         "rescanIntervalS": 3600,
+        "versioning": FOLDER_VERSIONING,
         "paused": False,
     }
 
@@ -133,6 +165,8 @@ def sync_state():
         "myId": "",
         "devices": [],
         "folders": [],
+        "pendingDevices": [],
+        "pendingFolders": [],
         "error": "",
     }
     try:
@@ -184,6 +218,26 @@ def sync_state():
                 "custom": True,
             })
         state["folders"] = folders
+        for folder in state["folders"]:
+            if not folder["enabled"]:
+                continue
+            try:
+                db = rest("GET", f"/rest/db/status?folder={folder['id']}") or {}
+                folder["syncState"] = str(db.get("state", ""))
+            except Exception:
+                folder["syncState"] = ""
+        pending_devices = rest("GET", "/rest/cluster/pending/devices") or {}
+        state["pendingDevices"] = [
+            {"id": dev_id, "name": str(info.get("name") or dev_id[:7])}
+            for dev_id, info in pending_devices.items()
+        ]
+        pending_folders = rest("GET", "/rest/cluster/pending/folders") or {}
+        offers = {}
+        for folder_id, info in pending_folders.items():
+            for dev_id, offer in (info.get("offeredBy") or {}).items():
+                offers.setdefault(folder_id, {"id": folder_id, "label": str(offer.get("label") or folder_id), "offeredBy": []})
+                offers[folder_id]["offeredBy"].append(dev_id)
+        state["pendingFolders"] = list(offers.values())
     except Exception as exc:
         state["error"] = str(exc)
     return state
@@ -271,6 +325,7 @@ def add_custom_folder(path, label):
         "ignorePerms": True,
         "fsWatcherEnabled": True,
         "rescanIntervalS": 3600,
+        "versioning": FOLDER_VERSIONING,
         "paused": False,
     }
     rest("POST", "/rest/config/folders", entry)
@@ -283,4 +338,51 @@ def remove_custom_folder(folder_id):
         # Presets go through set_folder_enabled so the toggle state stays consistent.
         return set_folder_enabled(folder_id, False)
     rest("DELETE", f"/rest/config/folders/{folder_id}")
+    return sync_state()
+
+
+def dismiss_pending_device(device_id):
+    rest("DELETE", f"/rest/cluster/pending/devices/{str(device_id).strip()}")
+    return sync_state()
+
+
+def accept_pending_folder(folder_id):
+    """Accept a folder a paired device is offering to share with us.
+
+    Preset ids map to their preset path; anything else becomes a custom
+    folder under ~/Sync/<label>.
+    """
+    folder_id = str(folder_id).strip()
+    offers = (rest("GET", "/rest/cluster/pending/folders") or {}).get(folder_id) or {}
+    offered_by = list((offers.get("offeredBy") or {}).keys())
+    if folder_id in PRESET_FOLDERS:
+        return set_folder_enabled(folder_id, True)
+    label = None
+    for info in (offers.get("offeredBy") or {}).values():
+        label = info.get("label")
+        if label:
+            break
+    label = str(label or folder_id)
+    path = HOME / "Sync" / label
+    path.mkdir(parents=True, exist_ok=True)
+    entry = {
+        "id": folder_id,
+        "label": label,
+        "path": str(path),
+        "type": "sendreceive",
+        "devices": [{"deviceID": d} for d in offered_by] or [{"deviceID": d["deviceID"]} for d in _remote_devices()],
+        "ignorePerms": True,
+        "fsWatcherEnabled": True,
+        "rescanIntervalS": 3600,
+        "versioning": FOLDER_VERSIONING,
+        "paused": False,
+    }
+    existing = {f.get("id") for f in (rest("GET", "/rest/config/folders") or [])}
+    if folder_id not in existing:
+        rest("POST", "/rest/config/folders", entry)
+    return sync_state()
+
+
+def dismiss_pending_folder(folder_id, device_id):
+    rest("DELETE", f"/rest/cluster/pending/folders/{str(folder_id).strip()}?device={str(device_id).strip()}")
     return sync_state()

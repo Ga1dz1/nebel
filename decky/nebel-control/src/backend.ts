@@ -68,3 +68,7 @@ export const syncAddCustomFolder = (path: string, label: string) =>
   call<[string, string], SyncState>("sync_add_custom_folder", path, label);
 export const syncRemoveCustomFolder = (folderId: string) =>
   call<[string], SyncState>("sync_remove_custom_folder", folderId);
+export const syncDismissDevice = (deviceId: string) => call<[string], SyncState>("sync_dismiss_device", deviceId);
+export const syncAcceptFolder = (folderId: string) => call<[string], SyncState>("sync_accept_folder", folderId);
+export const syncDismissFolder = (folderId: string, deviceId: string) =>
+  call<[string, string], SyncState>("sync_dismiss_folder", folderId, deviceId);
