@@ -32,16 +32,12 @@ SETTLE_TIME = 1.5     # let the MCU stream stabilize after serdev bind
 # ABS axes of the two analog sticks (left: X/Y, right: RX/RY).
 AXES = (("axis_leftx", 0x00), ("axis_lefty", 0x01),
         ("axis_rightx", 0x03), ("axis_righty", 0x04))
-MODULES = ("retroid", "rsinput")
-DEVICE_NAMES = ("Retroid Pocket Gamepad", "RSInput Gamepad")
-
-
-def find_params_dir():
-    for name in MODULES:
-        path = Path(f"/sys/module/{name}/parameters")
-        if path.is_dir():
-            return path
-    return None
+# modules-load.d force-loads BOTH families' drivers everywhere; pick the one
+# bound to the actual gamepad by its input device name.
+DEVICE_TO_MODULE = {
+    "Retroid Pocket Gamepad": "retroid",
+    "RSInput Gamepad": "rsinput",
+}
 
 
 def find_event_node():
@@ -54,10 +50,10 @@ def find_event_node():
                 name = buf.split(b"\0")[0].decode(errors="replace")
             except OSError:
                 continue
-            if name in DEVICE_NAMES:
-                return node
+            if name in DEVICE_TO_MODULE:
+                return node, DEVICE_TO_MODULE[name]
         time.sleep(0.1)
-    return None
+    return None, None
 
 
 def read_axis(fd, axis):
@@ -67,12 +63,13 @@ def read_axis(fd, axis):
 
 
 def main():
-    params = find_params_dir()
-    if params is None:
-        return  # not a handheld with a calibratable gamepad; nothing to do
-    node = find_event_node()
+    node, module = find_event_node()
     if node is None:
         print("gamepad-autocalibrate: gamepad event node not found", file=sys.stderr)
+        return
+    params = Path(f"/sys/module/{module}/parameters")
+    if not params.is_dir():
+        print(f"gamepad-autocalibrate: {params} missing", file=sys.stderr)
         return
 
     with open(node, "rb") as fd:

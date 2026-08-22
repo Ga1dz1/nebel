@@ -1,9 +1,11 @@
 [Unit]
 Description=Auto-calibrate handheld gamepad stick centers at boot
+# Always runs, even when /etc/nebel/input-calibration.json exists: the static
+# config carries ranges/deadzones (applied by nebel-input-calibration), while
+# centers drift boot-to-boot and are re-measured here every time.
 DefaultDependencies=no
 After=systemd-modules-load.service systemd-udev-trigger.service
 Before=inputplumber.service
-ConditionPathExists=!/etc/nebel/input-calibration.json
 
 [Service]
 Type=oneshot

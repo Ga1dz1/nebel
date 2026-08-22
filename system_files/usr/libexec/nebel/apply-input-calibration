@@ -5,10 +5,14 @@ from pathlib import Path
 
 CONFIG = Path("/etc/nebel/input-calibration.json")
 # Each supported gamepad driver exposes the same calibration parameter ABI
-# (axis_*/trigger_* module params) under its own /sys/module/<name>/parameters -
-# rsinput on AYN devices, retroid (drivers/input/joystick/retroid.c) on
-# Retroid Pocket. Only one of these will exist on any given device.
-CALIBRATION_DRIVER_MODULES = ("rsinput", "retroid")
+# (axis_*/trigger_* module params) under its own /sys/module/<name>/parameters.
+# BOTH get force-loaded by modules-load.d/nebel-handheld.conf on every device,
+# so first-existing is not good enough: pick by the registered input device's
+# name (retroid on Retroid Pocket, rsinput on AYN devices).
+DEVICE_NAME_TO_MODULE = (
+    ("retroid pocket gamepad", "retroid"),
+    ("rsinput", "rsinput"),
+)
 PARAM_NAMES = (
     "axis_leftx_min",
     "axis_leftx_center",
@@ -42,18 +46,36 @@ PARAM_NAMES = (
 def main():
     if not CONFIG.exists():
         return
-    parameters = next(
-        (Path(f"/sys/module/{name}/parameters") for name in CALIBRATION_DRIVER_MODULES
-         if Path(f"/sys/module/{name}/parameters").exists()),
-        None,
-    )
+    parameters = None
+    for event in Path("/sys/class/input").glob("event*"):
+        try:
+            name = (event / "device/name").read_text(encoding="utf-8").strip().casefold()
+        except OSError:
+            continue
+        for token, module in DEVICE_NAME_TO_MODULE:
+            if token in name:
+                parameters = Path(f"/sys/module/{module}/parameters")
+                break
+        if parameters is not None:
+            break
     if parameters is None:
+        for module in ("rsinput", "retroid"):
+            candidate = Path(f"/sys/module/{module}/parameters")
+            if candidate.exists():
+                parameters = candidate
+                break
+    if parameters is None or not parameters.exists():
         return
     with CONFIG.open(encoding="utf-8") as f:
         params = json.load(f)
     if not isinstance(params, dict):
         raise SystemExit("input calibration config must be a JSON object")
     for name in PARAM_NAMES:
+        # *_center is deliberately NOT taken from the static config: rest
+        # position drifts boot-to-boot (seen +-70 counts on the same unit),
+        # so nebel-gamepad-autocal re-measures centers fresh every boot.
+        if name.endswith("_center"):
+            continue
         if name in params:
             (parameters / name).write_text(str(int(params[name])), encoding="utf-8")
     (parameters / "update_params").write_text("1", encoding="utf-8")

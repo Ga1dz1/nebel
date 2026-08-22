@@ -488,6 +488,37 @@ def action_inputplumber_intercept(request):
     return {"ok": True}
 
 
+# The modules-load conf force-loads BOTH controller families' drivers so their
+# calibration params exist before InputPlumber; on any given device only one is
+# bound to real hardware. Pick the module by the registered input device's
+# name, not by first-existing - otherwise calibration writes land in the
+# unbound module (seen live on Mini V2: both rsinput and retroid loaded, the
+# Decky wizard saved into rsinput and the real gamepad never changed).
+DEVICE_NAME_TO_MODULE = (
+    ("retroid pocket gamepad", "retroid"),
+    ("rsinput", "rsinput"),
+)
+
+
+def calibration_driver_params():
+    for event in Path("/sys/class/input").glob("event*"):
+        try:
+            name = (event / "device/name").read_text(encoding="utf-8").strip().casefold()
+        except OSError:
+            continue
+        for token, module in DEVICE_NAME_TO_MODULE:
+            if token in name:
+                params = Path(f"/sys/module/{module}/parameters")
+                if params.exists():
+                    return params
+    # Fallback for devices whose input name matches neither family.
+    for module in ("rsinput", "retroid"):
+        params = Path(f"/sys/module/{module}/parameters")
+        if params.exists():
+            return params
+    return None
+
+
 def action_write_config(request):
     name = str(request.get("name", ""))
     text = request.get("text")
@@ -497,14 +528,7 @@ def action_write_config(request):
         raise ValueError("config payload too large")
     if name == "calibration":
         params = json.loads(text)
-        # Each supported gamepad driver exposes the same calibration
-        # parameter ABI under its own /sys/module/<name>/parameters -
-        # rsinput on AYN devices, retroid (drivers/input/joystick/retroid.c)
-        # on Retroid Pocket. Only one of these will exist on any device.
-        driver_params = next(
-            (p for name in ("rsinput", "retroid") if (p := Path(f"/sys/module/{name}/parameters")).exists()),
-            None,
-        )
+        driver_params = calibration_driver_params()
         if driver_params is None:
             raise RuntimeError("controller calibration is not supported on this device")
         for param in CALIBRATION_PARAMS:
