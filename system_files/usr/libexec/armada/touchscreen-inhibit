@@ -1,0 +1,13 @@
+#!/usr/bin/bash
+# Inhibit (1) or re-enable (0) an input device by name. Used to silence the
+# secondary touchscreen while gamescope owns the only visible screen.
+# (ported from upstream virtudude/armada 7752e05)
+set -euo pipefail
+
+name="${1:?usage: touchscreen-inhibit <device-name> <1|0>}"
+state="${2:?usage: touchscreen-inhibit <device-name> <1|0>}"
+
+for dev in /sys/class/input/input*/; do
+    [[ "$(cat "${dev}name" 2>/dev/null)" == "${name}" ]] || continue
+    echo "${state}" > "${dev}inhibited"
+done
