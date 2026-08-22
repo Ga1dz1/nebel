@@ -1,5 +1,5 @@
 [KDE]
-LookAndFeelPackage=com.valve.vapor.deck.desktop
+LookAndFeelPackage=com.valve.vapor.desktop
 
 [General]
 ColorScheme=Vapor

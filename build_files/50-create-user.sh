@@ -14,6 +14,10 @@ for group in wheel video render input audio seat gamemode; do
 done
 
 install -d -m 0700 -o armada -g armada /var/home/armada
+# Seed the home dir from /etc/skel (the Vapor KDE defaults live there);
+# plain `install -d` alone leaves the home empty and Plasma falls back to
+# its own Breeze Twilight default instead of our theme.
+cp -a /etc/skel/. /var/home/armada/
 chown -R armada:armada /var/home/armada
 chmod 0700 /var/home/armada
 install -Dpm 0755 -o armada -g armada \

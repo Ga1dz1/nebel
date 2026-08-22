@@ -24,6 +24,17 @@ if command -v /usr/libexec/armada/device-env >/dev/null 2>&1; then
     eval "$(/usr/libexec/armada/device-env)"
 fi
 
+# First Plasma login only: actually APPLY the Vapor look-and-feel. The
+# kdeglobals LookAndFeelPackage default alone just labels the theme in System
+# Settings; without an explicit apply Plasma quietly comes up as Breeze
+# Twilight (seen live on a fresh home dir).
+lnf_stamp="${XDG_CONFIG_HOME:-$HOME/.config}/armada/.lnf-applied"
+if [[ ! -e "${lnf_stamp}" ]]; then
+    mkdir -p "$(dirname "${lnf_stamp}")"
+    plasma-apply-lookandfeel --apply com.valve.vapor.desktop >/dev/null 2>&1 || true
+    touch "${lnf_stamp}"
+fi
+
 # The gaming session inhibits the secondary touchscreen (the desktop is the
 # only session that lights up the secondary panel); re-enable it every start.
 if [[ -n "${ARMADA_SECONDARY_TOUCHSCREEN:-}" ]]; then
