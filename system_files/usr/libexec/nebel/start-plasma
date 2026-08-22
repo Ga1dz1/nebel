@@ -8,12 +8,16 @@ export XDG_SESSION_TYPE=wayland
 export KDE_SESSION_VERSION=6
 
 # Ensure the KDE XDG desktop portal backend is available before Plasma/Steam
-# asks for a file chooser. In some boot paths the systemd user session does not
-# auto-activate plasma-xdg-desktop-portal-kde.service in time.
-if ! pgrep -x xdg-desktop-portal-kde >/dev/null 2>&1; then
-    systemctl --user start plasma-xdg-desktop-portal-kde.service 2>/dev/null || \
-        /usr/libexec/xdg-desktop-portal-kde &
-fi
+# asks for a file chooser. Stale backends from a previous desktop session can
+# linger on the shared user bus, holding org.freedesktop.impl.portal.desktop.kde
+# while bound to a dead display - kill them and start a fresh one through the
+# systemd unit (its drop-in forces the wayland backend and restart-on-failure).
+pkill -x xdg-desktop-portal-kde 2>/dev/null || true
+systemctl --user reset-failed plasma-xdg-desktop-portal-kde.service 2>/dev/null || true
+systemctl --user start plasma-xdg-desktop-portal-kde.service 2>/dev/null || true
+# The portal frontend caches backend interfaces at startup; bounce it once the
+# KDE backend is registered so FileChooser works on the very first request.
+(sleep 8; systemctl --user try-restart xdg-desktop-portal.service 2>/dev/null || true) &
 
 # In Plasma desktop mode the gamepad should act as a mouse/keyboard so the
 # handheld can be navigated without a paired controller. Switch InputPlumber to
