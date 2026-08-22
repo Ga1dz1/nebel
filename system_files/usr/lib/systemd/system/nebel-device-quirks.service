@@ -1,0 +1,14 @@
+[Unit]
+Description=nebel device quirks
+After=systemd-tmpfiles-setup-dev.service
+Before=inputplumber.service display-manager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/nebel/device-quirks
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -6,7 +6,7 @@ if [[ "$(uname -m)" != "aarch64" ]]; then
     exit 1
 fi
 
-STEAM_BOOTSTRAP_HOME="${STEAM_BOOTSTRAP_HOME:-/var/lib/armada/steam-bootstrap-home}"
+STEAM_BOOTSTRAP_HOME="${STEAM_BOOTSTRAP_HOME:-/var/lib/nebel/steam-bootstrap-home}"
 STEAM="${STEAM_BOOTSTRAP_HOME}/.local/share/Steam"
 DOT_STEAM="${STEAM_BOOTSTRAP_HOME}/.steam"
 STEAM_ARM_RUNTIME_BASE="https://repo.steampowered.com/steamrt3c/images"
@@ -115,7 +115,7 @@ if [[ ! -f "${STEAM}/steamrtarm64/steam" ]]; then
     exit 1
 fi
 
-Xvfb :99 -screen 0 1280x800x24 >/tmp/armada-steam-bootstrap-xvfb.log 2>&1 &
+Xvfb :99 -screen 0 1280x800x24 >/tmp/nebel-steam-bootstrap-xvfb.log 2>&1 &
 xvfb_pid=$!
 trap 'kill "${xvfb_pid}" 2>/dev/null || true' EXIT
 sleep 1
@@ -131,8 +131,8 @@ timeout "${STEAM_BOOTSTRAP_TIMEOUT}" \
     "${STEAM}/steamrtarm64/steam" \
     -steamdeck \
     -exitsteam \
-    >/tmp/armada-steam-bootstrap.stdout \
-    2>/tmp/armada-steam-bootstrap.stderr
+    >/tmp/nebel-steam-bootstrap.stdout \
+    2>/tmp/nebel-steam-bootstrap.stderr
 steam_rc=$?
 set -e
 
@@ -149,9 +149,9 @@ fi
 if [[ ! -f "${installed_manifest}" ]]; then
     echo "ERROR: Steam bootstrap produced no .installed manifest (last rc ${steam_rc}); the seed would re-install on first boot" >&2
     echo "--- last bootstrap stdout (tail) ---" >&2
-    tail -n 30 /tmp/armada-steam-bootstrap.stdout >&2 || true
+    tail -n 30 /tmp/nebel-steam-bootstrap.stdout >&2 || true
     echo "--- last bootstrap stderr (tail) ---" >&2
-    tail -n 30 /tmp/armada-steam-bootstrap.stderr >&2 || true
+    tail -n 30 /tmp/nebel-steam-bootstrap.stderr >&2 || true
     exit 1
 fi
 

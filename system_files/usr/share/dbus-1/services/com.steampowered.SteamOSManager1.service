@@ -1,4 +1,4 @@
 [D-BUS Service]
 Name=com.steampowered.SteamOSManager1
 Exec=/bin/false
-SystemdService=armada-steamos-manager.service
+SystemdService=nebel-steamos-manager.service

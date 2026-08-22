@@ -1,0 +1,47 @@
+#!/usr/bin/bash
+# udev-triggered on DRM change events (99-nebel-display-hotplug.rules).
+#
+# Game mode's output/resolution/rotation are gamescope STARTUP flags (see
+# sessions.d/steam) - if the external display the session launched on is
+# unplugged mid-session, the internal panel would come back with the
+# external's rotation/no rotation shader even if gamescope's own connector
+# fallback kicks in. Restarting the session is the only way to re-apply
+# the internal panel's correct flags, so do exactly that - but only when
+# the connector THIS session actually launched on (the marker written by
+# sessions.d/steam) is the one that disconnected. The marker is removed
+# before restarting and only rewritten by a session that launches on the
+# external again, which is what prevents a restart loop: the relaunched
+# session sees the connector gone, falls back to internal, writes no
+# marker, and further DRM events find nothing to do.
+set -euo pipefail
+
+MARKER="/run/user/1000/nebel-display-connector"
+LOCK="/run/nebel-display-hotplug.lock"
+
+exec 9>"$LOCK"
+flock -n 9 || exit 0
+
+[[ -f "$MARKER" ]] || exit 0
+connector=$(cat "$MARKER")
+[[ -n "$connector" ]] || exit 0
+
+for status_file in /sys/class/drm/card*-"${connector}"/status; do
+    [[ -f "$status_file" ]] || continue
+    [[ "$(cat "$status_file" 2>/dev/null)" == "connected" ]] && exit 0
+done
+
+# Marker present but gamescope gone = stale leftover (session ended some
+# other way); clean up but don't touch sddm from here.
+if ! pgrep -x gamescope >/dev/null 2>&1; then
+    rm -f "$MARKER"
+    exit 0
+fi
+
+rm -f "$MARKER"
+# Detached: udev kills long-running RUN+= children, and this restart
+# tearing down the very cgroup this trigger is running in mid-flight is
+# exactly that case. Not session-control's switch-gamemode: confirmed live
+# that restarting sddm.service (what that goes through when there's no
+# Plasma session to gracefully hand off from) never tears down an already-
+# running autologin session at all - see restart-gamescope-session for why.
+systemd-run --no-block /usr/libexec/nebel/restart-gamescope-session

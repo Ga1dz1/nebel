@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Nebel Desktop Bootstrap
+Exec=/usr/libexec/nebel/desktop-bootstrap
+Terminal=false
+OnlyShowIn=KDE;

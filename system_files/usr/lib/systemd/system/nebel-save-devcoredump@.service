@@ -1,0 +1,7 @@
+[Unit]
+Description=Save kernel devcoredump %i before auto-delete
+
+[Service]
+Type=oneshot
+TimeoutStartSec=120
+ExecStart=/usr/libexec/nebel/save-devcoredump %i

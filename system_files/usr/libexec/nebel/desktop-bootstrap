@@ -1,0 +1,60 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+[[ ${XDG_SESSION_TYPE:-} == wayland ]] || exit 0
+
+activation_env=(
+    DESKTOP_SESSION
+    XDG_CURRENT_DESKTOP
+    XDG_SESSION_DESKTOP
+    XDG_SESSION_TYPE
+    WAYLAND_DISPLAY
+    DISPLAY
+    XAUTHORITY
+    KDE_FULL_SESSION
+    KDE_SESSION_VERSION
+)
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment --systemd "${activation_env[@]}" 2>/dev/null || true
+else
+    systemctl --user import-environment "${activation_env[@]}" 2>/dev/null || true
+fi
+
+if command -v /usr/libexec/nebel/device-env >/dev/null 2>&1; then
+    eval "$(/usr/libexec/nebel/device-env)"
+fi
+
+# First Plasma login only: actually APPLY the Vapor look-and-feel. The
+# kdeglobals LookAndFeelPackage default alone just labels the theme in System
+# Settings; without an explicit apply Plasma quietly comes up as Breeze
+# Twilight (seen live on a fresh home dir).
+lnf_stamp="${XDG_CONFIG_HOME:-$HOME/.config}/nebel/.lnf-applied"
+if [[ ! -e "${lnf_stamp}" ]]; then
+    mkdir -p "$(dirname "${lnf_stamp}")"
+    plasma-apply-lookandfeel --apply com.valve.vapor.desktop >/dev/null 2>&1 || true
+    touch "${lnf_stamp}"
+fi
+
+# The gaming session inhibits the secondary touchscreen (the desktop is the
+# only session that lights up the secondary panel); re-enable it every start.
+if [[ -n "${NEBEL_SECONDARY_TOUCHSCREEN:-}" ]]; then
+    /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_SECONDARY_TOUCHSCREEN" 0 2>/dev/null || true
+fi
+
+display_connector="${NEBEL_PRIMARY_CONNECTOR:-}"
+panel_orientation="${NEBEL_PANEL_ORIENTATION:-normal}"
+
+[[ -n "${display_connector}" ]] || exit 0
+
+for _ in {1..30}; do
+    kscreen-doctor -o >/dev/null 2>&1 && break
+    sleep 1
+done
+
+case "${panel_orientation}" in
+    left|right|inverted)
+        kscreen-doctor "output.${display_connector}.rotation.${panel_orientation}" >/dev/null 2>&1 || true
+        ;;
+esac
+
+kscreen-doctor "output.${display_connector}.scale.1.5" >/dev/null 2>&1 || true

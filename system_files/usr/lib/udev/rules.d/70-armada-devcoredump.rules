@@ -1,2 +1,0 @@
-# Save devcoredumps before the kernel's ~5 min auto-delete.
-SUBSYSTEM=="devcoredump", ACTION=="add", TAG+="systemd", ENV{SYSTEMD_WANTS}+="armada-save-devcoredump@$kernel.service"

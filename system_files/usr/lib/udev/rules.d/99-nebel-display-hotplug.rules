@@ -1,0 +1,4 @@
+# DRM connectors fire a "change" uevent on hotplug (plug AND unplug). The
+# helper itself works out whether the display game mode launched on is the
+# one that went away; see its header comment.
+ACTION=="change", SUBSYSTEM=="drm", KERNEL=="card[0-9]*", RUN+="/usr/libexec/nebel/nebel-display-hotplug"

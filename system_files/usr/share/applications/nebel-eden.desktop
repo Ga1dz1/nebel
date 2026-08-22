@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Eden
+Comment=Nintendo Switch emulator
+Exec=/usr/bin/nebel-eden
+Icon=applications-games
+Terminal=false
+Categories=Game;Emulator;

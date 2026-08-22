@@ -26,9 +26,9 @@ FROM ${EDEN_PKG} AS eden
 
 FROM docker.io/library/node:22-slim AS decky-build
 WORKDIR /build
-COPY decky/armada-control/package.json decky/armada-control/package-lock.json ./
+COPY decky/nebel-control/package.json decky/nebel-control/package-lock.json ./
 RUN npm ci
-COPY decky/armada-control/ ./
+COPY decky/nebel-control/ ./
 RUN npm run build
 
 FROM scratch AS ctx
@@ -37,8 +37,8 @@ COPY decky /decky/
 COPY system_files /system_files/
 
 FROM quay.io/fedora/fedora-bootc:44
-ARG ARMADA_VERSION=unknown
-LABEL org.opencontainers.image.version="${ARMADA_VERSION}"
+ARG NEBEL_VERSION=unknown
+LABEL org.opencontainers.image.version="${NEBEL_VERSION}"
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=bind,from=fex,source=/rpms,target=/packages/fex \
@@ -57,8 +57,8 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
-    mkdir -p /usr/lib/armada && \
-    printf '%s\n' "${ARMADA_VERSION}" >/usr/lib/armada/version && \
+    mkdir -p /usr/lib/nebel && \
+    printf '%s\n' "${NEBEL_VERSION}" >/usr/lib/nebel/version && \
     /ctx/build_files/build.sh
 
 RUN bootc container lint

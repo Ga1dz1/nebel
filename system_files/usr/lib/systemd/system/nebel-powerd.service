@@ -1,0 +1,16 @@
+[Unit]
+Description=nebel power policy daemon
+StartLimitIntervalSec=0
+
+[Service]
+Type=dbus
+BusName=org.nebel.Power
+NotifyAccess=main
+ExecStart=/usr/libexec/nebel/nebel-powerd
+ExecStopPost=/usr/libexec/nebel/nebel-powerd --fan-safe
+Restart=always
+RestartSec=1
+WatchdogSec=15
+
+[Install]
+WantedBy=multi-user.target

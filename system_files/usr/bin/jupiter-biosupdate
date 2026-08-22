@@ -1,4 +1,4 @@
 #!/usr/bin/bash
-# No Steam Deck BIOS on armada hardware; gamescope-session-steam's polkit
+# No Steam Deck BIOS on nebel hardware; gamescope-session-steam's polkit
 # wrapper still invokes this on "Check for updates", so no-op cleanly (exit 0).
 exit 0

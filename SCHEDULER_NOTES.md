@@ -3,9 +3,9 @@
 Found via `shuuri-labs/pocknix-os`, a third-party Arch-based OS on the same
 Retroid hardware family (RP5/RP6/Flip2) built on ROCKNIX's kernel - and,
 confirmed via its own code comments, directly derived from our
-`armada-control` Decky plugin (`pocknix_control` mirrors our module
+`nebel-control` Decky plugin (`pocknix_control` mirrors our module
 structure/naming almost 1:1, several files literally say "ported from
-armada's X.py"). Two scheduler-related things they carry that we don't.
+nebel's X.py"). Two scheduler-related things they carry that we don't.
 
 ## gamescope compositor on SCHED_RR — DISABLED, suspected of a full system hang (2026-07-23)
 
@@ -24,7 +24,7 @@ supervised on-device investigation - don't re-enable blind.
 
 ## gamescope compositor on SCHED_RR — originally shipped
 
-Ported as `armada-gamescope-rt` (`system_files/usr/libexec/armada/`), a
+Ported as `nebel-gamescope-rt` (`system_files/usr/libexec/nebel/`), a
 root helper that polls for gamescope/gamescope-wl and promotes its normal
 (non-batch) threads to `SCHED_RR` priority 40 via
 `chrt -r --reset-on-fork -p 40 "$tid"`. `--reset-on-fork` is load-bearing:
@@ -35,11 +35,11 @@ a priority-inversion hang (GPU usage collapsing to 0%, hitching) on
 2026-07-03.
 
 Paired with `kernel.sched_rt_runtime_us=-1` (RT throttle disabled) in
-`system_files/usr/lib/sysctl.d/60-armada-gaming.conf` - without it the
+`system_files/usr/lib/sysctl.d/60-nebel-gaming.conf` - without it the
 kernel's default 95%-per-period RT cap throttles the RR threads under
 load, reproducing the exact stall this exists to prevent. Safe to disable
 globally since no rtprio grant exists for the `armada` user
-(`limits.d/60-armada-gaming.conf`), so this doesn't open RT abuse from
+(`limits.d/60-nebel-gaming.conf`), so this doesn't open RT abuse from
 unprivileged processes generally - only gamescope's own threads actually
 run RT, and only because this helper explicitly puts them there.
 

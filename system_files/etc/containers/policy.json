@@ -6,6 +6,11 @@
     ],
     "transports": {
         "docker": {
+            "ghcr.io/ga1dz1/nebel": [
+                {
+                    "type": "insecureAcceptAnything"
+                }
+            ],
             "ghcr.io/ga1dz1/armada": [
                 {
                     "type": "insecureAcceptAnything"

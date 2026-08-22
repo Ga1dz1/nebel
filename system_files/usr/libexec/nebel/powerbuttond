@@ -1,0 +1,102 @@
+#!/bin/bash
+# Power button + lid -> Steam's sleep flow (steam://shortpowerpress), launched by
+# launch-steam as the user. fake-suspend owns wake.
+set -uo pipefail
+SESSION_USER="${NEBEL_SESSION_USER:-armada}"
+STEAM_DIR="/var/home/${SESSION_USER}/.local/share/Steam/steamrtarm64"
+STEAM_BIN="${STEAM_DIR}/steam"
+log() { logger -t nebel-powerbuttond -- "$*"; }
+source /usr/lib/nebel/input-lib 2>/dev/null || true
+
+steam_uri() {
+    [[ -x "$STEAM_BIN" ]] || return 1
+    LD_LIBRARY_PATH="$STEAM_DIR" "$STEAM_BIN" -ifrunning "steam://$1" >/dev/null 2>&1
+}
+
+power_device() {
+    local dev name
+    for dev in /dev/input/event*; do
+        [[ -e "$dev" ]] || continue
+        name="$(cat "/sys/class/input/$(basename "$dev")/device/name" 2>/dev/null)" || continue
+        case "$name" in *pwrkey*|*[Pp]ower\ [Bb]utton*) echo "$dev"; return 0 ;; esac
+    done
+    return 1
+}
+
+# Lid (clamshell only): close -> suspend directly. Lid-open wake is
+# fake-suspend's job. This used to go through steam_uri shortpowerpress like
+# the power button does, but that's wrong for a lid: -ifrunning is a no-op
+# if Steam isn't running, and even when it is, shortpowerpress in desktop
+# mode surfaces a confirmation menu instead of sleeping immediately - nobody
+# can click a menu after they've already closed the lid and put the device
+# in a bag. systemctl suspend is unconditional and session-agnostic (our own
+# 10-nebel-suspend.conf drop-in routes it through suspend-dispatch to
+# fake-suspend or real suspend regardless of desktop/game mode), matching
+# how every laptop's lid-close is expected to behave.
+lidpid=""
+liddev="$(nebel_find_lid_dev || true)"
+if [[ -n "$liddev" ]]; then
+    log "watching lid $liddev"
+    ( evtest "$liddev" 2>/dev/null | while read -r l; do
+        case "$l" in
+            *"(SW_LID), value 1"*) log "lid close -> systemctl suspend"; systemctl suspend --no-block ;;
+        esac
+      done ) &
+    lidpid=$!
+fi
+trap '[[ -n "$lidpid" ]] && kill "$lidpid" 2>/dev/null' EXIT INT TERM
+
+pdev="$(power_device || true)"
+[[ -n "$pdev" ]] || exit 0
+log "watching $pdev"
+# Long-press fires while still held, not on release.
+LONG_MS=1000
+# Real suspend (see the 50-nebel-real-suspend systemd-sleep hook) grabs the
+# power key for a couple seconds right after resume, which handles the wake
+# press's own echo in the common case - this is a backstop for the race
+# where our own reader wakes up and sees that echo before the grab lands.
+# Beyond just the echo, this is also a deliberate post-resume grace period:
+# a genuine short press this soon after waking is far more likely to be an
+# accidental press (pocket, still settling in) than an intentional request
+# to sleep again immediately - any press within this many ms of a recorded
+# resume is swallowed as a rebound guard, not treated as a request.
+REBOUND_GUARD_MS=30000
+RESUME_FLAG="/run/nebel/real-suspend.resumed-at"
+
+just_resumed() {
+    local at
+    [[ -r "$RESUME_FLAG" ]] || return 1
+    at="$(cat "$RESUME_FLAG" 2>/dev/null)" || return 1
+    [[ "$at" =~ ^[0-9]+$ ]] || return 1
+    (( ( $(date +%s%3N) - at ) < REBOUND_GUARD_MS ))
+}
+
+exec 3< <(evtest "$pdev" 2>/dev/null)
+state=idle; press_ms=0
+while :; do
+    case "$state" in
+        held)
+            rem=$(( LONG_MS - ( $(date +%s%3N) - press_ms ) ))
+            if (( rem <= 0 )); then
+                log "long press -> longpowerpress"; steam_uri longpowerpress; state=draining; continue
+            fi
+            if IFS= read -r -u 3 -t "$(printf '%d.%03d' $(( rem / 1000 )) $(( rem % 1000 )))" line; then
+                case "$line" in
+                    *"(KEY_POWER), value 0"*) log "short press -> shortpowerpress"; steam_uri shortpowerpress; state=idle ;;
+                esac
+            elif (( $? <= 128 )); then
+                break   # evtest ended (not a timeout); launch-steam relaunches next session
+            fi ;;
+        draining)  # long press already fired, or a rebound press is being swallowed; ignore the release
+            IFS= read -r -u 3 line || break
+            case "$line" in *"(KEY_POWER), value 0"*) state=idle ;; esac ;;
+        *)  # idle: a release here is the tail of a wake press fake-suspend grabbed -> ignore
+            IFS= read -r -u 3 line || break
+            case "$line" in
+                *"(KEY_POWER), value 1"*)
+                    if nebel_lid_closed 2>/dev/null; then log "power w/ lid closed -> ignored"
+                    elif just_resumed; then log "power press just after real-suspend resume -> rebound guard"; state=draining
+                    else press_ms=$(date +%s%3N); state=held; fi ;;
+            esac ;;
+    esac
+done

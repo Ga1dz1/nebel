@@ -1,0 +1,14 @@
+[Unit]
+Description=Apply Nebel state fixups
+After=local-fs.target
+RequiresMountsFor=/var/home/armada
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nebel/nebel-fixups
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

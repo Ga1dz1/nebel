@@ -1,0 +1,596 @@
+#!/usr/bin/env python3
+import json
+import os
+import re
+import shlex
+import socket
+import subprocess
+import tempfile
+from pathlib import Path
+
+SOCKET = Path("/run/nebel/control.sock")
+MAX_REQUEST = 1024 * 1024
+CLIENT_TIMEOUT = 5
+CONTROLLER_TYPES = {"deck-uhid", "xb360", "ds5"}
+INTERCEPT_MODES = {"overlay", "reset"}
+CONFIG_PATHS = {
+    "power": Path("/etc/nebel/power-profiles.conf"),
+    "tweaks": Path("/etc/nebel/game-tweaks.json"),
+    "calibration": Path("/etc/nebel/input-calibration.json"),
+    "compat-applied": Path("/var/lib/nebel/compat-applied.json"),
+}
+DISPLAY_OVERRIDE_PATH = Path("/etc/nebel/display-override.conf")
+# Per-connector last-used settings, kept even after switching back to the
+# internal screen so re-picking the same monitor restores its resolution/
+# rotation instead of resetting to the first mode. /var/lib (not /etc):
+# it's accumulated state, not the active choice.
+DISPLAY_REMEMBERED_PATH = Path("/var/lib/nebel/display-remembered.json")
+DISPLAY_ORIENTATIONS = {"normal", "left", "right", "upsidedown"}
+CALIBRATION_PARAMS = (
+    "axis_leftx_min",
+    "axis_leftx_center",
+    "axis_leftx_max",
+    "axis_leftx_deadzone",
+    "axis_leftx_antideadzone",
+    "axis_lefty_min",
+    "axis_lefty_center",
+    "axis_lefty_max",
+    "axis_lefty_deadzone",
+    "axis_lefty_antideadzone",
+    "axis_rightx_min",
+    "axis_rightx_center",
+    "axis_rightx_max",
+    "axis_rightx_deadzone",
+    "axis_rightx_antideadzone",
+    "axis_righty_min",
+    "axis_righty_center",
+    "axis_righty_max",
+    "axis_righty_deadzone",
+    "axis_righty_antideadzone",
+    "trigger_left_max",
+    "trigger_left_deadzone",
+    "trigger_left_antideadzone",
+    "trigger_right_max",
+    "trigger_right_deadzone",
+    "trigger_right_antideadzone",
+)
+
+
+def atomic_write(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, path)
+    finally:
+        try:
+            os.unlink(tmp)
+        except FileNotFoundError:
+            pass
+
+
+def run(command, timeout=20):
+    subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=timeout)
+
+
+def ssh_enabled():
+    result = subprocess.run(
+        ["/usr/bin/systemctl", "is-active", "sshd"],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        timeout=5,
+    )
+    return result.stdout.strip() == "active"
+
+
+def device_env():
+    result = subprocess.check_output(["/usr/libexec/nebel/device-env"], text=True, timeout=5)
+    env = {}
+    for line in result.splitlines():
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        try:
+            env[key] = shlex.split(value)[0] if value else ""
+        except ValueError:
+            env[key] = value
+    return env
+
+
+def drm_connectors():
+    # gamescope-session-plus/sessions.d/steam picks its output by connector
+    # name (--prefer-output), so that's the unit both listing and applying a
+    # choice operate on - not a friendlier "monitor 1/2" index that could
+    # silently shift if a cable is unplugged between listing and applying.
+    connectors = []
+    drm = Path("/sys/class/drm")
+    if not drm.is_dir():
+        return connectors
+    for card_dir in sorted(drm.glob("card*-*")):
+        status_path = card_dir / "status"
+        if not status_path.is_file():
+            continue
+        try:
+            status = status_path.read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        name = card_dir.name.split("-", 1)[1]
+        modes = []
+        modes_path = card_dir / "modes"
+        if modes_path.is_file():
+            seen = set()
+            try:
+                for line in modes_path.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line and line not in seen:
+                        seen.add(line)
+                        modes.append(line)
+            except OSError:
+                pass
+        connectors.append({"connector": name, "connected": status == "connected", "modes": modes})
+    return connectors
+
+
+def action_list_displays(request):
+    primary = device_env().get("NEBEL_PRIMARY_CONNECTOR", "")
+    connectors = drm_connectors()
+    for c in connectors:
+        c["internal"] = c["connector"] == primary
+    return {"connectors": connectors, "primaryConnector": primary}
+
+
+def _display_remembered():
+    try:
+        data = json.loads(DISPLAY_REMEMBERED_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def action_get_display_config(request):
+    remembered = _display_remembered()
+    if not DISPLAY_OVERRIDE_PATH.exists():
+        return {"useExternal": False, "remembered": remembered}
+    values = {}
+    try:
+        for line in DISPLAY_OVERRIDE_PATH.read_text(encoding="utf-8").splitlines():
+            if "=" in line:
+                key, value = line.split("=", 1)
+                values[key] = value
+    except OSError:
+        return {"useExternal": False, "remembered": remembered}
+    return {
+        "useExternal": True,
+        "connector": values.get("NEBEL_DISPLAY_CONNECTOR", ""),
+        "width": int(values.get("NEBEL_DISPLAY_WIDTH") or 0),
+        "height": int(values.get("NEBEL_DISPLAY_HEIGHT") or 0),
+        "orientation": values.get("NEBEL_DISPLAY_ORIENTATION", "normal"),
+        "remembered": remembered,
+    }
+
+
+def action_set_display_config(request):
+    if not bool(request.get("useExternal")):
+        # Only the active choice is cleared - the remembered per-connector
+        # settings survive so picking the same monitor later restores them.
+        try:
+            DISPLAY_OVERRIDE_PATH.unlink()
+        except FileNotFoundError:
+            pass
+        return {"ok": True}
+
+    connector = str(request.get("connector", ""))
+    orientation = str(request.get("orientation", "normal"))
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", connector):
+        raise ValueError("invalid connector")
+    if orientation not in DISPLAY_ORIENTATIONS:
+        raise ValueError("invalid orientation")
+    try:
+        width = int(request.get("width"))
+        height = int(request.get("height"))
+    except (TypeError, ValueError):
+        raise ValueError("invalid resolution")
+    if not (0 < width <= 16384 and 0 < height <= 16384):
+        raise ValueError("invalid resolution")
+
+    text = (
+        f"NEBEL_DISPLAY_CONNECTOR={connector}\n"
+        f"NEBEL_DISPLAY_WIDTH={width}\n"
+        f"NEBEL_DISPLAY_HEIGHT={height}\n"
+        f"NEBEL_DISPLAY_ORIENTATION={orientation}\n"
+    )
+    atomic_write(DISPLAY_OVERRIDE_PATH, text)
+    remembered = _display_remembered()
+    remembered[connector] = {"width": width, "height": height, "orientation": orientation}
+    atomic_write(DISPLAY_REMEMBERED_PATH, json.dumps(remembered, separators=(",", ":")))
+    return {"ok": True}
+
+
+def action_restart_gamescope_session(request):
+    # Output connector/resolution/rotation are gamescope startup flags (see
+    # sessions.d/steam) - applying a new display choice needs the session
+    # relaunched, not just the config file rewritten. Shared with
+    # nebel-display-hotplug's disconnect fallback (see that script's own
+    # comment, and restart-gamescope-session's, for why this can't just be
+    # session-control's switch-gamemode).
+    run(["/usr/libexec/nebel/restart-gamescope-session"], timeout=15)
+    return {"ok": True}
+
+
+def action_set_controller_type(request):
+    value = str(request.get("value", ""))
+    if value not in CONTROLLER_TYPES:
+        raise ValueError("invalid controller type")
+    run(["/usr/libexec/nebel/controller-type", "set", value])
+    result = subprocess.check_output(["/usr/libexec/nebel/controller-type", "get"], text=True, timeout=5).strip()
+    return {"value": result}
+
+
+def action_get_controller_type(request):
+    result = subprocess.check_output(["/usr/libexec/nebel/controller-type", "get"], text=True, timeout=5).strip()
+    return {"value": result}
+
+
+STICK_SIDES = ("l", "r")
+STICK_LED_MODES = ("static", "breathing", "rainbow", "spin", "reactive", "multidot", "ambilight", "duotone", "wave", "starlight")
+STICK_LED_COLOR_SOURCES = ("static", "battery", "random", "shimmer")
+DUOTONE_ORIENTATIONS = ("horizontal", "vertical", "diagonal")
+STICK_LED_PARAM_MODES = {
+    "speed": {"breathing", "spin", "rainbow", "multidot", "ambilight", "duotone", "wave", "starlight"},
+    "intensity": {"breathing", "spin", "multidot", "reactive", "duotone", "starlight"},
+    "size": {"spin", "multidot", "reactive"},
+}
+STICK_LED_PARAMS = ("speed", "intensity", "size")
+FLASH_BUTTONS = (
+    "south", "east", "north", "west",
+    "l1", "r1", "l3", "r3", "l4", "r4",
+    "start", "select",
+    "dpad_up", "dpad_down", "dpad_left", "dpad_right",
+    "other",
+)
+
+
+def action_set_stick_led_color(request):
+    side = str(request.get("side", ""))
+    value = str(request.get("value", ""))
+    if side not in STICK_SIDES:
+        raise ValueError("invalid stick side")
+    if not re.fullmatch(r"[0-9A-Fa-f]{6}", value):
+        raise ValueError("invalid color")
+    run(["/usr/libexec/nebel/stick-led-color", "set", side, value], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_mode(request):
+    side = str(request.get("side", ""))
+    mode = str(request.get("mode", ""))
+    if side not in STICK_SIDES:
+        raise ValueError("invalid stick side")
+    if mode not in STICK_LED_MODES:
+        raise ValueError("invalid stick led mode")
+    run(["/usr/libexec/nebel/stick-led-color", "set-mode", side, mode], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_screen_link(request):
+    enabled = bool(request.get("enabled"))
+    run(["/usr/libexec/nebel/stick-led-color", "set-screen-link", "on" if enabled else "off"], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_enabled(request):
+    enabled = bool(request.get("enabled"))
+    run(["/usr/libexec/nebel/stick-led-color", "set-enabled", "on" if enabled else "off"], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_max_brightness(request):
+    try:
+        value = max(0.0, min(1.0, float(request.get("value"))))
+    except (TypeError, ValueError):
+        raise ValueError("invalid max brightness value")
+    run(["/usr/libexec/nebel/stick-led-color", "set-max-brightness", str(value)], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_param(request):
+    side = str(request.get("side", ""))
+    param = str(request.get("param", ""))
+    mode = str(request.get("mode", ""))
+    if side not in STICK_SIDES:
+        raise ValueError("invalid stick side")
+    allowed = STICK_LED_PARAM_MODES.get(param)
+    if not allowed or mode not in allowed:
+        raise ValueError("invalid stick led param/mode")
+    try:
+        value = float(request.get("value"))
+    except (TypeError, ValueError):
+        raise ValueError("invalid stick led param value")
+    run(["/usr/libexec/nebel/stick-led-color", "set-param", side, param, mode, str(value)], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_color_source(request):
+    side = str(request.get("side", ""))
+    source = str(request.get("source", ""))
+    if side not in STICK_SIDES:
+        raise ValueError("invalid stick side")
+    if source not in STICK_LED_COLOR_SOURCES:
+        raise ValueError("invalid stick led color source")
+    run(["/usr/libexec/nebel/stick-led-color", "set-color-source", side, source], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_charging_indicator(request):
+    side = str(request.get("side", ""))
+    if side not in STICK_SIDES:
+        raise ValueError("invalid stick side")
+    enabled = bool(request.get("enabled"))
+    run(["/usr/libexec/nebel/stick-led-color", "set-charging-indicator", side, "on" if enabled else "off"], timeout=5)
+    return _stick_led_state()
+
+
+def action_get_stick_led(request):
+    return _stick_led_state()
+
+
+def _action_set_stick_led_bool_toggle(cli_command):
+    def handler(request):
+        side = str(request.get("side", ""))
+        if side not in STICK_SIDES:
+            raise ValueError("invalid stick side")
+        enabled = bool(request.get("enabled"))
+        run(["/usr/libexec/nebel/stick-led-color", cli_command, side, "on" if enabled else "off"], timeout=5)
+        return _stick_led_state()
+    return handler
+
+
+action_set_stick_led_chase = _action_set_stick_led_bool_toggle("set-chase")
+action_set_stick_led_compass = _action_set_stick_led_bool_toggle("set-compass")
+action_set_stick_led_seesaw = _action_set_stick_led_bool_toggle("set-seesaw")
+
+
+def action_set_stick_led_flash_color(request):
+    button = str(request.get("button", ""))
+    value = str(request.get("value", ""))
+    if button not in FLASH_BUTTONS:
+        raise ValueError("invalid flash button")
+    if not re.fullmatch(r"[0-9A-Fa-f]{6}", value):
+        raise ValueError("invalid color")
+    run(["/usr/libexec/nebel/stick-led-color", "set-flash-color", button, value.upper()], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_duotone_color(request):
+    side = str(request.get("side", ""))
+    slot = str(request.get("slot", ""))
+    value = str(request.get("value", ""))
+    if side not in STICK_SIDES:
+        raise ValueError("invalid stick side")
+    if slot not in ("a", "b"):
+        raise ValueError("invalid duotone color slot")
+    if not re.fullmatch(r"[0-9A-Fa-f]{6}", value):
+        raise ValueError("invalid color")
+    run(["/usr/libexec/nebel/stick-led-color", "set-duotone-color", side, slot, value.upper()], timeout=5)
+    return _stick_led_state()
+
+
+def action_set_stick_led_duotone_orientation(request):
+    side = str(request.get("side", ""))
+    orientation = str(request.get("orientation", ""))
+    if side not in STICK_SIDES:
+        raise ValueError("invalid stick side")
+    if orientation not in DUOTONE_ORIENTATIONS:
+        raise ValueError("invalid duotone orientation")
+    run(["/usr/libexec/nebel/stick-led-color", "set-duotone-orientation", side, orientation], timeout=5)
+    return _stick_led_state()
+
+
+def _default_stick_side_state():
+    return {
+        "mode": "static",
+        "color": "0050FF",
+        "colorSource": "static",
+        "chargingIndicator": True,
+        "duotoneColorA": "0050FF",
+        "duotoneColorB": "FFD700",
+        "duotoneOrientation": "horizontal",
+        "chase": False,
+        "compass": False,
+        "seesaw": False,
+        "params": {},
+    }
+
+
+def _stick_led_state():
+    result = subprocess.check_output(["/usr/libexec/nebel/stick-led-color", "get"], text=True, timeout=5)
+    state = {"screenLink": False, "enabled": True, "maxBrightness": 1.0, "sides": {"l": _default_stick_side_state(), "r": _default_stick_side_state()}, "flashColors": {}}
+    for line in result.splitlines():
+        key, sep, value = line.partition("=")
+        if not sep:
+            continue
+        key, value = key.strip(), value.strip()
+        if key == "screen_link":
+            state["screenLink"] = value == "1"
+            continue
+        if key == "enabled":
+            state["enabled"] = value == "1"
+            continue
+        if key == "max_brightness":
+            try:
+                state["maxBrightness"] = max(0.0, min(1.0, float(value)))
+            except ValueError:
+                pass
+            continue
+        if key.startswith("flash_") and key[len("flash_"):] in FLASH_BUTTONS:
+            if re.fullmatch(r"[0-9A-Fa-f]{6}", value or ""):
+                state["flashColors"][key[len("flash_"):]] = value.upper()
+            continue
+        if key.endswith("_l"):
+            side, base = "l", key[:-2]
+        elif key.endswith("_r"):
+            side, base = "r", key[:-2]
+        else:
+            continue
+        s = state["sides"][side]
+        if base == "mode":
+            s["mode"] = value
+        elif base == "color":
+            s["color"] = value
+        elif base == "color_source":
+            s["colorSource"] = value
+        elif base == "charging_indicator":
+            s["chargingIndicator"] = value == "1"
+        elif base == "duotone_color_a":
+            s["duotoneColorA"] = value
+        elif base == "duotone_color_b":
+            s["duotoneColorB"] = value
+        elif base == "duotone_orientation":
+            s["duotoneOrientation"] = value
+        elif base == "chase":
+            s["chase"] = value == "1"
+        elif base == "compass":
+            s["compass"] = value == "1"
+        elif base == "seesaw":
+            s["seesaw"] = value == "1"
+        elif "_" in base and base.split("_", 1)[0] in STICK_LED_PARAMS:
+            try:
+                s["params"][base] = float(value)
+            except ValueError:
+                pass
+    return state
+
+
+def action_set_ssh_enabled(request):
+    enabled = bool(request.get("enabled"))
+    action = "enable" if enabled else "disable"
+    run(["/usr/bin/systemctl", action, "--now", "sshd"], timeout=30)
+    return {"enabled": ssh_enabled()}
+
+
+def action_get_ssh_enabled(request):
+    return {"enabled": ssh_enabled()}
+
+
+def action_get_device_env(request):
+    return {"env": device_env()}
+
+
+def action_inputplumber_intercept(request):
+    mode = str(request.get("mode", ""))
+    if mode not in INTERCEPT_MODES:
+        raise ValueError("invalid intercept mode")
+    run(["/usr/libexec/nebel/inputplumber-intercept", mode], timeout=5)
+    return {"ok": True}
+
+
+def action_write_config(request):
+    name = str(request.get("name", ""))
+    text = request.get("text")
+    if name not in CONFIG_PATHS or not isinstance(text, str):
+        raise ValueError("invalid config write")
+    if len(text.encode("utf-8")) > MAX_REQUEST:
+        raise ValueError("config payload too large")
+    if name == "calibration":
+        params = json.loads(text)
+        # Each supported gamepad driver exposes the same calibration
+        # parameter ABI under its own /sys/module/<name>/parameters -
+        # rsinput on AYN devices, retroid (drivers/input/joystick/retroid.c)
+        # on Retroid Pocket. Only one of these will exist on any device.
+        driver_params = next(
+            (p for name in ("rsinput", "retroid") if (p := Path(f"/sys/module/{name}/parameters")).exists()),
+            None,
+        )
+        if driver_params is None:
+            raise RuntimeError("controller calibration is not supported on this device")
+        for param in CALIBRATION_PARAMS:
+            if param in params:
+                (driver_params / param).write_text(str(int(params[param])), encoding="utf-8")
+        (driver_params / "update_params").write_text("1", encoding="utf-8")
+    atomic_write(CONFIG_PATHS[name], text)
+    if name == "power":
+        run(["/usr/bin/nebel-power", "reload"], timeout=15)
+    return {"ok": True}
+
+
+ACTIONS = {
+    "set_controller_type": action_set_controller_type,
+    "get_controller_type": action_get_controller_type,
+    "get_device_env": action_get_device_env,
+    "get_ssh_enabled": action_get_ssh_enabled,
+    "inputplumber_intercept": action_inputplumber_intercept,
+    "set_ssh_enabled": action_set_ssh_enabled,
+    "write_config": action_write_config,
+    "get_stick_led": action_get_stick_led,
+    "set_stick_led_color": action_set_stick_led_color,
+    "set_stick_led_mode": action_set_stick_led_mode,
+    "set_stick_led_screen_link": action_set_stick_led_screen_link,
+    "set_stick_led_enabled": action_set_stick_led_enabled,
+    "set_stick_led_max_brightness": action_set_stick_led_max_brightness,
+    "set_stick_led_param": action_set_stick_led_param,
+    "set_stick_led_flash_color": action_set_stick_led_flash_color,
+    "set_stick_led_duotone_color": action_set_stick_led_duotone_color,
+    "set_stick_led_duotone_orientation": action_set_stick_led_duotone_orientation,
+    "set_stick_led_color_source": action_set_stick_led_color_source,
+    "set_stick_led_charging_indicator": action_set_stick_led_charging_indicator,
+    "set_stick_led_chase": action_set_stick_led_chase,
+    "set_stick_led_compass": action_set_stick_led_compass,
+    "set_stick_led_seesaw": action_set_stick_led_seesaw,
+    "list_displays": action_list_displays,
+    "get_display_config": action_get_display_config,
+    "set_display_config": action_set_display_config,
+    "restart_gamescope_session": action_restart_gamescope_session,
+}
+
+
+def handle(request):
+    action = ACTIONS.get(request.get("action"))
+    if action is None:
+        raise ValueError("unknown action")
+    return action(request)
+
+
+def serve_client(conn):
+    with conn:
+        conn.settimeout(CLIENT_TIMEOUT)
+        try:
+            data = b""
+            while b"\n" not in data:
+                chunk = conn.recv(65536)
+                if not chunk:
+                    break
+                data += chunk
+                if len(data) > MAX_REQUEST:
+                    raise ValueError("request too large")
+            request = json.loads(data.split(b"\n", 1)[0].decode("utf-8"))
+            response = {"ok": True, "result": handle(request)}
+        except Exception as exc:
+            response = {"ok": False, "error": str(exc)}
+        try:
+            conn.sendall((json.dumps(response, separators=(",", ":")) + "\n").encode("utf-8"))
+        except OSError:
+            pass
+
+
+def main():
+    SOCKET.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        SOCKET.unlink()
+    except FileNotFoundError:
+        pass
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        sock.bind(str(SOCKET))
+        # Root-only socket; config rendering still belongs to the plugin client.
+        os.chmod(SOCKET, 0o600)
+        sock.listen(8)
+        while True:
+            conn, _ = sock.accept()
+            serve_client(conn)
+
+
+if __name__ == "__main__":
+    main()

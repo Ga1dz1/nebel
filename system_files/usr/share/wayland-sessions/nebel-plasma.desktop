@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Nebel Desktop
+Comment=Plasma Desktop for Nebel
+Exec=/usr/libexec/nebel/start-plasma
+TryExec=/usr/bin/startplasma-wayland
+Type=Application

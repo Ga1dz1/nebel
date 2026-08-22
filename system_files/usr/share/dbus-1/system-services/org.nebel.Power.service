@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.nebel.Power
+Exec=/bin/false
+User=root
+SystemdService=nebel-powerd.service

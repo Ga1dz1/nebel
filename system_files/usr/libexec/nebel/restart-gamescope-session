@@ -1,0 +1,23 @@
+#!/bin/bash
+# Terminate the armada user's active graphical session and let SDDM's
+# Relogin=true (see /etc/sddm.conf.d/nebel.conf) bring it back fresh -
+# re-sourcing sessions.d/steam so a changed display choice actually takes
+# effect. session-control's switch-gamemode (systemctl restart sddm.service)
+# does NOT do this when called from WITHIN an already-running gamescope
+# session: it only tears a session down gracefully via a session-specific
+# exit path (logout_plasma's D-Bus call) when LEAVING that session type, and
+# restarting sddm.service itself never touches an already-running autologin
+# session at all - systemd-logind tracks it in its own session-N.scope
+# cgroup, independent of the sddm.service unit's lifetime. Confirmed live
+# twice with that call silently doing nothing: the Decky display menu's own
+# restart button, and nebel-display-hotplug's disconnect fallback (which,
+# left broken, meant gamescope kept running with flags computed for the
+# now-gone external display - the direct cause of the internal panel coming
+# back with no rotation shader and the wrong orientation, live-observed as
+# upside down, once gamescope's own DRM hotplug handling silently re-
+# targeted it without a process restart).
+set -euo pipefail
+
+session_id=$(loginctl show-user armada -p Display --value)
+[[ -n "$session_id" ]] || { echo "restart-gamescope-session: no active graphical session found for nebel" >&2; exit 1; }
+exec loginctl terminate-session "$session_id"

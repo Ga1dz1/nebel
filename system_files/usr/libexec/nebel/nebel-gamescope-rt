@@ -1,0 +1,38 @@
+#!/bin/sh
+# nebel-gamescope-rt - elevate gamescope's compositor threads to SCHED_RR.
+#
+# gamescope is built with realtime support and holds CAP_SYS_NICE at runtime,
+# but on our non-root session it does not put its own compositor threads on
+# realtime scheduling - only a root context gets that "for free". This helper
+# runs as root and polls for gamescope, promoting its normal (TS) threads to
+# SCHED_RR so the compositor keeps up under load instead of being preemptable
+# by everything else on the system.
+#
+# Confirmed via a third-party fork of this same codebase (their own commit
+# history documents hitting this live): --reset-on-fork is CRITICAL, not
+# decoration. SCHED_RR is inherited across fork/clone, and gamescope's own
+# process forks the ENTIRE session it launches (steam -> proton -> wine ->
+# game). Without --reset-on-fork the whole tree is born RR 40, which
+# reproduces a priority-inversion hang (GPU usage collapsing to 0%,
+# hitching) - confirmed live by that fork, independent of any rtprio grant
+# to the session user (we don't grant one - see limits.d/60-nebel-gaming.conf).
+# With --reset-on-fork, only the gamescope thread itself stays RR; every
+# child it forks starts back at SCHED_OTHER.
+#
+# Only TS (normal) threads are promoted - gamescope's own SCHED_BATCH helper
+# threads (async disk/trace queues) are deliberately left alone; RR-ing them
+# would needlessly preempt real work gamescope itself chose to background.
+#
+# Pairs with kernel.sched_rt_runtime_us=-1 (RT throttle disabled) in
+# 60-nebel-gaming.conf - without that, these RR threads can hit the kernel's
+# default 95%-per-period RT cap under load and get throttled, stalling the
+# compositor (the exact symptom this exists to avoid).
+set -u
+
+while :; do
+    gpid=$(pidof gamescope gamescope-wl 2>/dev/null) || { sleep 2; continue; }
+    for tid in $(ps -L -o tid=,cls= -p "$gpid" 2>/dev/null | awk '$2=="TS"{print $1}'); do
+        chrt -r --reset-on-fork -p 40 "$tid" 2>/dev/null
+    done
+    sleep 3
+done

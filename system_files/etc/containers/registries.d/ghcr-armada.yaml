@@ -1,3 +1,0 @@
-docker:
-  ghcr.io/ga1dz1/armada:
-    use-sigstore-attachments: false

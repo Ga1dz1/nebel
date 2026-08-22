@@ -1,0 +1,13 @@
+[Unit]
+Description=Apply Nebel controller type
+ConditionPathExists=/etc/nebel/controller.conf
+After=inputplumber.service
+Requires=inputplumber.service
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nebel/controller-type apply
+
+[Install]
+WantedBy=multi-user.target

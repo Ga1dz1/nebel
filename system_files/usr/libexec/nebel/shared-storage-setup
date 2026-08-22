@@ -1,0 +1,72 @@
+#!/usr/bin/bash
+# Mount a shared exFAT partition labeled ARMADA_SHARED into the armada user's
+# home as ~/Shared. The partition is created by the installer from free space
+# taken from Android userdata. If it does not exist, the service silently skips
+# mounting. A persistent /etc/nebel/shared-storage.conf toggle lets the user
+# disable (and re-enable) the mount without repartitioning.
+set -euo pipefail
+
+MOUNT_POINT=/mnt/shared
+SHARE_DIR=/var/home/armada/Shared
+LABEL=ARMADA_SHARED
+CONFIG=/etc/nebel/shared-storage.conf
+
+mkdir -p /etc/nebel
+
+is_enabled() {
+    # Missing config means "enabled" so the shared partition works out of the
+    # box once it has been created. Only an explicit enabled=0 disables it.
+    if [[ -r "$CONFIG" ]] && grep -Eq '^enabled\s*=\s*0\s*$' "$CONFIG"; then
+        return 1
+    fi
+    return 0
+}
+
+set_enabled() {
+    local value="$1"
+    printf 'enabled=%s\n' "$value" > "$CONFIG"
+}
+
+ensure_mounted() {
+    if findmnt -n -o TARGET -- "${SHARE_DIR}" >/dev/null 2>&1; then
+        return 0
+    fi
+    if ! [[ -L "/dev/disk/by-label/${LABEL}" ]]; then
+        echo "Shared storage partition labeled '${LABEL}' not found; skipping." >&2
+        return 0
+    fi
+    mkdir -p "${MOUNT_POINT}"
+    # exFAT does not support POSIX ownership, so force everything to the nebel
+    # user so KDE/Steam apps can read/write without permission issues.
+    mount -o "uid=1000,gid=1000,umask=000,noatime" \
+          "/dev/disk/by-label/${LABEL}" "${MOUNT_POINT}"
+    mkdir -p "${SHARE_DIR}"
+    mount --bind "${MOUNT_POINT}" "${SHARE_DIR}"
+}
+
+ensure_unmounted() {
+    umount -R "${SHARE_DIR}" 2>/dev/null || true
+    umount -R "${MOUNT_POINT}" 2>/dev/null || true
+}
+
+case "${1:-}" in
+    enable)
+        set_enabled 1
+        ensure_mounted
+        ;;
+    disable)
+        set_enabled 0
+        ensure_unmounted
+        ;;
+    ""|start)
+        if is_enabled; then
+            ensure_mounted
+        else
+            ensure_unmounted
+        fi
+        ;;
+    *)
+        echo "usage: $0 {enable|disable|start}" >&2
+        exit 2
+        ;;
+esac

@@ -6,13 +6,13 @@ RAW="${1:-output/image/disk.raw}"
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 MKBOOTIMG="${MKBOOTIMG:-}"
 
-# Single sources shared with the on-device regen (armada-bootimg-update).
-ARMADA_LIB="${SCRIPT_DIR}/../system_files/usr/lib/armada"
-DTB_LIST="${ARMADA_LIB}/supported-dtbs"
+# Single sources shared with the on-device regen (nebel-bootimg-update).
+NEBEL_LIB="${SCRIPT_DIR}/../system_files/usr/lib/nebel"
+DTB_LIST="${NEBEL_LIB}/supported-dtbs"
 [[ -r "${DTB_LIST}" ]] || { echo "missing DTB list: ${DTB_LIST}"; exit 1; }
 SUPPORTED_DTBS=$(cat "${DTB_LIST}")
-[[ -r "${ARMADA_LIB}/bootimg-args" ]] || { echo "missing ${ARMADA_LIB}/bootimg-args"; exit 1; }
-source "${ARMADA_LIB}/bootimg-args"
+[[ -r "${NEBEL_LIB}/bootimg-args" ]] || { echo "missing ${NEBEL_LIB}/bootimg-args"; exit 1; }
+source "${NEBEL_LIB}/bootimg-args"
 
 [[ -f "${RAW}" ]] || { echo "raw image not found: ${RAW} (run a build first)"; exit 1; }
 
@@ -32,13 +32,13 @@ sudo mount "${LOOP}p2" "${WORK}/p2"          # /boot
 DEPLOY=$(sudo ls "${WORK}/p2/ostree" | grep '^default-' | head -1)
 BOOTDIR="${WORK}/p2/ostree/${DEPLOY}"
 KVER=$(basename "$(sudo ls "${BOOTDIR}"/vmlinuz-* | head -1)" | sed 's/^vmlinuz-//')
-# Read the raw entry lines (matching armada-bootimg-update) so the stamp we write
+# Read the raw entry lines (matching nebel-bootimg-update) so the stamp we write
 # matches what it computes — a fresh install then skips first-boot regeneration.
 BLS=$(sudo ls "${WORK}/p2"/loader*/entries/*.conf | head -1)
 LINUX_LINE=$(sudo sed -n 's/^linux //p' "${BLS}" | head -1)
 INITRD_LINE=$(sudo sed -n 's/^initrd //p' "${BLS}" | head -1)
 OPTIONS_LINE=$(sudo sed -n 's/^options //p' "${BLS}" | head -1)
-STAMP_ID=$(armada_bootimg_id "${LINUX_LINE}" "${INITRD_LINE}" "${OPTIONS_LINE}" "${DTB_LIST}" "${ARMADA_LIB}/bootimg-args")
+STAMP_ID=$(nebel_bootimg_id "${LINUX_LINE}" "${INITRD_LINE}" "${OPTIONS_LINE}" "${DTB_LIST}" "${NEBEL_LIB}/bootimg-args")
 CMDLINE="${OPTIONS_LINE}"
 
 # Fit the 512-byte cmdline: drop serial console, ostree= first, keep splash kargs.
@@ -50,8 +50,8 @@ for _t in ${CMDLINE}; do
 done
 CMDLINE="${_ostree}${_rest}"
 
-if [[ "${#CMDLINE}" -gt "${ARMADA_CMDLINE_MAX}" ]]; then
-    echo "ERROR: cmdline is ${#CMDLINE}B, over the ${ARMADA_CMDLINE_MAX}B boot-header limit"; exit 1
+if [[ "${#CMDLINE}" -gt "${NEBEL_CMDLINE_MAX}" ]]; then
+    echo "ERROR: cmdline is ${#CMDLINE}B, over the ${NEBEL_CMDLINE_MAX}B boot-header limit"; exit 1
 fi
 
 # ROCKNIX ABL expects gzip(Image) with DTBs appended.
@@ -66,13 +66,13 @@ done
 
 python3 "${MKBOOTIMG}" \
     --kernel "${WORK}/kernel.gz" --ramdisk "${WORK}/initramfs" \
-    ${ARMADA_BOOTIMG_ARGS} --os_patch_level "$(date '+%Y-%m')" \
+    ${NEBEL_BOOTIMG_ARGS} --os_patch_level "$(date '+%Y-%m')" \
     --cmdline "${CMDLINE}" \
     -o "${WORK}/KERNEL"
 
 sudo mount "${LOOP}p1" "${WORK}/p1"
 sudo cp "${WORK}/KERNEL" "${WORK}/p1/KERNEL"
-printf '%s' "${STAMP_ID}" | sudo tee "${WORK}/p1/.armada-bootimg.id" >/dev/null
+printf '%s' "${STAMP_ID}" | sudo tee "${WORK}/p1/.nebel-bootimg.id" >/dev/null
 sudo sync
 
 echo "Staged /KERNEL ($(du -h "${WORK}/KERNEL" | cut -f1)) on the FAT partition of ${RAW}"

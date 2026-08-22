@@ -1,2 +1,0 @@
-# Allow the armada user to toggle the shared-storage mount without a password.
-armada ALL=(root) NOPASSWD: /usr/libexec/armada/shared-storage-setup enable, /usr/libexec/armada/shared-storage-setup disable

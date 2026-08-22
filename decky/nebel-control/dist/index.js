@@ -1,4 +1,4 @@
-const manifest = {"name":"Armada Control"};
+const manifest = {"name":"Nebel Control"};
 const API_VERSION = 2;
 const internalAPIConnection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
 if (!internalAPIConnection) {
@@ -98,9 +98,9 @@ const tabIcons = {
 
 const apps = () => window.SteamClient?.Apps;
 const settings = () => window.SteamClient?.Settings;
-// Keep in sync with PROTON_TOOL_NAME (build) and PROTON_11_STABLE (armada-fixups).
+// Keep in sync with PROTON_TOOL_NAME (build) and PROTON_11_STABLE (nebel-fixups).
 const DEFAULT_WINDOWS_COMPAT_TOOL = "proton-cachyos-11.0-arm64";
-const USE_DEFAULT_COMPAT = "__armada_default__";
+const USE_DEFAULT_COMPAT = "__nebel_default__";
 const FOLLOW_STEAM_COMPAT = "__steam_default__";
 let windowsCompatTool = DEFAULT_WINDOWS_COMPAT_TOOL;
 let autoApplyCompat = true;
@@ -213,7 +213,7 @@ function requestAppDetails(appid) {
     }
 }
 // Absolute path: launch options run via a shell without /usr/libexec on PATH.
-const LAUNCH_WRAPPER = "/usr/libexec/armada/armada-game-launch";
+const LAUNCH_WRAPPER = "/usr/libexec/nebel/nebel-game-launch";
 const COMMAND_TOKEN = "%command%";
 // null when already wrapped (idempotent); preserves user options around %command%.
 function wrapLaunchOptions(current) {
@@ -603,7 +603,7 @@ function currentGame() {
 }
 
 const styles = `
-      .armada-control-tabs {
+      .nebel-control-tabs {
         height: 95%;
         width: 316px;
         position: fixed;
@@ -611,31 +611,31 @@ const styles = `
         margin-left: -8px;
         overflow: hidden;
       }
-      .armada-control-tabs > div > div:first-child::before {
+      .nebel-control-tabs > div > div:first-child::before {
         background: #0D141C;
         box-shadow: none;
         backdrop-filter: none;
       }
-      .armada-control-tabs [role="tabpanel"] {
+      .nebel-control-tabs [role="tabpanel"] {
         padding-left: 0 !important;
         padding-right: 0 !important;
       }
-      .armada-control-tabs .armada-control-tab-content {
+      .nebel-control-tabs .nebel-control-tab-content {
         padding-bottom: 24px;
       }
-      .armada-control-tabs .armada-slider-field {
+      .nebel-control-tabs .nebel-slider-field {
         width: 100%;
         max-width: none;
         overflow: hidden;
       }
-      .armada-control-tabs .armada-slider-field * {
+      .nebel-control-tabs .nebel-slider-field * {
         min-width: 0 !important;
         max-width: 100% !important;
       }
-      .armada-control-tabs .armada-reset-row {
+      .nebel-control-tabs .nebel-reset-row {
         padding: 0 14px 8px;
       }
-      .armada-control-tabs .armada-compat-note {
+      .nebel-control-tabs .nebel-compat-note {
         box-sizing: border-box;
         width: 100%;
         padding: 8px 16px 8px;
@@ -657,7 +657,7 @@ function ToggleRow({ label, value, onChange, disabled, description }) {
 }
 function SliderEdit({ label, value, min, max, step, onChange, format }) {
     const numeric = Number(value);
-    return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "armada-slider-field", children: SP_JSX.jsx(DFL.SliderField, { label: label, value: Number.isFinite(numeric) ? numeric : min, min: min, max: max, step: step, showValue: true, onChange: (next) => onChange(format ? format(next) : next) }) }) }));
+    return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "nebel-slider-field", children: SP_JSX.jsx(DFL.SliderField, { label: label, value: Number.isFinite(numeric) ? numeric : min, min: min, max: max, step: step, showValue: true, onChange: (next) => onChange(format ? format(next) : next) }) }) }));
 }
 
 const GLOBAL_RESOLUTION_KEY = "gamescope_game_resolution_global";
@@ -716,7 +716,7 @@ function ConfirmResetAllModal({ closeModal, onConfirm }) {
         closeModal?.();
         onConfirm();
     };
-    return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: closeModal, children: [SP_JSX.jsx(DFL.DialogBody, { children: "This removes all per-game Armada settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam." }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx(DFL.DialogButton, { onClick: confirm, children: "Reset All Games" }), SP_JSX.jsx(DFL.DialogButton, { onClick: closeModal, children: "Cancel" })] })] }));
+    return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: closeModal, children: [SP_JSX.jsx(DFL.DialogBody, { children: "This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam." }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx(DFL.DialogButton, { onClick: confirm, children: "Reset All Games" }), SP_JSX.jsx(DFL.DialogButton, { onClick: closeModal, children: "Cancel" })] })] }));
 }
 function Compatibility({ config, setConfig }) {
     const [resolution, setResolution] = SP_REACT.useState("Default");
@@ -1017,7 +1017,7 @@ function Compatibility({ config, setConfig }) {
     const setKnob = (key, on) => patchSettings({ fexProfile: "custom", fexConfig: { ...fexConfig, [key]: on ? "1" : "0" } });
     const thunks = values.thunks || {};
     const setThunk = (module, on) => patchSettings({ thunks: { ...thunks, [module]: on } });
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "EDIT GAME PROFILE", children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "armada-compat-note", children: "Compatibility changes apply on next launch" })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "PROFILE SETTINGS", children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Default Proton", value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: "Apply to New Games", checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "EDIT GAME PROFILE", children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: "Compatibility changes apply on next launch" })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "PROFILE SETTINGS", children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Default Proton", value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: "Apply to New Games", checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
                                     setAutoApplyCompat(enabled);
                                     patchSettings({ autoApplyCompat: enabled });
                                 } }), SP_JSX.jsx(SelectEdit, { label: "Game Resolution", value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution })] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: "Compatibility Tool", value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { label: "Game Resolution", value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: "Status", description: resolutionMessage }) : null, SP_JSX.jsx(SelectEdit, { label: "FEX Preset", value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
@@ -1119,7 +1119,7 @@ function Display() {
             return;
         persist({ width: w, height: h });
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "EXTERNAL DISPLAY", children: [SP_JSX.jsx(SelectEdit, { label: "Primary Display", value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Resolution", value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(DFL.Field, { label: "Rotation isn't available for an external display (gamescope only rotates the internal screen)." })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here." })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered." })), errorMessage && SP_JSX.jsx(DFL.Field, { label: `Error: ${errorMessage}` }), SP_JSX.jsx("div", { className: "armada-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "EXTERNAL DISPLAY", children: [SP_JSX.jsx(SelectEdit, { label: "Primary Display", value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: "Resolution", value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(DFL.Field, { label: "Rotation isn't available for an external display (gamescope only rotates the internal screen)." })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here." })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered." })), errorMessage && SP_JSX.jsx(DFL.Field, { label: `Error: ${errorMessage}` }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
                         setRestarting(true);
                         setErrorMessage("");
                         // A successful restart tears down this very session (and Decky
@@ -1177,7 +1177,7 @@ function Power({ config, setConfig }) {
     };
     const underclockLevel = p.cpu_underclock || "";
     const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: "EDIT POWER PROFILE", children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: "PROFILE SETTINGS", children: [SP_JSX.jsx(SelectEdit, { label: "Fan Curve", value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: "CPU Underclock", value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: "CPU Max (%)", value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: "GPU Min (%)", value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: "GPU Max (%)", value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "armada-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: "Reset to Default" }) })] })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: "EDIT POWER PROFILE", children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: "PROFILE SETTINGS", children: [SP_JSX.jsx(SelectEdit, { label: "Fan Curve", value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: "CPU Underclock", value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: "CPU Max (%)", value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: "GPU Min (%)", value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: "GPU Max (%)", value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: "Reset to Default" }) })] })] }));
 }
 
 const CAPTURE_CONTROLS = ["left_x", "left_y", "right_x", "right_y", "left_trigger", "right_trigger"];
@@ -1259,9 +1259,9 @@ function TriggerBar({ title, name, state }) {
 const gridTwoCol = { display: "grid", gridTemplateColumns: "repeat(2, 132px)", gap: "22px", justifyContent: "center", width: "100%" };
 // Modal input capture leaves gamepad focus frozen on the last-touched button.
 const focusStyles = `
-  .armada-cal-footer button.gpfocus,
-  .armada-cal-footer button:focus,
-  .armada-cal-footer button:hover {
+  .nebel-cal-footer button.gpfocus,
+  .nebel-cal-footer button:focus,
+  .nebel-cal-footer button:hover {
     background-color: rgba(255, 255, 255, 0.1) !important;
     color: #ffffff !important;
     box-shadow: none !important;
@@ -1357,7 +1357,7 @@ function CalibrationModal({ closeModal }) {
             : phase === "recording"
                 ? "Move both sticks in full circles and fully press both triggers, then Save."
                 : "Press Start, then move sticks and triggers through full range.";
-    return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: close, children: [SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsxs("div", { style: { ...gridTwoCol, alignItems: "start", marginBottom: "22px" }, children: [SP_JSX.jsx(StickPlot, { title: "Left Stick", xName: "left_x", yName: "left_y", state: state }), SP_JSX.jsx(StickPlot, { title: "Right Stick", xName: "right_x", yName: "right_y", state: state })] }), SP_JSX.jsxs("div", { style: { ...gridTwoCol, marginBottom: "16px" }, children: [SP_JSX.jsx(TriggerBar, { title: "LT", name: "left_trigger", state: state }), SP_JSX.jsx(TriggerBar, { title: "RT", name: "right_trigger", state: state })] }), SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "18px", opacity: 0.72, textAlign: "center" }, children: instructions })] }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx("style", { children: focusStyles }), !canApply ? (SP_JSX.jsx("div", { className: "armada-cal-footer", style: { display: "flex", gap: "10px" }, children: SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: "Close" }) })) : phase === "recording" ? (SP_JSX.jsxs("div", { className: "armada-cal-footer", style: { display: "flex", gap: "10px" }, children: [SP_JSX.jsx(DFL.DialogButton, { onClick: save, disabled: !capture, children: "Save Calibration" }), SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: "Close" })] })) : (SP_JSX.jsxs("div", { className: "armada-cal-footer", style: { display: "flex", gap: "10px" }, children: [SP_JSX.jsx(DFL.DialogButton, { onClick: start, children: "Start Calibration" }), SP_JSX.jsx(DFL.DialogButton, { onClick: reset, children: "Reset to Defaults" }), SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: "Close" })] }))] })] }));
+    return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: close, children: [SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsxs("div", { style: { ...gridTwoCol, alignItems: "start", marginBottom: "22px" }, children: [SP_JSX.jsx(StickPlot, { title: "Left Stick", xName: "left_x", yName: "left_y", state: state }), SP_JSX.jsx(StickPlot, { title: "Right Stick", xName: "right_x", yName: "right_y", state: state })] }), SP_JSX.jsxs("div", { style: { ...gridTwoCol, marginBottom: "16px" }, children: [SP_JSX.jsx(TriggerBar, { title: "LT", name: "left_trigger", state: state }), SP_JSX.jsx(TriggerBar, { title: "RT", name: "right_trigger", state: state })] }), SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "18px", opacity: 0.72, textAlign: "center" }, children: instructions })] }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx("style", { children: focusStyles }), !canApply ? (SP_JSX.jsx("div", { className: "nebel-cal-footer", style: { display: "flex", gap: "10px" }, children: SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: "Close" }) })) : phase === "recording" ? (SP_JSX.jsxs("div", { className: "nebel-cal-footer", style: { display: "flex", gap: "10px" }, children: [SP_JSX.jsx(DFL.DialogButton, { onClick: save, disabled: !capture, children: "Save Calibration" }), SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: "Close" })] })) : (SP_JSX.jsxs("div", { className: "nebel-cal-footer", style: { display: "flex", gap: "10px" }, children: [SP_JSX.jsx(DFL.DialogButton, { onClick: start, children: "Start Calibration" }), SP_JSX.jsx(DFL.DialogButton, { onClick: reset, children: "Reset to Defaults" }), SP_JSX.jsx(DFL.DialogButton, { onClick: close, children: "Close" })] }))] })] }));
 }
 function openCalibration() {
     DFL.showModal(SP_JSX.jsx(CalibrationModal, {}));
@@ -1836,9 +1836,9 @@ function Content() {
     useDebouncedSave({ config, field: "power", snapshot: savedPowerSnapshot, save: savePowerConfig, setConfig, onError: load });
     useDebouncedSave({ config, field: "tweaks", snapshot: savedTweaksSnapshot, save: saveTweaks, setConfig, onError: load });
     if (!config)
-        return SP_JSX.jsx(DFL.PanelSection, { title: "Armada Control", children: SP_JSX.jsx(DFL.Field, { label: message }) });
-    const tabContent = (content) => (SP_JSX.jsx("div", { className: "armada-control-tab-content", children: content }));
-    return (SP_JSX.jsxs("div", { className: "armada-control-tabs", children: [SP_JSX.jsx("style", { children: styles }), SP_JSX.jsx(DFL.Tabs, { activeTab: tab, onShowTab: setTab, tabs: [
+        return SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) });
+    const tabContent = (content) => (SP_JSX.jsx("div", { className: "nebel-control-tab-content", children: content }));
+    return (SP_JSX.jsxs("div", { className: "nebel-control-tabs", children: [SP_JSX.jsx("style", { children: styles }), SP_JSX.jsx(DFL.Tabs, { activeTab: tab, onShowTab: setTab, tabs: [
                     { id: "Compatibility", title: tabIcons.Compatibility, content: tabContent(SP_JSX.jsx(Compatibility, { config: config, setConfig: setConfig })) },
                     { id: "Power", title: tabIcons.Power, content: tabContent(SP_JSX.jsx(Power, { config: config, setConfig: setConfig })) },
                     { id: "Display", title: tabIcons.Display, content: tabContent(SP_JSX.jsx(Display, {})) },
@@ -1872,7 +1872,7 @@ var index = definePlugin(() => {
     })
         .catch(() => { });
     return {
-        name: "Armada Control",
+        name: "Nebel Control",
         content: SP_JSX.jsx(Content, {}),
         onDismount() {
             cancelled = true;

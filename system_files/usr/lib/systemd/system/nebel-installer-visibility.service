@@ -1,0 +1,15 @@
+[Unit]
+Description=nebel installer KDE entry visibility
+After=systemd-tmpfiles-setup.service
+Before=display-manager.service
+RequiresMountsFor=/run
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/nebel/installer-visibility
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

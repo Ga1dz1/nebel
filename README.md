@@ -1,4 +1,4 @@
-# Armada
+# Nebel OS
 
 A SteamOS-like Linux distribution for ARM handhelds built on Fedora bootc using
 device support from ROCKNIX.
@@ -15,18 +15,18 @@ Includes:
 * Per-game FEX and Proton settings (Decky plugin)
 
 > [!WARNING]
-> **Prototype software. Use at your own risk.** Armada is under active
+> **Prototype software. Use at your own risk.** Nebel is under active
 > development and is not stable. Booting it requires flashing an ABL which
 > could brick your device or corrupt your Android partition.
 >
-> **Over-the-air updates are experimental.** Armada can now update itself in
+> **Over-the-air updates are experimental.** Nebel can now update itself in
 > place (see [Updating](#updating)) instead of reflashing, but the update path
 > is still being validated. If an update fails, reflashing the SD card is the
 > reliable recovery.
 >
-> **Armada ships with a known default password.** The image ships with user
+> **Nebel ships with a known default password.** The image ships with user
 > `armada` / password `armada`. SSH is disabled by default, but if you enable it
-> from Armada Control, anyone on your network can log in until you change the
+> from Nebel Control, anyone on your network can log in until you change the
 > password.
 
 ## About this fork
@@ -52,7 +52,7 @@ few fixes that ended up being generally useful beyond just this one device:
   reader of the raw device.
 - **RGB stick lighting** (see [Stick RGB lighting](#stick-rgb-lighting)) - ten
   modes including a screen-color-reactive "Ambilight" mode, all configurable
-  from Armada Control.
+  from Nebel Control.
 
 The kernel/DTS side lives in
 [Ga1dz1/armada-packages](https://github.com/Ga1dz1/armada-packages), also a
@@ -91,13 +91,13 @@ fixes) are very welcome.
 
 ## Flash to SD card
 
-Armada boots from SD card. Once it is running, you can optionally install it to
+Nebel boots from SD card. Once it is running, you can optionally install it to
 internal storage so it boots without the card (see
 [Install to internal storage](#install-to-internal-storage)).
 
-1. Flash the Armada image to SD.
+1. Flash the Nebel image to SD.
 
-   Use Balena Etcher to flash the latest `armada-YYYYMMDD.img.gz` image to a
+   Use Balena Etcher to flash the latest `nebel-YYYYMMDD.img.gz` image to a
    64GB or larger SD card (A2 speed for best results).
 
 2. Flash the ROCKNIX ABL for your device.
@@ -131,9 +131,9 @@ internal storage so it boots without the card (see
 
 ## Install to internal storage
 
-Once Armada is running from the SD card, you can install it to the device's
+Once Nebel is running from the SD card, you can install it to the device's
 internal storage so it boots without the card. Open **Desktop Mode** and launch
-**Armada Installer** from the **System** menu.
+**Nebel Installer** from the **System** menu.
 
 > [!WARNING]
 > Installing to internal storage repartitions internal storage and can require a
@@ -143,30 +143,30 @@ internal storage so it boots without the card. Open **Desktop Mode** and launch
 The installer checks what is already on internal storage and offers:
 
 - **Install alongside Android** (fresh device): choose how much storage Android
-  keeps; Armada takes the rest. This **factory-resets Android** (you lose Android
+  keeps; Nebel takes the rest. This **factory-resets Android** (you lose Android
   apps and data, but the Android system itself stays).
-- **Reinstall / Switch to Armada** (a ROCKNIX or Armada install is already
-  present): Armada replaces the existing Linux install and **leaves Android
+- **Reinstall / Switch to Nebel** (a ROCKNIX or Nebel install is already
+  present): Nebel replaces the existing Linux install and **leaves Android
   untouched**, with no resize or wipe.
-- **Remove and restore Android**: erase the Armada/ROCKNIX install and give the
+- **Remove and restore Android**: erase the Nebel/ROCKNIX install and give the
   whole disk back to Android (Android factory-resets on its next boot).
 
 When it finishes, **power off, remove the SD card, then power on.** Internal
 storage boots before the SD card.
 
-If an install is interrupted, re-run Armada Installer from the SD card to finish.
+If an install is interrupted, re-run Nebel Installer from the SD card to finish.
 If the device will not boot the SD card at all, force it back to the card with
 `fastboot erase ROCKNIX` (see [Uninstall](#uninstall) for the full steps).
 
 ## Uninstall / Reinstall
 
-To remove or reinstall an internal install, run **Armada Installer** from the
+To remove or reinstall an internal install, run **Nebel Installer** from the
 **SD card**. You cannot modify the partitions you are currently booted from, so
 neither can be done from the internal install itself.
 
 The catch is that the ABL bootloader prefers internal storage over the SD card,
-so while Armada is installed internally the device keeps booting the internal
-copy even with the card inserted. You first have to erase Armada's internal boot
+so while Nebel is installed internally the device keeps booting the internal
+copy even with the card inserted. You first have to erase Nebel's internal boot
 partition over `fastboot` to force it back to the SD card.
 
 1. **Enter the bootloader.** Power off, then hold **VOL-** while powering on and
@@ -175,33 +175,33 @@ partition over `fastboot` to force it back to the SD card.
    ```
    fastboot erase ROCKNIX
    ```
-   Armada's boot partition is named `ROCKNIX` so the ROCKNIX-derived ABL finds it.
-3. **Boot Armada from the SD card.** With the internal boot partition gone,
-   reboot with the Armada SD card inserted and it boots from the card.
-4. **Run Armada Installer.** Open **Desktop Mode** and launch **Armada
+   Nebel's boot partition is named `ROCKNIX` so the ROCKNIX-derived ABL finds it.
+3. **Boot Nebel from the SD card.** With the internal boot partition gone,
+   reboot with the Nebel SD card inserted and it boots from the card.
+4. **Run Nebel Installer.** Open **Desktop Mode** and launch **Nebel
    Installer**. It detects the existing internal install and offers two choices:
-   - **Reinstall Armada** (or **Switch to Armada** if ROCKNIX is installed)
+   - **Reinstall Nebel** (or **Switch to Nebel** if ROCKNIX is installed)
      replaces the Linux install and leaves your Android untouched.
    - **Remove & Restore Android** erases the install and gives the whole disk
      back to Android, which factory-resets on its next boot.
 
-## Using Armada
+## Using Nebel
 
 FEX (x86 translation) and CachyOS Proton 11 are set up out of the box, so for most
 games you can just install from Steam and press play, with no extra setup. The
-rest of Armada works like SteamOS, and the Armada-specific controls live in
-**Armada Control**, a Decky plugin in the Quick Access Menu, for tuning and the
+rest of Nebel works like SteamOS, and the Nebel-specific controls live in
+**Nebel Control**, a Decky plugin in the Quick Access Menu, for tuning and the
 occasional game that needs it.
 
-### Quick Access Menu and Armada Control
+### Quick Access Menu and Nebel Control
 
 Press the **Steam** button to open the Quick Access Menu (on AYANEO devices the
-QAM is unmapped, so use **Home + A**), then open **Armada Control**. It has three
+QAM is unmapped, so use **Home + A**), then open **Nebel Control**. It has three
 tabs:
 
 - **Power.** Pick a profile: **Eco**, **Balanced**, or **Performance**. Each sets
   a fan curve, CPU underclock, and a GPU clock range. Profiles are editable in
-  **Armada Control**.
+  **Nebel Control**.
 - **Compatibility.** Per-game resolution and FEX settings. Pick a FEX preset
   (**Default**, **Fast**, **Compatible**, or **Custom**). The defaults work for
   most titles; change these only if a game misbehaves. Settings are saved per game.
@@ -214,7 +214,7 @@ tabs:
 ### Desktop mode
 
 From the Steam power menu, choose **Switch to Desktop** for a full KDE Plasma
-desktop. The **Bazaar** app store and the **Armada Installer**
+desktop. The **Bazaar** app store and the **Nebel Installer**
 ([Install to internal storage](#install-to-internal-storage)) live here. Use the
 **Return to Gaming Mode** shortcut on the desktop to switch back.
 
@@ -228,7 +228,7 @@ than it would be with real suspend.
 ### Stick RGB lighting
 
 On devices whose analog sticks have addressable RGB (currently Retroid Pocket
-Mini V2), **Armada Control > Settings > Stick Lighting** controls them:
+Mini V2), **Nebel Control > Settings > Stick Lighting** controls them:
 
 | Mode | Behavior |
 |---|---|
@@ -254,7 +254,7 @@ level.
 > Over-the-air updates are new and still being validated. You may need to reflash
 > if an update fails.
 
-Armada can update itself in place, with no reflash and no need to redownload
+Nebel can update itself in place, with no reflash and no need to redownload
 games. Choose an update channel and trigger the update from Steam's system
 settings:
 
@@ -270,7 +270,7 @@ settings:
   before Steam becomes fully visible, often following an update or restart.
 - **Compiling shaders message during gameplay.** This was a change made in a
   recent version of CachyOS Proton 11 (ARM) that will be disabled in a future
-  Armada release.
+  Nebel release.
 - **Red tint.** Some devices show a red tint on the panel after Steam
   restart. It is intermittent and a reboot clears it.
 - **QAM is unmapped on Ayaneo devices.** Use Home+A to open the Quick Access Menu.
@@ -297,6 +297,6 @@ Join the Discord: [discord.gg/HdmdSxTD5S](https://discord.gg/HdmdSxTD5S)
 
 ## License
 
-Armada's own code is **GPL-2.0-or-later**. If you modify and distribute it, your
+Nebel's own code is **GPL-2.0-or-later**. If you modify and distribute it, your
 changes stay open under the same terms. Bundled components keep their upstream
 licenses. See [`LICENSE.md`](LICENSE.md).

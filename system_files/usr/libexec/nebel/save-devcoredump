@@ -1,0 +1,21 @@
+#!/bin/bash
+# Save a kernel devcoredump (e.g. a GPU/GMU hang) before its ~5 min auto-delete.
+set -uo pipefail
+
+dev="${1:?usage: save-devcoredump devcdN}"
+src="/sys/class/devcoredump/${dev}/data"
+[[ -r "$src" ]] || exit 0
+
+dir="/var/lib/nebel/devcoredump"
+mkdir -p "$dir"
+out="${dir}/${dev}-$(date +%Y%m%d-%H%M%S).devcore"
+
+if cp "$src" "$out"; then
+    sz=$(stat -c%s "$out" 2>/dev/null || echo 0)
+    if [[ "$sz" -gt 0 ]]; then
+        logger -t nebel-devcoredump "saved $out ($sz bytes)"
+    else
+        rm -f "$out"
+        logger -t nebel-devcoredump "$dev produced an empty dump (GPU/GMU wedged) — discarded"
+    fi
+fi

@@ -5,7 +5,7 @@ dnf5 -y install --nogpgcheck \
     --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' \
     terra-release
 
-# grim is what armada-stick-led's "ambilight" mode uses to sample the
+# grim is what nebel-stick-led's "ambilight" mode uses to sample the
 # screen's average color - via gamescope's own wlr-screencopy-unstable-v1
 # protocol as an ordinary Wayland client, not ffmpeg's kmsgrab demuxer
 # (dropped: kmsgrab opens the primary DRM node directly, which conflicts

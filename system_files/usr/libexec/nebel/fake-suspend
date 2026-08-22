@@ -1,0 +1,325 @@
+#!/bin/bash
+# Real suspend hangs this SoC. Runs as systemd-suspend.service and blocks until
+# woken, so logind's sleep lifecycle (and Steam's blank) lasts the whole sleep.
+set -uo pipefail
+
+STATE_FLAG="/run/nebel/fake-suspend.active"
+WAKE_FLAG="/run/nebel/fake-suspend.wake"
+SAVE_DIR="/run/nebel/fake-suspend"
+LOG_TAG="nebel-fake-suspend"
+
+log() { logger -t "$LOG_TAG" -- "$*"; echo "$LOG_TAG: $*" >&2; }
+source /usr/lib/nebel/input-lib
+
+SESSION_USER="${NEBEL_SESSION_USER:-armada}"
+SESSION_UID="$(id -u "$SESSION_USER" 2>/dev/null || echo 1000)"
+SESSION_RUNTIME="/run/user/${SESSION_UID}"
+
+as_session() {
+    local s b sock=""
+    for s in "${SESSION_RUNTIME}"/gamescope-*; do
+        [[ -S "$s" ]] || continue
+        b="$(basename "$s")"
+        # gamescope-N, not the -ei input socket.
+        [[ "$b" =~ ^gamescope-[0-9]+$ ]] && { sock="$b"; break; }
+    done
+    # A wedged gamescope must not hang suspend/resume.
+    timeout 8 runuser -u "$SESSION_USER" -- env \
+        XDG_RUNTIME_DIR="$SESSION_RUNTIME" \
+        ${sock:+GAMESCOPE_WAYLAND_DISPLAY="$sock"} \
+        ${sock:+WAYLAND_DISPLAY="$sock"} \
+        "$@"
+}
+
+display_off() {
+    if as_session gamescopectl drm_sleep_internal_screen 1; then
+        log "display off (gamescope)"
+    else
+        log "gamescopectl failed -> bl_power fallback"
+        for bl in /sys/class/backlight/*/bl_power; do [[ -w "$bl" ]] && echo 4 > "$bl" 2>/dev/null || true; done
+    fi
+}
+display_on() {
+    if as_session gamescopectl drm_sleep_internal_screen 0; then
+        log "display on (gamescope)"
+    else
+        log "gamescopectl failed -> bl_power fallback"
+        for bl in /sys/class/backlight/*/bl_power; do [[ -w "$bl" ]] && echo 0 > "$bl" 2>/dev/null || true; done
+    fi
+}
+
+mute_audio()   { as_session wpctl set-mute @DEFAULT_AUDIO_SINK@ 1 2>/dev/null || true; }
+unmute_audio() { as_session wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 2>/dev/null || true; }
+
+# Multiple users (nebel issue #31) reported crackling/sped-up/warbling
+# audio after resume, sometimes for the rest of the session, and sometimes
+# outright silence in a client that had a stream open before sleeping (e.g.
+# Steam's own UI sounds) while freshly-opened streams (e.g. a game launched
+# after resume) were fine. Root cause: freeze_processes() used to freeze the
+# whole session, including pipewire/wireplumber themselves, for the sleep
+# duration - but the audio codec's hardware clock is never suspended in
+# lockstep (fake-suspend never touches the hardware), so pipewire's own
+# stream/clock bookkeeping went stale relative to the ring buffer by the
+# time it thawed. Restarting wireplumber/pipewire/pipewire-pulse on resume
+# was tried as a fix and confirmed to run at the right time, but that kills
+# existing client connections, which don't reconnect on their own - traded
+# warbling audio for total silence, a worse outcome. Fixed properly by
+# freeze_processes() no longer touching pipewire/wireplumber's cgroup at
+# all (see session_cgroup() - it only freezes gamescope/Steam's own cgroup),
+# so there's nothing to resync in the first place.
+
+radio_soft_blocked() {
+    rfkill list "$1" 2>/dev/null | grep -q 'Soft blocked: yes'
+}
+
+suspend_radios() {
+    command -v rfkill >/dev/null 2>&1 || return 0
+
+    : > "$SAVE_DIR/radios"
+    local kind
+    for kind in wifi bluetooth; do
+        rfkill list "$kind" >/dev/null 2>&1 || continue
+        radio_soft_blocked "$kind" && continue
+        if rfkill block "$kind"; then
+            printf '%s\n' "$kind" >> "$SAVE_DIR/radios"
+        else
+            log "failed to block ${kind}"
+        fi
+    done
+}
+
+resume_radios() {
+    [[ -r "$SAVE_DIR/radios" ]] || return 0
+
+    local kind
+    while IFS= read -r kind; do
+        [[ -n "$kind" ]] || continue
+        rfkill unblock "$kind" || log "failed to restore ${kind}"
+    done < "$SAVE_DIR/radios"
+}
+
+runtime_pm_devices() {
+    local dev
+    # Leave GPU runtime PM alone here; the GMU is known to wedge under
+    # rapid idle/resume churn on current devices.
+    for dev in /sys/devices/platform/soc@0/*.usb; do
+        [[ -e "$dev" ]] && printf '%s\n' "$dev"
+    done
+}
+
+suspend_runtime_pm() {
+    : > "$SAVE_DIR/power-controls"
+
+    local dev control previous count=0
+    while IFS= read -r dev; do
+        control="${dev}/power/control"
+        [[ -w "$control" ]] || continue
+        previous="$(cat "$control" 2>/dev/null)" || continue
+        printf '%s\t%s\n' "$control" "$previous" >> "$SAVE_DIR/power-controls"
+        if echo auto > "$control" 2>/dev/null; then
+            count=$((count + 1))
+        else
+            log "failed to enable runtime PM for ${dev}"
+        fi
+    done < <(runtime_pm_devices)
+
+    log "enabled runtime PM for ${count} devices"
+}
+
+resume_runtime_pm() {
+    [[ -r "$SAVE_DIR/power-controls" ]] || return 0
+
+    local control previous
+    while IFS=$'\t' read -r control previous; do
+        [[ -w "$control" ]] || continue
+        echo "$previous" > "$control" 2>/dev/null ||
+            log "failed to restore ${control}=${previous}"
+    done < <(tac "$SAVE_DIR/power-controls")
+}
+
+# The power key is left ungrabbed by block_input; wait_for_wake grabs it
+# instead. Must match power_device()'s pattern below - a literal name like
+# "pmic_pwrkey" doesn't match this SoC's actual "pm8941_pwrkey" (or other
+# PMICs' equivalents), silently letting block_input steal the grab and
+# starving wait_for_wake of the wake keypress entirely.
+power_device() {
+    local dev name
+    for dev in /dev/input/event*; do
+        [[ -e "$dev" ]] || continue
+        name="$(cat "/sys/class/input/$(basename "$dev")/device/name" 2>/dev/null)" || continue
+        case "$name" in *pwrkey*|*[Pp]ower\ [Bb]utton*) echo "$dev"; return 0 ;; esac
+    done
+    return 1
+}
+
+block_input() {
+    local dev name
+    for dev in /dev/input/event*; do
+        [[ -e "$dev" ]] || continue
+        # Never grab the lid switch — logind/resume need its events to flow.
+        nebel_dev_has_lid "$dev" && continue
+        name="$(cat "/sys/class/input/$(basename "$dev")/device/name" 2>/dev/null)" || continue
+        case "$name" in *pwrkey*|*[Pp]ower\ [Bb]utton*) continue ;; esac
+        evtest --grab "$dev" >/dev/null 2>&1 &
+    done
+}
+unblock_input() { pkill -9 -f 'evtest --grab' 2>/dev/null || true; }
+
+# Grab the power key and block until woken, so the wake press resumes us instead
+# of reaching logind/Steam.
+wait_for_wake() {
+    rm -f "$WAKE_FLAG"
+    local pdev t0 line lidwasclosed; pdev="$(power_device || true)"; t0=$SECONDS
+    # Clamshell: a closed lid blocks the power button (no waking in a bag); lid-open wakes.
+    lidwasclosed=0; nebel_lid_closed 2>/dev/null && lidwasclosed=1
+    if [[ -n "$pdev" ]]; then
+        log "waiting for wake (power key ${pdev})"
+        exec 3< <(evtest --grab "$pdev" 2>/dev/null)
+        while true; do
+            [[ -f "$WAKE_FLAG" ]] && { log "wake (flag)"; break; }
+            if nebel_lid_closed 2>/dev/null; then
+                lidwasclosed=1
+            elif (( lidwasclosed )); then
+                log "wake (lid open)"; break
+            fi
+            if IFS= read -r -t 1 -u 3 line; then
+                case "$line" in
+                    *"(KEY_POWER), value 1"*)
+                        if (( SECONDS - t0 >= 1 )) && ! nebel_lid_closed 2>/dev/null; then log "wake (power key)"; break; fi ;;
+                esac
+            elif (( $? <= 128 )); then
+                # evtest exited (not a read timeout, e.g. OOM or the input
+                # device re-enumerating when the display power-cycles) -
+                # re-grab it rather than going permanently deaf to the power
+                # key, which otherwise strands the device asleep forever.
+                log "evtest exited, re-grabbing ${pdev}"
+                sleep 1
+                exec 3< <(evtest --grab "$pdev" 2>/dev/null)
+            fi
+        done
+        exec 3<&-
+    else
+        log "no power device; waiting on wake flag"
+        while :; do
+            [[ -f "$WAKE_FLAG" ]] && break
+            if nebel_lid_closed 2>/dev/null; then lidwasclosed=1
+            elif (( lidwasclosed )); then break; fi
+            sleep 0.5
+        done
+    fi
+    rm -f "$WAKE_FLAG"
+}
+
+# Values are the 15-char /proc comm.
+SESSION_KEEP_COMMS='gamescope-wl|gamescope-sessi|Xwayland|mangoapp|steam_notif_dae'
+
+session_cgroup() {
+    local gspid cg
+    gspid="$(pgrep -f 'bin/gamescope -W' | head -1)"
+    [[ -n "$gspid" ]] || return 1
+    cg="$(awk -F: '/0::/{print $3}' "/proc/${gspid}/cgroup" 2>/dev/null)"
+    [[ -n "$cg" ]] || return 1
+    echo "$cg"
+}
+
+session_procs_file() {
+    local cg; cg="$(session_cgroup)" || return 1
+    echo "/sys/fs/cgroup${cg}/cgroup.procs"
+}
+
+freeze_processes() {
+    local procs p c cg freeze_file
+
+    # Freeze only gamescope/Steam's own cgroup, not the whole user.slice:
+    # pipewire/wireplumber live in a sibling cgroup (session.slice), and
+    # freezing them along with everything else for the sleep duration while
+    # the audio codec itself stays fully powered (fake-suspend never touches
+    # the hardware) is what desyncs pipewire's stream clocks from the
+    # hardware ring buffer, causing crackling/sped-up audio on resume
+    # (nebel issue #31). Leaving them running (silently, muted) the whole
+    # time means there's nothing to resync in the first place.
+    cg="$(session_cgroup)"
+    if [[ -n "$cg" ]]; then
+        freeze_file="/sys/fs/cgroup${cg}/cgroup.freeze"
+        if [[ -w "$freeze_file" ]] && echo 1 > "$freeze_file" 2>/dev/null; then
+            echo "$cg" > "$SAVE_DIR/frozen-cgroup"
+            log "froze ${cg}"
+            return
+        fi
+    fi
+
+    log "failed to freeze session cgroup; falling back to process freezer"
+    procs="$(session_procs_file)" || { log "no session cgroup; skipping freeze"; return; }
+    [[ -r "$procs" ]] || { log "session procs unreadable; skipping freeze"; return; }
+    : > "$SAVE_DIR/processes"
+    for p in $(cat "$procs"); do
+        [[ "$p" == "$$" ]] && continue
+        c="$(cat "/proc/${p}/comm" 2>/dev/null)" || continue
+        echo "$c" | grep -qE "^(${SESSION_KEEP_COMMS})$" && continue
+        kill -STOP "$p" 2>/dev/null && echo "$p" >> "$SAVE_DIR/processes"
+    done
+    log "froze $(wc -l < "$SAVE_DIR/processes" 2>/dev/null || echo 0) processes"
+}
+unfreeze_processes() {
+    if [[ -r "$SAVE_DIR/frozen-cgroup" ]]; then
+        local cg; cg="$(cat "$SAVE_DIR/frozen-cgroup")"
+        echo 0 > "/sys/fs/cgroup${cg}/cgroup.freeze" 2>/dev/null || log "failed to thaw ${cg}"
+        rm -f "$SAVE_DIR/frozen-cgroup"
+        return
+    fi
+
+    if [[ -f "$SAVE_DIR/processes" ]]; then
+        local p; for p in $(cat "$SAVE_DIR/processes"); do kill -CONT "$p" 2>/dev/null || true; done
+    fi
+    kill -CONT -1 2>/dev/null || true
+}
+
+do_suspend() {
+    log "entering fake suspend"
+    mkdir -p "$SAVE_DIR"
+    touch "$STATE_FLAG"
+    mute_audio
+    block_input
+    display_off   # gamescope drm_sleep (game) / bl_power (desktop); after Steam's animation
+    freeze_processes
+    # Radio suspend disabled until we can improve resume speed (currently takes 30+ seconds)
+    # suspend_radios
+    if ! timeout 10 /usr/bin/nebel-power suspend; then
+        log "nebel-power suspend failed; aborting fake suspend"
+        do_resume
+        exit 1
+    fi
+    # Do this after the final GPU devfreq writes in nebel-power suspend.
+    suspend_runtime_pm
+}
+do_resume() {
+    # Idempotent: a trap-fired resume after the explicit one is a no-op.
+    [[ -f "$STATE_FLAG" ]] || return 0
+    log "leaving fake suspend"
+    resume_runtime_pm
+    timeout 10 /usr/bin/nebel-power resume || log "nebel-power resume timed out"
+    # Radio suspend disabled until we can improve resume speed (currently takes 30+ seconds)
+    # resume_radios
+    unfreeze_processes
+    unblock_input
+    unmute_audio
+    display_on
+    rm -f "$STATE_FLAG"
+    rm -rf "$SAVE_DIR"
+}
+
+case "${1:-sleep}" in
+    sleep|suspend)
+        [[ -f "$STATE_FLAG" ]] && exit 0
+        # If killed (e.g. unit stopped / timeout), always resume so nothing is stranded.
+        trap 'do_resume; exit 0' INT TERM
+        do_suspend
+        wait_for_wake
+        do_resume
+        trap - INT TERM
+        ;;
+    wake|resume)  touch "$WAKE_FLAG" ;;
+    toggle|power) if [[ -f "$STATE_FLAG" ]]; then touch "$WAKE_FLAG"; else exec "$0" sleep; fi ;;
+    status)       [[ -f "$STATE_FLAG" ]] && echo "suspended" || echo "awake" ;;
+    *) echo "Usage: $0 {sleep|wake|toggle|status}" >&2; exit 2 ;;
+esac

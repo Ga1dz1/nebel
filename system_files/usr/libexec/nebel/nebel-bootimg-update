@@ -1,0 +1,117 @@
+#!/bin/bash
+# Rebuild the ESP /KERNEL (Android boot.img) for the next-boot deployment so a
+# bootc upgrade/rollback takes effect — ostree is bootloader=none and won't.
+set -euo pipefail
+
+ESP="${ESP:-/boot/efi}"
+BOOTROOT="${BOOTROOT:-/boot}"
+MKBOOTIMG="${MKBOOTIMG:-/usr/libexec/nebel/mkbootimg.py}"
+DTB_LIST="${DTB_LIST:-/usr/lib/nebel/supported-dtbs}"
+ARGS_FILE="${ARGS_FILE:-/usr/lib/nebel/bootimg-args}"
+KERNEL_OUT="${ESP}/KERNEL"
+STAMP="${ESP}/.nebel-bootimg.id"
+
+[ -r "${DTB_LIST}" ] || { echo "nebel-bootimg-update: missing ${DTB_LIST}" >&2; exit 1; }
+[ -r "${ARGS_FILE}" ] || { echo "nebel-bootimg-update: missing ${ARGS_FILE}" >&2; exit 1; }
+. "${ARGS_FILE}"
+
+# /KERNEL must land on the FAT ESP the ABL reads; if it isn't mounted we'd write
+# to a stray dir and the ABL would keep booting the old kernel. Fail loud instead.
+findmnt -rn "${ESP}" >/dev/null 2>&1 || {
+    echo "nebel-bootimg-update: ${ESP} is not a mountpoint; refusing to write /KERNEL" >&2
+    exit 1
+}
+
+# Next-boot deployment = highest-version BLS entry (ostree gives its default,
+# and the rollback target, the highest version), via the shared helper.
+entry=$(nebel_default_bls_entry "${BOOTROOT}")
+[ -n "${entry:-}" ] || { echo "nebel-bootimg-update: no BLS entry in ${BOOTROOT}/loader/entries" >&2; exit 1; }
+
+linux=$(sed -n 's/^linux //p'   "${entry}" | head -1)
+initrd=$(sed -n 's/^initrd //p' "${entry}" | head -1)
+fdtdir=$(sed -n 's/^fdtdir //p' "${entry}" | head -1)
+options=$(sed -n 's/^options //p' "${entry}" | head -1)
+
+# BLS paths carry a /boot prefix (bootprefix=true); the files live on this fs.
+kpath="${BOOTROOT}${linux#/boot}"
+ipath="${BOOTROOT}${initrd#/boot}"
+dpath="${BOOTROOT}${fdtdir#/boot}"
+
+id=$(nebel_bootimg_id "${linux}" "${initrd}" "${options}" "${DTB_LIST}" "${ARGS_FILE}")
+if [ -f "${KERNEL_OUT}" ] && [ "$(cat "${STAMP}" 2>/dev/null || true)" = "${id}" ]; then
+    echo "nebel-bootimg-update: /KERNEL already current (${linux##*/})"
+    exit 0
+fi
+
+# Fit the header-v0 512-byte cmdline: drop the serial console and redundant
+# Btrfs defaults, then put ostree first.
+#
+# All rootflags= tokens must be merged into ONE: the kernel is last-wins per
+# karg, and bootc emits the BIB subvol= rootflags and our kargs.d mount-opts
+# rootflags as separate tokens - unmerged, the later one (no subvol=) would
+# drop the subvol=/root the ostree initramfs needs, and the boot dies in the
+# emergency shell (seen live on Mini V2: "root account is locked").
+ostree_arg=""; rest=""; rootflags=""
+for t in ${options}; do
+    case "${t}" in
+        console=ttyS0) continue ;;
+        ostree=*) ostree_arg="${t}" ;;
+        rootflags=*) rootflags="${rootflags}${rootflags:+,}${t#rootflags=}" ;;
+        *) rest="${rest} ${t}" ;;
+    esac
+done
+# space_cache=v2 has been the btrfs default for ages; dropping it saves bytes.
+rootflags=$(printf '%s' "${rootflags}" | sed 's/,space_cache=v2//g; s/^space_cache=v2,\?//')
+cmdline="${ostree_arg}${rest}"
+[ -n "${rootflags}" ] && cmdline="${cmdline} rootflags=${rootflags}"
+
+# Fail loud rather than ship a silently-truncated, unbootable /KERNEL that can
+# only be recovered via fastboot. Limit is single-sourced (see bootimg-args).
+if [ "${#cmdline}" -gt "${NEBEL_CMDLINE_MAX}" ]; then
+    echo "nebel-bootimg-update: assembled cmdline is ${#cmdline}B, over the ${NEBEL_CMDLINE_MAX}B limit" >&2
+    exit 1
+fi
+
+work=$(mktemp -d)
+trap 'rm -rf "${work}"' EXIT
+
+# ROCKNIX ABL expects gzip(Image) with all supported DTBs appended; its model
+# picker chooses among them at boot. supported-dtbs enumerates every device
+# nebel targets across all SoC families, but a single kernel package build
+# doesn't necessarily carry all of them (e.g. a locally-built SM8250-only
+# kernel has no AYN/SM8550/SM8650 DTBs at all) - append whichever of these
+# actually exist rather than hard-failing on the first one that doesn't.
+# Confirmed live: a hard fail here made bootc rollback DURING
+# ostree-finalize-staged's ExecStop (nebel-bootimg-finalize), which broke
+# the boot chain on real hardware rather than just skipping an irrelevant
+# DTB for a device this kernel was never built to support anyway. Only fail
+# if NONE at all are found, since that means this device's own DTB is
+# almost certainly missing too.
+gzip -c "${kpath}" > "${work}/kernel.gz"
+found=0
+while read -r name; do
+    [ -n "${name}" ] || continue
+    dtb="${dpath}/qcom/${name}.dtb"
+    if [ -f "${dtb}" ]; then
+        cat "${dtb}" >> "${work}/kernel.gz"
+        found=$((found + 1))
+    else
+        echo "nebel-bootimg-update: skipping ${dtb} (not in this kernel package)" >&2
+    fi
+done < "${DTB_LIST}"
+[ "${found}" -gt 0 ] || { echo "nebel-bootimg-update: none of the DTBs in ${DTB_LIST} were found under ${dpath}/qcom" >&2; exit 1; }
+
+python3 "${MKBOOTIMG}" \
+    --kernel "${work}/kernel.gz" --ramdisk "${ipath}" \
+    ${NEBEL_BOOTIMG_ARGS} --os_patch_level "$(date '+%Y-%m')" \
+    --cmdline "${cmdline}" \
+    -o "${work}/KERNEL"
+
+# Atomic on the FAT ESP: rename can't leave a half-written /KERNEL.
+cp -f "${work}/KERNEL" "${ESP}/.KERNEL.new"
+sync "${ESP}/.KERNEL.new"
+mv -f "${ESP}/.KERNEL.new" "${KERNEL_OUT}"
+printf '%s' "${id}" > "${STAMP}"
+sync
+
+echo "nebel-bootimg-update: wrote ${KERNEL_OUT} for ${linux##*/}"

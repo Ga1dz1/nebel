@@ -21,8 +21,8 @@ cp -a /etc/skel/. /var/home/armada/
 chown -R armada:armada /var/home/armada
 chmod 0700 /var/home/armada
 install -Dpm 0755 -o armada -g armada \
-    /usr/share/applications/armada-return-to-gamemode.desktop \
-    /var/home/armada/Desktop/armada-return-to-gamemode.desktop
+    /usr/share/applications/nebel-return-to-gamemode.desktop \
+    /var/home/armada/Desktop/nebel-return-to-gamemode.desktop
 
 echo 'armada:armada' | chpasswd
 
@@ -32,9 +32,9 @@ cat > /etc/sudoers.d/armada-user <<'EOF'
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop sddm
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl poweroff
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl reboot
-%wheel ALL=(ALL) NOPASSWD: /usr/libexec/armada/session-control switch-desktop
-%wheel ALL=(ALL) NOPASSWD: /usr/libexec/armada/session-control switch-gamemode
-%wheel ALL=(ALL) NOPASSWD: /usr/libexec/armada/session-control default-gamemode
-%wheel ALL=(ALL) NOPASSWD: /usr/libexec/armada/armada-installer *
+%wheel ALL=(ALL) NOPASSWD: /usr/libexec/nebel/session-control switch-desktop
+%wheel ALL=(ALL) NOPASSWD: /usr/libexec/nebel/session-control switch-gamemode
+%wheel ALL=(ALL) NOPASSWD: /usr/libexec/nebel/session-control default-gamemode
+%wheel ALL=(ALL) NOPASSWD: /usr/libexec/nebel/nebel-installer *
 EOF
 chmod 0440 /etc/sudoers.d/armada-user

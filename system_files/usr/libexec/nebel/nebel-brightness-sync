@@ -1,0 +1,73 @@
+#!/usr/bin/bash
+# Synchronize display backlight brightness between the panel's DSI backlight
+# (used by game mode / gamescope) and the generic "backlight" device that
+# Plasma PowerDevil prefers. Without this, changing brightness in game mode
+# and Plasma desktop mode drift apart.
+set -euo pipefail
+
+# The DSI panel backlight is what gamescope/DRM adjusts.
+PANEL_BACKLIGHT="/sys/class/backlight/ae94000.dsi.0"
+# PowerDevil in Plasma 6 tends to pick this generic device on RP6.
+PLASMA_BACKLIGHT="/sys/class/backlight/backlight"
+
+# Some devices only expose one of the two; bail out cleanly.
+[[ -r "${PANEL_BACKLIGHT}/brightness" ]] || exit 0
+[[ -r "${PLASMA_BACKLIGHT}/brightness" ]] || exit 0
+
+STATE_DIR="/run/nebel/brightness-sync"
+mkdir -p "${STATE_DIR}"
+LAST_PANEL_FILE="${STATE_DIR}/last-panel"
+LAST_PLASMA_FILE="${STATE_DIR}/last-plasma"
+
+read_file() {
+    cat "$1" 2>/dev/null || echo 0
+}
+
+write_file() {
+    local target="$1" value="$2"
+    # Ignore permission errors; the device may disappear on hotplug.
+    printf '%s\n' "${value}" >"${target}" 2>/dev/null || true
+}
+
+# Sync panel (game mode) -> Plasma backlight. This makes the Plasma session
+# start at the same brightness the user left game mode in.
+sync_panel_to_plasma() {
+    local panel_val panel_max plasma_max new_plasma
+    panel_val=$(read_file "${PANEL_BACKLIGHT}/brightness")
+    [[ -f "${LAST_PANEL_FILE}" ]] && [[ "$(read_file "${LAST_PANEL_FILE}")" == "${panel_val}" ]] && return
+
+    panel_max=$(read_file "${PANEL_BACKLIGHT}/max_brightness")
+    plasma_max=$(read_file "${PLASMA_BACKLIGHT}/max_brightness")
+    new_plasma=$((panel_val * plasma_max / panel_max))
+
+    write_file "${LAST_PANEL_FILE}" "${panel_val}"
+    write_file "${LAST_PLASMA_FILE}" "${new_plasma}"
+    write_file "${PLASMA_BACKLIGHT}/brightness" "${new_plasma}"
+}
+
+# Sync Plasma backlight -> panel. When the user changes brightness in Plasma
+# desktop mode, the panel backlight must follow so game mode sees the same value.
+sync_plasma_to_panel() {
+    local plasma_val plasma_max panel_max new_panel
+    plasma_val=$(read_file "${PLASMA_BACKLIGHT}/brightness")
+    [[ -f "${LAST_PLASMA_FILE}" ]] && [[ "$(read_file "${LAST_PLASMA_FILE}")" == "${plasma_val}" ]] && return
+
+    plasma_max=$(read_file "${PLASMA_BACKLIGHT}/max_brightness")
+    panel_max=$(read_file "${PANEL_BACKLIGHT}/max_brightness")
+    new_panel=$((plasma_val * panel_max / plasma_max))
+
+    write_file "${LAST_PLASMA_FILE}" "${plasma_val}"
+    write_file "${LAST_PANEL_FILE}" "${new_panel}"
+    write_file "${PANEL_BACKLIGHT}/brightness" "${new_panel}"
+}
+
+# Initial one-shot sync so the session starts in sync.
+sync_panel_to_plasma
+
+# Continuous bidirectional sync. Polling is used because sysfs brightness files
+# do not reliably emit inotify events on every device.
+while true; do
+    sleep 2
+    sync_plasma_to_panel
+    sync_panel_to_plasma
+done

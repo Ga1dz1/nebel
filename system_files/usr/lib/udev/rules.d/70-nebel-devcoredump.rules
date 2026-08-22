@@ -1,0 +1,2 @@
+# Save devcoredumps before the kernel's ~5 min auto-delete.
+SUBSYSTEM=="devcoredump", ACTION=="add", TAG+="systemd", ENV{SYSTEMD_WANTS}+="nebel-save-devcoredump@$kernel.service"

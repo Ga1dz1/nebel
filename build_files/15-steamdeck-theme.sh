@@ -18,7 +18,7 @@ cd "${EXTRACT}"
 
 # Only extract the theme assets and default configs.  We deliberately skip
 # SteamOS-specific daemons, autostarts, and xorg.conf snippets that would
-# conflict with Armada's own session management.
+# conflict with Nebel's own session management.
 tar -xf "steamdeck-kde-presets.pkg.tar" \
     usr/share/color-schemes/Vapor.colors \
     usr/share/color-schemes/VGUI.colors \

@@ -1,0 +1,32 @@
+#!/bin/sh
+# Post-resume PipeWire quantum bounce - a ROCKNIX SM8250 wake quirk (ported
+# via shuuri-labs/pocknix-os's own pocknix-sm8250-audio-resume): after resume,
+# the sm8250 qdsp6 audio path can come back glitched (silent until the whole
+# session is restarted - the "no audio after resume" symptom this project's
+# own README already documented as unresolved). Forcing the PipeWire graph
+# quantum to 1023 and back to 1024 kicks it back into shape.
+#
+# This runs from nebel-audio-resume.service (WantedBy=suspend.target,
+# After=systemd-suspend.service) - i.e. AFTER the whole sleep transaction
+# completes and user.slice is thawed. It must NOT be a system-sleep hook
+# (like 50-nebel-real-suspend): those run while user.slice is still FROZEN,
+# so pw-metadata would block forever on a frozen PipeWire and systemd-sleep
+# would never get to thaw the slice - pocknix-os diagnosed exactly this as a
+# "frozen frame, no network, live kernel" wake failure on their RP5
+# (2026-07-16). The timeout below is belt-and-braces so no PipeWire state can
+# ever wedge this service either.
+set -u
+
+eval "$(/usr/libexec/nebel/device-env 2>/dev/null)" || true
+[ "${NEBEL_SOC_CLASS:-}" = "SM8250" ] || exit 0
+
+SESSION_USER="${NEBEL_SESSION_USER:-armada}"
+SESSION_UID="$(id -u "$SESSION_USER" 2>/dev/null || echo 1000)"
+RUNDIR="/run/user/${SESSION_UID}"
+
+[ -S "${RUNDIR}/pipewire-0" ] || exit 0
+timeout 5 runuser -u "$SESSION_USER" -- env XDG_RUNTIME_DIR="$RUNDIR" \
+    pw-metadata -n settings 0 clock.force-quantum 1023 >/dev/null 2>&1 || exit 0
+timeout 5 runuser -u "$SESSION_USER" -- env XDG_RUNTIME_DIR="$RUNDIR" \
+    pw-metadata -n settings 0 clock.force-quantum 1024 >/dev/null 2>&1 || true
+exit 0

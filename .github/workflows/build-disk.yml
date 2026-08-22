@@ -57,7 +57,7 @@ jobs:
       - name: Log in to ghcr.io
         run: echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build Armada image
+      - name: Build Nebel image
         run: |
           set -euxo pipefail
           JUST_BIN=$(command -v just)
@@ -65,19 +65,19 @@ jobs:
           # Build the disk FROM the published container so the disk and the ghcr
           # image are identical content and the installed system's bootc origin
           # points at ghcr (so OTA works). The Justfile pulls the ref for BIB.
-          sudo "${JUST_BIN}" build-armada-image "${IMAGE_REGISTRY}/${IMAGE_NAME}" "${{ inputs.tag }}"
+          sudo "${JUST_BIN}" build-nebel-image "${IMAGE_REGISTRY}/${IMAGE_NAME}" "${{ inputs.tag }}"
           sudo chown -R "$(id -u):$(id -g)" output
-          IMG=$(find output -maxdepth 1 -name 'armada-*.img.gz' -type f -print -quit)
+          IMG=$(find output -maxdepth 1 -name 'nebel-*.img.gz' -type f -print -quit)
           sha256sum "${IMG}" > "${IMG}.sha256"
           ls -lh "${IMG}" "${IMG}.sha256"
 
       - name: Upload disk image
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: armada-disk-image
+          name: nebel-disk-image
           path: |
-            output/armada-*.img.gz
-            output/armada-*.img.gz.sha256
+            output/nebel-*.img.gz
+            output/nebel-*.img.gz.sha256
           if-no-files-found: error
           retention-days: 1
           compression-level: 0

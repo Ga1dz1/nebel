@@ -1,0 +1,48 @@
+match-architectures = ["aarch64"]
+
+kargs = [
+    "rootwait",
+    "rootflags=noatime,compress=zstd:1",
+    # Retroid's recovery/Android tooling can leave the primary GPT header
+    # invalid (seen live on Mini V2's duo layout); "gpt" makes the kernel
+    # fall back to the backup GPT instead of giving up on the disk.
+    "gpt",
+    "console=tty0",
+    "rhgb",
+    "quiet",
+    "plymouth.enable=1",
+
+    "enforcing=0",
+
+    # TEMPORARILY REMOVED (re-add once this build has actually finalized on
+    # a real device at least once - see below): "rd.emergency=reboot",
+    # "systemd.emergency_action=reboot". These are handheld game consoles
+    # with no keyboard - dropping to an interactive rescue/emergency shell
+    # on a boot failure strands a player, only recoverable with a forced
+    # power-off - so this pair is a real, wanted fix. But it pushed the
+    # assembled /KERNEL cmdline past nebel-bootimg-update's 512B limit,
+    # which an older nebel-bootimg-finalize treated as unconditionally fatal
+    # and rolled back. The current nebel-bootimg-finalize no longer does
+    # that, but can't retroactively apply to the transition INTO itself -
+    # a chicken-and-egg problem only solved by shipping one build that fits
+    # under the old limit first. Once that build is what's actually running,
+    # add these back.
+    "allow_mismatched_32bit_el0",
+    "fw_devlink.strict=1",
+    "pcie_ports=compat",
+
+    "irqaffinity=0-1",
+
+    # Waydroid's LMKD wants system-wide PSI stats, but not the legacy cgroup
+    # v1-style "pressure" controller hooked into the hierarchy (conflicts
+    # with how Waydroid/LXC sets up its own cgroups) - psi=1 without
+    # cgroup_disable=pressure would give Waydroid the stats it wants but
+    # with that conflict still present.
+    "psi=1",
+    "cgroup_disable=pressure",
+    "cgroup.memory=nokmem,nosocket",
+
+    "cpufreq.default_governor=schedutil",
+
+    "swiotlb=8192",
+]

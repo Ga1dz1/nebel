@@ -1,4 +1,4 @@
-export image_name := env("IMAGE_NAME", "armada")
+export image_name := env("IMAGE_NAME", "nebel")
 export default_tag := env("DEFAULT_TAG", "latest")
 export bib_image := env("BIB_IMAGE", "quay.io/centos-bootc/bootc-image-builder:latest")
 
@@ -70,8 +70,8 @@ build $target_image=image_name $tag=default_tag:
     set -euo pipefail
 
     BUILD_ARGS=()
-    ARMADA_VERSION="$(TZ=America/New_York date +%Y%m%d).$(git rev-parse --short HEAD)"
-    BUILD_ARGS+=("--build-arg" "ARMADA_VERSION=${ARMADA_VERSION}")
+    NEBEL_VERSION="$(TZ=America/New_York date +%Y%m%d).$(git rev-parse --short HEAD)"
+    BUILD_ARGS+=("--build-arg" "NEBEL_VERSION=${NEBEL_VERSION}")
 
     # Allow local armada-packages images to override pinned package images.
     mapfile -t PKG_VARS < <(sed -n 's/^ARG \([A-Z0-9_]*_PKG\)=.*/\1/p' Containerfile)
@@ -79,10 +79,10 @@ build $target_image=image_name $tag=default_tag:
     for var in "${PKG_VARS[@]}"; do
         KNOWN_PKG_VARS["${var}"]=1
     done
-    for p in ${ARMADA_LOCAL_PKGS:-}; do
+    for p in ${NEBEL_LOCAL_PKGS:-}; do
         var="$(echo "$p" | tr '[:lower:]-' '[:upper:]_')_PKG"
         if [[ -z "${KNOWN_PKG_VARS[$var]:-}" ]]; then
-            echo "unknown package in ARMADA_LOCAL_PKGS: ${p}" >&2
+            echo "unknown package in NEBEL_LOCAL_PKGS: ${p}" >&2
             exit 1
         fi
         export "${var}=localhost/armada-packages/${p}:latest"
@@ -162,8 +162,8 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
     if [ -d /etc/containers/containers.conf.d ]; then
         EXTRA_MOUNTS+=("-v" "/etc/containers/containers.conf.d:/etc/containers/containers.conf.d:ro")
     fi
-    if [ -f /tmp/armada-runc/runc-arm64 ]; then
-        EXTRA_MOUNTS+=("-v" "/tmp/armada-runc/runc-arm64:/usr/bin/runc:ro")
+    if [ -f /tmp/nebel-runc/runc-arm64 ]; then
+        EXTRA_MOUNTS+=("-v" "/tmp/nebel-runc/runc-arm64:/usr/bin/runc:ro")
     fi
 
     # Ubuntu 24.04 AppArmor blocks mknod in nested crun.
@@ -191,8 +191,8 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
       "${target_image}:${tag}"
 
     # BIB writes output as root.
-    if [ -x /opt/armada/bin/reown ]; then
-        sudo /opt/armada/bin/reown "$BUILDTMP"
+    if [ -x /opt/nebel/bin/reown ]; then
+        sudo /opt/nebel/bin/reown "$BUILDTMP"
     else
         sudo chown -R "$(id -u):$(id -g)" "$BUILDTMP"
     fi
@@ -215,10 +215,10 @@ build-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_build
 [group('Build Virtual Machine Image')]
 build-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "iso" "disk_config/iso.toml")
 
-# Output: ./output/armada-<version>.img.gz  (version = container label, date.sha)
+# Output: ./output/nebel-<version>.img.gz  (version = container label, date.sha)
 # All supported devices boot via ROCKNIX ABL from /KERNEL; GRUB is not used.
-[group('Armada')]
-build-armada-image $target_image=("localhost/" + image_name) $tag=default_tag: (build-raw target_image tag)
+[group('Nebel')]
+build-nebel-image $target_image=("localhost/" + image_name) $tag=default_tag: (build-raw target_image tag)
     #!/usr/bin/env bash
     set -euo pipefail
     echo "Finalizing the freshly-built raw image..."
@@ -228,9 +228,9 @@ build-armada-image $target_image=("localhost/" + image_name) $tag=default_tag: (
     ./post_process/make-bootimg.sh output/image/disk.raw
     # Name from the container's version so a flashed device traces to its build.
     if [[ -n "$version" && "$version" != unknown ]]; then
-        export OUT="output/armada-${version}.img.gz"
+        export OUT="output/nebel-${version}.img.gz"
     fi
-    ./post_process/finalize-armada-image.sh output/image/disk.raw
+    ./post_process/finalize-nebel-image.sh output/image/disk.raw
 
 [group('Build Virtual Machine Image')]
 rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "qcow2" "disk_config/disk.toml")

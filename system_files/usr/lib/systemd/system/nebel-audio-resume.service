@@ -1,0 +1,14 @@
+[Unit]
+Description=Bounce PipeWire's graph quantum after resume (SM8250 audio wake quirk)
+# Must run after the whole sleep transaction, including the user.slice
+# thaw - see the script's own comment for why this can't be a
+# system-sleep (sleep.d) hook instead.
+After=systemd-suspend.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nebel/nebel-audio-resume
+TimeoutStartSec=20
+
+[Install]
+WantedBy=suspend.target

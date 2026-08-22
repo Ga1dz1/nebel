@@ -1,0 +1,15 @@
+[Unit]
+Description=Mount Nebel shared storage partition
+Documentation=https://github.com/Ga1dz1/nebel
+ConditionPathExists=/dev/disk/by-label/ARMADA_SHARED
+After=local-fs.target
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/nebel/shared-storage-setup start
+ExecStopPost=-/usr/bin/umount -R /var/home/armada/Shared /mnt/shared
+
+[Install]
+WantedBy=multi-user.target

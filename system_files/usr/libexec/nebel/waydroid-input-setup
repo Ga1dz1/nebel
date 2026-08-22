@@ -1,0 +1,54 @@
+#!/bin/bash
+set -euo pipefail
+
+boot_completed=
+deadline=$((SECONDS + 90))
+while (( SECONDS < deadline )); do
+    boot_completed=$(timeout 3s waydroid shell -- getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)
+    if [[ "$boot_completed" == "1" ]]; then
+        break
+    fi
+    sleep 1
+done
+
+if [[ "$boot_completed" != "1" ]]; then
+    echo "Android did not finish booting before the controller setup timeout" >&2
+    exit 1
+fi
+
+waydroid shell -- setprop persist.waydroid.uevent true
+
+# AYN's controller and the SM8250 Retroid family's controller report the
+# identical placeholder vendor:product (0x2020:0x3001), so Android's normal
+# vendor/product-based keylayout lookup can't tell them apart on its own -
+# both would resolve to the same Vendor_2020_Product_3001.kl path regardless
+# of which is actually plugged in. Pick the source with the correct button/
+# axis mapping for whichever family is actually running (see the source
+# files' own comments for why the mappings differ) and stage only that one
+# under the shared vendor:product name Android actually looks for.
+eval "$(/usr/libexec/nebel/device-env 2>/dev/null)" || true
+case "${NEBEL_SOC_CLASS:-}" in
+    SM8250) keylayout_variant="retroid" ;;
+    *) keylayout_variant="ayn" ;;
+esac
+keylayout_source="/usr/share/nebel/waydroid/keylayout/${keylayout_variant}.Vendor_2020_Product_3001.kl"
+keylayout_target_dir=/var/home/armada/.local/share/waydroid/data/system/devices/keylayout
+if [[ -f "$keylayout_source" ]]; then
+    install -d -m 0755 "$keylayout_target_dir"
+    install -m 0644 "$keylayout_source" "$keylayout_target_dir/Vendor_2020_Product_3001.kl"
+fi
+
+found=0
+for event in /sys/class/input/event*; do
+    if ! udevadm info --query=property --path="$event" 2>/dev/null | grep -qx 'NEBEL_WAYDROID_GAMEPAD=1'; then
+        continue
+    fi
+    echo add > "$event/uevent"
+    echo "Exposed $(basename "$event") to Waydroid"
+    found=1
+done
+
+if (( ! found )); then
+    echo "No Waydroid passthrough gamepad found"
+    exit 0
+fi

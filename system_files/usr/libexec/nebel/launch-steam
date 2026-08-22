@@ -1,0 +1,89 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+steam_args=()
+if [[ ${1:-} == "--desktop" ]]; then
+    shift
+    steam_args=(-steamdeck)
+fi
+
+steam_root="${STEAM_ROOT:-${HOME}/.local/share/Steam}"
+steam_arm_dir="${steam_root}/steamrtarm64"
+steam_arm="${steam_arm_dir}/steam"
+steam_shim_dir="${steam_root}/lib/aarch64-linux-gnu"
+steam_runtime_bin="${steam_root}/steam-runtime-steamrt-arm64/bin"
+
+if [[ ! -x "${steam_arm}" ]]; then
+    echo "ERROR: native ARM Steam is missing or not executable: ${steam_arm}" >&2
+    exit 127
+fi
+
+steam_ld_path="${steam_arm_dir}"
+if [[ -d "${steam_shim_dir}" ]]; then
+    steam_ld_path="${steam_ld_path}:${steam_shim_dir}"
+fi
+export LD_LIBRARY_PATH="${steam_ld_path}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+if [[ -d "${steam_runtime_bin}" ]]; then
+    export PATH="${steam_runtime_bin}:${PATH}"
+fi
+export FUSERMOUNT_PROG=/run/host/usr/bin/fusermount3
+
+steamapps_dirs=("${steam_root}/steamapps")
+while IFS= read -r library; do
+    steamapps="${library}/steamapps"
+    [[ -d "${steamapps}" ]] || continue
+    steamapps_dirs+=("${steamapps}")
+done < <(grep -oP '"path"\s+"\K[^"]+' "${steam_root}/steamapps/libraryfolders.vdf" 2>/dev/null || true)
+
+# Register the official Proton 11.0 (ARM64) before Steam scans compatibilitytools.d.
+proton11_runner=""
+proton11_reg="${steam_root}/compatibilitytools.d/proton-11-arm64"
+for steamapps in "${steamapps_dirs[@]}"; do
+    runner="${steamapps}/common/Proton 11.0 (ARM64)"
+    flags="$(grep -oP '"StateFlags"\s+"\K[0-9]+' "${steamapps}/appmanifest_4628740.acf" 2>/dev/null || true)"
+    if [[ -n "${flags}" ]] && (( flags & 4 )) && [[ -d "${runner}" ]]; then
+        proton11_runner="${runner}"
+        break
+    fi
+done
+if [[ -n "${proton11_runner}" ]]; then
+    mkdir -p "${proton11_reg}"
+    cat > "${proton11_reg}/compatibilitytool.vdf" <<EOF
+"compatibilitytools"
+{
+  "compat_tools"
+  {
+    "proton11_arm64"
+    {
+      "install_path" "${proton11_runner}"
+      "display_name" "Proton 11.0 (ARM64)"
+      "from_oslist"  "windows"
+      "to_oslist"    "linux"
+    }
+  }
+}
+EOF
+else
+    rm -rf "${proton11_reg}"
+fi
+
+# The ARM client can't resolve require_tool_appid for the SLR4 Arm64 runtime (4185400)
+# even when it's installed, so Protons requiring it fail "compat tool failed". Strip it
+# from every Proton and run bare.
+for manifest in "${steam_root}"/compatibilitytools.d/*/toolmanifest.vdf; do
+    [[ -f "${manifest}" ]] || continue
+    sed -i '/require_tool_appid.*4185400/d' "${manifest}"
+done
+for steamapps in "${steamapps_dirs[@]}"; do
+    for manifest in "${steamapps}"/common/Proton*/toolmanifest.vdf; do
+        [[ -f "${manifest}" ]] || continue
+        sed -i '/require_tool_appid.*4185400/d' "${manifest}"
+    done
+done
+
+touch "${steam_root}/.cef-enable-remote-debugging"
+/usr/libexec/nebel/powerbuttond >/dev/null 2>&1 &
+cd "${steam_arm_dir}"
+exec "${steam_arm}" \
+    "${steam_args[@]}" \
+    "$@"

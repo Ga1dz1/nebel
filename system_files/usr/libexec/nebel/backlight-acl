@@ -1,0 +1,18 @@
+#!/usr/bin/bash
+# udev helper: grant Steam (wheel) direct write access to a backlight.
+#
+# On devices with more than one panel (NEBEL_PRIMARY_BACKLIGHT set) the
+# grant is withheld from every backlight: Steam writes the first backlight
+# it finds directly whenever it can, which bypasses the steamos-priv-write
+# steering to the primary panel. Without write access Steam falls back to
+# the polkit helper (its standard path on SteamOS), which steers and
+# rescales the write.
+# Single-backlight devices keep the direct grant.
+# (ported from upstream virtudude/armada cb3e6c8)
+set -euo pipefail
+
+eval "$(/usr/libexec/nebel/device-env)"
+[[ -n "${NEBEL_PRIMARY_BACKLIGHT:-}" ]] && exit 0
+
+chgrp wheel "/sys/class/backlight/$1/brightness" 2>/dev/null || true
+chmod g+w "/sys/class/backlight/$1/brightness" 2>/dev/null || true

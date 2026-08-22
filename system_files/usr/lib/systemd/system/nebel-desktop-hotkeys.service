@@ -1,0 +1,12 @@
+[Unit]
+Description=Nebel desktop gamepad hotkey daemon
+After=inputplumber.service
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/nebel/nebel-desktop-hotkeys
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

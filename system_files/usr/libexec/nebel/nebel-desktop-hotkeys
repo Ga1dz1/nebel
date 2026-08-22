@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""Desktop-mode gamepad chord daemon for Nebel handhelds.
+
+InputPlumber uses passthrough=true for the raw Retroid MCU gamepad, so this
+daemon can read the same evdev node concurrently. It only acts when a Plasma
+desktop session is active; in gaming mode the raw events pass through untouched
+for Steam/gamescope to handle.
+
+Chords (Home + button):
+  X (West)        -> KEY_ONSCREEN_KEYBOARD
+  Y (North)       -> KEY_PRINT          (screenshot)
+  A (South)       -> KEY_LEFTMETA       (overview/activities)
+  B (East)        -> KEY_ESC
+  DPad Up/Down    -> KEY_VOLUMEUP/DOWN
+  DPad Left/Right -> KEY_BRIGHTNESSDOWN/UP
+  Start           -> KEY_F12
+  Select          -> KEY_MENU
+"""
+import fcntl
+import math
+import os
+import select
+import struct
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+EV_KEY = 0x01
+EV_ABS = 0x03
+EV_SYN = 0x00
+BTN_MODE = 0x13C
+BTN_SOUTH = 0x130
+BTN_EAST = 0x131
+BTN_NORTH = 0x133
+BTN_WEST = 0x134
+BTN_START = 0x13B
+BTN_SELECT = 0x13A
+BTN_DPAD_UP = 0x220
+BTN_DPAD_DOWN = 0x221
+BTN_DPAD_LEFT = 0x222
+BTN_DPAD_RIGHT = 0x223
+ABS_X = 0x00
+ABS_Y = 0x01
+ABS_RX = 0x03
+ABS_RY = 0x04
+
+KEY_ONSCREEN_KEYBOARD = 0x17B
+KEY_PRINT = 0xD8
+KEY_LEFTMETA = 0x7D
+KEY_ESC = 0x01
+KEY_VOLUMEUP = 0x73
+KEY_VOLUMEDOWN = 0x72
+KEY_BRIGHTNESSUP = 0xE0
+KEY_BRIGHTNESSDOWN = 0xE1
+KEY_F12 = 0x58
+KEY_MENU = 0x8B
+
+INPUT_EVENT_FMT = "llHHi"
+INPUT_EVENT_SIZE = struct.calcsize(INPUT_EVENT_FMT)
+
+GAMEPAD_NAMES = ("Retroid Pocket Gamepad", "AYN Odin2 Gamepad")
+
+CHORD_HOLD_MS = 300
+POLL_INTERVAL_S = 0.05
+
+CHORD_MAP = {
+    BTN_NORTH: KEY_ONSCREEN_KEYBOARD,
+    BTN_WEST: KEY_PRINT,
+    BTN_SOUTH: KEY_LEFTMETA,
+    BTN_EAST: KEY_ESC,
+    BTN_DPAD_UP: KEY_VOLUMEUP,
+    BTN_DPAD_DOWN: KEY_VOLUMEDOWN,
+    BTN_DPAD_LEFT: KEY_BRIGHTNESSDOWN,
+    BTN_DPAD_RIGHT: KEY_BRIGHTNESSUP,
+    BTN_START: KEY_F12,
+    BTN_SELECT: KEY_MENU,
+}
+
+# uinput ioctls (standard Linux values)
+UINPUT_IOCTL_BASE = ord("U")
+_IOC_WRITE = 1
+_IOC_NRBITS = 8
+_IOC_TYPEBITS = 8
+_IOC_SIZEBITS = 14
+_IOC_DIRBITS = 2
+_IOC_NRSHIFT = 0
+_IOC_TYPESHIFT = _IOC_NRSHIFT + _IOC_NRBITS
+_IOC_SIZESHIFT = _IOC_TYPESHIFT + _IOC_TYPEBITS
+_IOC_DIRSHIFT = _IOC_SIZESHIFT + _IOC_SIZEBITS
+
+
+def _IOC(direction, type_, nr, size):
+    return (direction << _IOC_DIRSHIFT) | (size << _IOC_SIZESHIFT) | (type_ << _IOC_TYPESHIFT) | (nr << _IOC_NRSHIFT)
+
+
+def _IOW(type_, nr, size):
+    return _IOC(_IOC_WRITE, type_, nr, size)
+
+
+UI_SET_EVBIT = _IOW(UINPUT_IOCTL_BASE, 100, 4)
+UI_SET_KEYBIT = _IOW(UINPUT_IOCTL_BASE, 101, 4)
+UI_DEV_SETUP = _IOW(UINPUT_IOCTL_BASE, 3, 92)
+UI_DEV_CREATE = _IOC(0, UINPUT_IOCTL_BASE, 1, 0)
+UI_DEV_DESTROY = _IOC(0, UINPUT_IOCTL_BASE, 2, 0)
+UINPUT_MAX_NAME_SIZE = 80
+
+
+def find_gamepad():
+    for ev in Path("/sys/class/input").glob("event*"):
+        try:
+            name = (ev / "device" / "name").read_text().strip()
+        except OSError:
+            continue
+        if name in GAMEPAD_NAMES:
+            return Path("/dev/input") / ev.name
+    return None
+
+
+def is_plasma_desktop_active():
+    """Return True if the Plasma desktop session is currently running."""
+    try:
+        out = subprocess.check_output(["ps", "-eo", "comm"], text=True, timeout=2)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    procs = {line.strip() for line in out.splitlines()}
+    return "plasmashell" in procs and "gamescope-session" not in procs
+
+
+class UInputKeyboard:
+    def __init__(self):
+        self.fd = None
+
+    def open(self):
+        fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
+        # Enable EV_KEY and register every key we emit.
+        fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
+        for key in set(CHORD_MAP.values()):
+            fcntl.ioctl(fd, UI_SET_KEYBIT, key)
+        setup = struct.pack(
+            "HHHH80sI",
+            0x0003,  # BUS_USB
+            0x2020,
+            0x3001,
+            1,
+            b"Nebel Desktop Hotkeys",
+            0,
+        )
+        fcntl.ioctl(fd, UI_DEV_SETUP, setup)
+        fcntl.ioctl(fd, UI_DEV_CREATE)
+        self.fd = fd
+
+    def close(self):
+        if self.fd is not None:
+            try:
+                fcntl.ioctl(self.fd, UI_DEV_DESTROY)
+                os.close(self.fd)
+            except OSError:
+                pass
+            self.fd = None
+
+    def _emit(self, type_, code, value):
+        now = time.time()
+        sec = int(now)
+        usec = int((now - sec) * 1_000_000)
+        event = struct.pack(INPUT_EVENT_FMT, sec, usec, type_, code, value)
+        os.write(self.fd, event)
+
+    def send_key(self, code):
+        self._emit(EV_KEY, code, 1)
+        self._emit(EV_SYN, 0, 0)
+        self._emit(EV_KEY, code, 0)
+        self._emit(EV_SYN, 0, 0)
+
+
+def _eviocgabs(code):
+    _IOC_READ = 2
+    return (_IOC_READ << 30) | (24 << 16) | (ord("E") << 8) | (0x40 + code)
+
+
+class GamepadReader:
+    def __init__(self):
+        self.fd = None
+        self.ranges = {}
+        self.buttons = set()
+        self.home_pressed_at = None
+
+    def open(self):
+        path = find_gamepad()
+        if path is None:
+            return False
+        try:
+            self.fd = os.open(str(path), os.O_RDONLY | os.O_NONBLOCK)
+        except OSError:
+            return False
+        for code in (ABS_X, ABS_Y, ABS_RX, ABS_RY):
+            buf = bytearray(24)
+            try:
+                fcntl.ioctl(self.fd, _eviocgabs(code), buf)
+                _, minimum, maximum, _, _, _ = struct.unpack("iiiiii", buf)
+                if maximum > minimum:
+                    self.ranges[code] = (minimum, maximum)
+            except OSError:
+                pass
+        return True
+
+    def close(self):
+        if self.fd is not None:
+            try:
+                os.close(self.fd)
+            except OSError:
+                pass
+            self.fd = None
+
+    def poll(self):
+        if self.fd is None:
+            return
+        try:
+            while select.select([self.fd], [], [], 0)[0]:
+                chunk = os.read(self.fd, INPUT_EVENT_SIZE)
+                if len(chunk) != INPUT_EVENT_SIZE:
+                    break
+                _, _, ev_type, code, value = struct.unpack(INPUT_EVENT_FMT, chunk)
+                if ev_type == EV_KEY:
+                    if value == 1:
+                        self.buttons.add(code)
+                    elif value == 0:
+                        self.buttons.discard(code)
+        except OSError:
+            self.close()
+
+
+def run():
+    reader = GamepadReader()
+    keyboard = UInputKeyboard()
+    while True:
+        if not is_plasma_desktop_active():
+            reader.close()
+            keyboard.close()
+            time.sleep(POLL_INTERVAL_S)
+            continue
+        if not reader.open():
+            time.sleep(POLL_INTERVAL_S)
+            continue
+        if keyboard.fd is None:
+            try:
+                keyboard.open()
+            except OSError:
+                keyboard.close()
+                time.sleep(POLL_INTERVAL_S)
+                continue
+
+        reader.poll()
+
+        if BTN_MODE in reader.buttons and reader.home_pressed_at is None:
+            reader.home_pressed_at = time.time()
+
+        if reader.home_pressed_at is not None:
+            elapsed = (time.time() - reader.home_pressed_at) * 1000
+            chord_buttons = reader.buttons - {BTN_MODE}
+            if chord_buttons:
+                # Use the newest pressed button as the chord partner.
+                btn = max(chord_buttons)
+                key = CHORD_MAP.get(btn)
+                if key is not None:
+                    try:
+                        keyboard.send_key(key)
+                    except OSError:
+                        keyboard.close()
+                # Swallow the release of the chord partner so InputPlumber/Steam
+                # doesn't also act on it.
+                reader.buttons.discard(btn)
+                reader.home_pressed_at = None
+            elif elapsed > CHORD_HOLD_MS:
+                # Home held alone too long; let InputPlumber handle it.
+                reader.home_pressed_at = None
+
+        time.sleep(POLL_INTERVAL_S)
+
+
+if __name__ == "__main__":
+    try:
+        run()
+    except KeyboardInterrupt:
+        sys.exit(0)

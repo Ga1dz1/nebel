@@ -3,7 +3,7 @@
 set -euo pipefail
 
 case "${1:-gamescope}" in
-    desktop|plasma) exec sudo /usr/libexec/armada/session-control switch-desktop ;;
-    gamescope)      exec sudo /usr/libexec/armada/session-control switch-gamemode ;;
+    desktop|plasma) exec sudo /usr/libexec/nebel/session-control switch-desktop ;;
+    gamescope)      exec sudo /usr/libexec/nebel/session-control switch-gamemode ;;
     *) echo "unrecognised session: ${1}" >&2; exit 1 ;;
 esac

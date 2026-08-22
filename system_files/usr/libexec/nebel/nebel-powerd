@@ -1,0 +1,999 @@
+#!/usr/bin/env python3
+import configparser
+import os
+import shutil
+import signal
+import shlex
+import socket
+import subprocess
+import sys
+import time
+import warnings
+from pathlib import Path
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+BUS_NAME = "org.nebel.Power"
+OBJECT_PATH = "/org/nebel/Power"
+IFACE = "org.nebel.Power1"
+LOGIN1_NAME = "org.freedesktop.login1"
+LOGIN1_PATH = "/org/freedesktop/login1"
+LOGIN1_IFACE = "org.freedesktop.login1.Manager"
+PROFILES = ["eco", "balanced", "performance"]
+STATE_FILE = Path("/var/lib/nebel/powerd.state")
+FACTORY_CONFIG_FILE = Path("/usr/share/nebel/power-profiles.conf")
+CONFIG_FILE = Path("/etc/nebel/power-profiles.conf")
+FAN_SAFE_PWM = 128
+
+
+def normalize_profile(profile):
+    value = profile.strip().lower()
+    return value if value in PROFILES else ""
+
+
+XML = f"""
+<node>
+  <interface name="{IFACE}">
+    <method name="Reload"/>
+    <method name="Suspend"/>
+    <method name="Resume"/>
+    <method name="GetStatus">
+      <arg type="a{{sv}}" name="status" direction="out"/>
+    </method>
+    <property name="AvailableProfiles" type="as" access="read"/>
+    <property name="Profile" type="s" access="readwrite"/>
+    <property name="SuggestedDefaultProfile" type="s" access="read"/>
+    <property name="AvailableGpuPerformanceLevels" type="as" access="read"/>
+    <property name="GpuPerformanceLevel" type="s" access="readwrite"/>
+    <property name="ManualGpuClock" type="u" access="readwrite"/>
+    <property name="ManualGpuClockMin" type="u" access="read"/>
+    <property name="ManualGpuClockMax" type="u" access="read"/>
+    <property name="FanMode" type="s" access="read"/>
+    <property name="FanPwm" type="u" access="read"/>
+    <property name="FanRpm" type="u" access="read"/>
+    <property name="Temperature" type="u" access="read"/>
+  </interface>
+</node>
+"""
+
+
+def read_text(path, default=""):
+    try:
+        return Path(path).read_text().strip()
+    except OSError:
+        return default
+
+
+def write_text(path, value):
+    try:
+        Path(path).write_text(f"{value}\n")
+        return True
+    except OSError as exc:
+        print(f"nebel-powerd: write failed {path}: {exc}", file=sys.stderr)
+        return False
+
+
+def restore_factory_config(reason):
+    # Remove invalid /etc overrides so factory-only sections keep tracking /usr.
+    if not CONFIG_FILE.exists():
+        raise reason
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = CONFIG_FILE.with_name(f"{CONFIG_FILE.name}.invalid-{timestamp}")
+    try:
+        shutil.copy2(CONFIG_FILE, backup)
+        CONFIG_FILE.unlink()
+    except OSError:
+        raise reason
+    print(f"nebel-powerd: dropped invalid {CONFIG_FILE} (backup at {backup}); using factory defaults: {reason}", file=sys.stderr)
+
+
+def sd_notify(message):
+    notify_socket = os.environ.get("NOTIFY_SOCKET")
+    if not notify_socket:
+        return
+    if notify_socket.startswith("@"):
+        notify_socket = "\0" + notify_socket[1:]
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sock:
+            sock.connect(notify_socket)
+            sock.sendall(message.encode())
+    except OSError:
+        pass
+
+
+def shell_env():
+    helper = os.environ.get("NEBEL_DEVICE_ENV", "/usr/libexec/nebel/device-env")
+    command = (
+        f'eval "$({shlex.quote(helper)})"; '
+        'for name in "${!NEBEL_@}"; do printf "%s=%s\\n" "$name" "${!name}"; done'
+    )
+    proc = subprocess.run(
+        ["bash", "-c", command],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    env = {}
+    for line in proc.stdout.splitlines():
+        if "=" in line:
+            key, value = line.split("=", 1)
+            env[key] = value
+    return env
+
+
+def ints_from_file(path):
+    return sorted(int(v) for v in read_text(path).split() if v.isdigit())
+
+
+def clamp(value, low, high):
+    return max(low, min(high, value))
+
+
+def parse_fan_curve(value):
+    curve = []
+    for item in value.split(","):
+        if ":" not in item:
+            continue
+        temp, pwm = item.split(":", 1)
+        try:
+            curve.append((int(temp.strip()), int(pwm.strip())))
+        except ValueError:
+            continue
+    return sorted(curve, reverse=True)
+
+
+def require_section(parser, section):
+    if not parser.has_section(section):
+        raise ValueError(f"missing config section [{section}]")
+
+
+def require_ratio(parser, section, key):
+    return clamp(parser.getfloat(section, key), 0.0, 1.0)
+
+
+def fan_safe_once():
+    fan_hwmon = None
+    for path in Path("/sys/class/hwmon").glob("hwmon*"):
+        if read_text(path / "name") == "pwmfan" and (path / "pwm1").exists():
+            fan_hwmon = path
+            break
+    if not fan_hwmon:
+        for path in Path("/sys/class/hwmon").glob("hwmon*"):
+            if (path / "pwm1").exists():
+                fan_hwmon = path
+                break
+    if not fan_hwmon:
+        return
+    enable = fan_hwmon / "pwm1_enable"
+    if enable.exists():
+        write_text(enable, "1")
+    write_text(fan_hwmon / "pwm1", FAN_SAFE_PWM)
+
+
+class NebelPower:
+    def __init__(self):
+        self.env = shell_env()
+        self.profile_config = {}
+        self.profile_labels = {}
+        self.underclock_config = {}
+        self.fan_curves = {}
+        self.fan_config = {}
+        self.suspend_config = {}
+        self.default_profile = ""
+        self.profile = ""
+        self.gpu_level = "auto"
+        self.manual_gpu_clock = 0
+        self.smoothed_temp = 0.0
+        self.last_pwm = 0
+        self.suspended = False
+        self.suspend_save = {}
+        self.connection = None
+        # None until the first power_source_tick() observes a real value -
+        # switching profile on that first observation (rather than only on
+        # a later change) would clobber whatever profile the user actually
+        # had before this daemon last restarted, right at startup.
+        self.ac_online = None
+        self.load_config()
+        self.profile = self.default_profile
+        self.discover()
+        self.apply_underclock_refs()
+        self.load_state()
+        if self.fan_pwm:
+            current = read_text(self.fan_pwm)
+            self.last_pwm = int(current) if current.isdigit() else self.fan_config["min_pwm"]
+        self.apply_profile()
+        if self.gpu_level == "manual" and self.manual_gpu_clock:
+            self.set_gpu_manual_clock(self.manual_gpu_clock)
+        self.fan_tick()
+        GLib.timeout_add_seconds(3, self.fan_tick)
+        self.power_source_tick()
+        GLib.timeout_add_seconds(3, self.power_source_tick)
+
+    def discover(self):
+        self.gpu = self.discover_gpu()
+        self.cpu_policies = sorted(Path("/sys/devices/system/cpu/cpufreq").glob("policy*"))
+        self.fan_hwmon = self.discover_fan_hwmon()
+        self.fan_pwm = self.fan_hwmon / "pwm1" if self.fan_hwmon else None
+        self.fan_enable = self.fan_hwmon / "pwm1_enable" if self.fan_hwmon else None
+        self.fan_rpm = self.fan_hwmon / "fan1_input" if self.fan_hwmon else None
+        self.temp_paths = self.discover_temps()
+
+    def cpu_device_class(self):
+        return self.env.get("NEBEL_SOC_CLASS", "")
+
+    def apply_underclock_refs(self):
+        device_class = self.cpu_device_class()
+        if not device_class:
+            return
+        for profile in PROFILES:
+            config = self.profile_config[profile]
+            if config["cpu_max_policy"]:
+                continue
+            level = config.get("cpu_underclock", "none")
+            if level in ("", "none", "stock"):
+                continue
+            caps = self.underclock_config.get(device_class, {}).get(level)
+            if caps:
+                config["cpu_max_policy"] = dict(caps)
+
+    def parse_config(self, include_user=True):
+        underclock_config = {}
+        fan_curves = {}
+        profile_config = {}
+        parser = configparser.ConfigParser()
+        config_files = [FACTORY_CONFIG_FILE]
+        if include_user and CONFIG_FILE.exists():
+            config_files.append(CONFIG_FILE)
+        if not parser.read(config_files):
+            raise FileNotFoundError(FACTORY_CONFIG_FILE)
+        require_section(parser, "general")
+        default_profile = parser.get("general", "default_profile").strip().lower()
+        if default_profile not in PROFILES:
+            raise ValueError(f"invalid default_profile: {default_profile}")
+        auto_profile = parser.getboolean("general", "auto_profile_by_power_source", fallback=True)
+        auto_profile_ac = parser.get("general", "auto_profile_ac", fallback="performance").strip().lower()
+        auto_profile_battery = parser.get("general", "auto_profile_battery", fallback="balanced").strip().lower()
+        if auto_profile_ac not in PROFILES:
+            auto_profile_ac = "performance"
+        if auto_profile_battery not in PROFILES:
+            auto_profile_battery = "balanced"
+        for section in parser.sections():
+            if not section.startswith("underclock."):
+                continue
+            parts = section.split(".")
+            if len(parts) != 3:
+                continue
+            device_class, level = parts[1], parts[2]
+            caps = {}
+            for key, value in parser.items(section):
+                if not key.startswith("cpu_max_policy"):
+                    continue
+                policy_id = key.removeprefix("cpu_max_policy")
+                if not policy_id.isdigit():
+                    continue
+                try:
+                    caps[int(policy_id)] = int(value)
+                except ValueError:
+                    pass
+            if caps:
+                underclock_config.setdefault(device_class, {})[level] = caps
+        for section in parser.sections():
+            if not section.startswith("fan_curve."):
+                continue
+            parts = section.split(".", 1)
+            if len(parts) != 2:
+                continue
+            curve = parse_fan_curve(parser.get(section, "curve", fallback=""))
+            if curve:
+                fan_curves[parts[1]] = curve
+        if not fan_curves:
+            raise ValueError("missing fan curves")
+        for profile in PROFILES:
+            section = f"profile.{profile}"
+            require_section(parser, section)
+            fan_curve = parser.get(section, "fan_curve").strip().lower()
+            curve = parse_fan_curve(fan_curve)
+            config = {
+                "label": parser.get(section, "label", fallback="").strip() or profile.replace("_", " ").title(),
+                "cpu_governor": parser.get(section, "cpu_governor").strip(),
+                "cpu_max": require_ratio(parser, section, "cpu_max"),
+                "cpu_underclock": parser.get(section, "cpu_underclock").strip().lower(),
+                "gpu_max": require_ratio(parser, section, "gpu_max"),
+                "gpu_min": require_ratio(parser, section, "gpu_min"),
+                "fan_curve": fan_curve,
+                "cpu_max_policy": {},
+            }
+            if curve:
+                config["fan_curve"] = curve
+            elif fan_curve in fan_curves:
+                config["fan_curve"] = fan_curve
+            else:
+                raise ValueError(f"unknown fan_curve for {profile}: {fan_curve}")
+            for key, value in parser.items(section):
+                if not key.startswith("cpu_max_policy"):
+                    continue
+                policy_id = key.removeprefix("cpu_max_policy")
+                if not policy_id.isdigit():
+                    continue
+                try:
+                    config["cpu_max_policy"][int(policy_id)] = int(value)
+                except ValueError:
+                    pass
+            profile_config[profile] = config
+        require_section(parser, "fan")
+        fan_config = {
+            key: parser.getint("fan", key)
+            for key in ("min_pwm", "max_pwm", "ramp_up", "ramp_down")
+        }
+        fan_config["smoothing"] = clamp(parser.getfloat("fan", "smoothing"), 0.0, 0.99)
+        fan_config["pwm_quantum"] = clamp(parser.getint("fan", "pwm_quantum", fallback=1), 1, 255)
+        fan_config["min_pwm"] = clamp(fan_config["min_pwm"], 0, 255)
+        fan_config["max_pwm"] = clamp(fan_config["max_pwm"], fan_config["min_pwm"], 255)
+
+        fan_safe_above = clamp(
+            parser.getint("suspend", "fan_safe_above", fallback=55),
+            0,
+            120,
+        )
+        fan_low_pwm = clamp(
+            parser.getint("suspend", "fan_low_pwm", fallback=fan_config["min_pwm"]),
+            0,
+            fan_config["max_pwm"],
+        )
+        fan_safe_pwm = clamp(
+            parser.getint("suspend", "fan_safe_pwm", fallback=FAN_SAFE_PWM),
+            fan_low_pwm,
+            fan_config["max_pwm"],
+        )
+        suspend_config = {
+            "fan_safe_above": fan_safe_above,
+            "fan_low_pwm": fan_low_pwm,
+            "fan_safe_pwm": fan_safe_pwm,
+        }
+        return (
+            default_profile, underclock_config, fan_curves, profile_config, fan_config, suspend_config,
+            auto_profile, auto_profile_ac, auto_profile_battery,
+        )
+
+    def load_config(self):
+        try:
+            parsed = self.parse_config()
+        except Exception as exc:
+            restore_factory_config(exc)
+            parsed = self.parse_config(include_user=False)
+        (
+            self.default_profile,
+            self.underclock_config,
+            self.fan_curves,
+            self.profile_config,
+            self.fan_config,
+            self.suspend_config,
+            self.auto_profile,
+            self.auto_profile_ac,
+            self.auto_profile_battery,
+        ) = parsed
+        self.profile_labels = {p: self.profile_config[p].get("label", p) for p in PROFILES}
+
+    def discover_gpu(self):
+        for path in Path("/sys/class/devfreq").glob("*.gpu"):
+            if (path / "available_frequencies").exists():
+                return path
+        for path in Path("/sys/class/devfreq").glob("*"):
+            if "gpu" in path.name.lower() and (path / "governor").exists() and (path / "available_frequencies").exists():
+                return path
+        return None
+
+    def discover_fan_hwmon(self):
+        for path in Path("/sys/class/hwmon").glob("hwmon*"):
+            if read_text(path / "name") == "pwmfan" and (path / "pwm1").exists():
+                return path
+        for path in Path("/sys/class/hwmon").glob("hwmon*"):
+            if (path / "pwm1").exists():
+                return path
+        return None
+
+    def discover_temps(self):
+        control = []
+        for zone in Path("/sys/class/thermal").glob("thermal_zone*"):
+            kind = read_text(zone / "type").lower()
+            temp = zone / "temp"
+            if not temp.exists():
+                continue
+            if kind.startswith(("cpu", "gpu", "gpuss", "video", "mem")):
+                control.append(temp)
+        return control
+
+    def load_state(self):
+        if not STATE_FILE.exists():
+            return
+        for line in read_text(STATE_FILE).splitlines():
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            if key == "profile" and value in PROFILES:
+                self.profile = value
+            elif key == "gpu_level" and value in ("auto", "manual"):
+                self.gpu_level = value
+            elif key == "manual_gpu_clock" and value.isdigit():
+                self.manual_gpu_clock = int(value)
+
+    def save_state(self):
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        STATE_FILE.write_text(
+            f"profile={self.profile}\n"
+            f"gpu_level={self.gpu_level}\n"
+            f"manual_gpu_clock={self.manual_gpu_clock}\n"
+        )
+
+    def gpu_freqs(self):
+        if not self.gpu:
+            return []
+        return ints_from_file(self.gpu / "available_frequencies")
+
+    def cpu_available_freqs(self, policy):
+        freqs = ints_from_file(policy / "scaling_available_frequencies")
+        if freqs:
+            return freqs
+        low = read_text(policy / "cpuinfo_min_freq")
+        high = read_text(policy / "cpuinfo_max_freq")
+        if low.isdigit() and high.isdigit():
+            return [int(low), int(high)]
+        return []
+
+    def closest(self, freqs, target):
+        return min(freqs, key=lambda freq: abs(freq - target)) if freqs else 0
+
+    def choose_at_least(self, freqs, target):
+        for freq in freqs:
+            if freq >= target:
+                return freq
+        return freqs[-1] if freqs else 0
+
+    def choose_at_most(self, freqs, target):
+        below = [freq for freq in freqs if freq <= target]
+        return below[-1] if below else freqs[0] if freqs else 0
+
+    def policy_id(self, policy):
+        try:
+            return int(policy.name.removeprefix("policy"))
+        except ValueError:
+            return -1
+
+    def cpu_max_target(self, settings, policy_id, freqs):
+        if self.cpu_device_class() in self.underclock_config:
+            return settings["cpu_max_policy"].get(policy_id, freqs[-1])
+        return int(freqs[-1] * settings["cpu_max"])
+
+    def profile_settings(self):
+        return self.profile_config.get(self.profile, self.profile_config["balanced"])
+
+    def write_governor(self, path, preferred):
+        available = read_text(path / "scaling_available_governors").split()
+        if preferred in available:
+            write_text(path / "scaling_governor", preferred)
+        elif "schedutil" in available:
+            write_text(path / "scaling_governor", "schedutil")
+        elif "ondemand" in available:
+            write_text(path / "scaling_governor", "ondemand")
+
+    def apply_profile(self):
+        settings = self.profile_settings()
+        for policy in self.cpu_policies:
+            freqs = self.cpu_available_freqs(policy)
+            if not freqs:
+                continue
+            self.write_governor(policy, settings["cpu_governor"])
+            write_text(policy / "scaling_min_freq", freqs[0])
+            target = self.cpu_max_target(settings, self.policy_id(policy), freqs)
+            write_text(policy / "scaling_max_freq", self.choose_at_most(freqs, target))
+        if self.gpu and self.gpu_level == "auto":
+            self.apply_gpu_auto(settings)
+
+    def resolved_cpu_caps(self):
+        settings = self.profile_settings()
+        caps = {}
+        for policy in self.cpu_policies:
+            freqs = self.cpu_available_freqs(policy)
+            if not freqs:
+                continue
+            policy_id = self.policy_id(policy)
+            target = self.cpu_max_target(settings, policy_id, freqs)
+            caps[f"policy{policy_id}"] = self.choose_at_most(freqs, target)
+        return caps
+
+    def resolved_gpu_auto_limits(self):
+        freqs = self.gpu_freqs()
+        if not freqs:
+            return (0, 0)
+        settings = self.profile_settings()
+        max_freq = self.choose_at_most(freqs, int(freqs[-1] * settings["gpu_max"]))
+        min_target = int(freqs[-1] * settings["gpu_min"])
+        min_freq = self.choose_at_least(freqs, min_target) if min_target else freqs[0]
+        return (min(min_freq, max_freq), max_freq)
+
+    def suspend(self):
+        if self.suspend_save:
+            return
+        self.suspended = True
+        self.suspend_save = {"cpu": [], "gpu": {}}
+        for policy in self.cpu_policies:
+            freqs = self.cpu_available_freqs(policy)
+            if freqs:
+                self.suspend_save["cpu"].append(
+                    (
+                        policy,
+                        read_text(policy / "scaling_min_freq"),
+                        read_text(policy / "scaling_max_freq"),
+                    )
+                )
+                write_text(policy / "scaling_min_freq", freqs[0])
+                write_text(policy / "scaling_max_freq", freqs[0])
+        freqs = self.gpu_freqs()
+        # SM8250's GMU is known to wedge the whole SoC (unrecoverable, no
+        # kernel error logged) if its devfreq gets clamped down right as
+        # fake-suspend freezes the session - confirmed via a hard hang on
+        # every suspend attempt. Leave the GPU alone here, matching
+        # fake-suspend's own runtime-PM exception for the same hardware.
+        if self.gpu and freqs and self.cpu_device_class() != "SM8250":
+            self.suspend_save["gpu"] = {
+                "governor": read_text(self.gpu / "governor"),
+                "min": read_text(self.gpu / "min_freq"),
+                "max": read_text(self.gpu / "max_freq"),
+            }
+            write_text(self.gpu / "min_freq", freqs[0])
+            write_text(self.gpu / "max_freq", freqs[0])
+        self.fan_tick()
+
+    def resume(self):
+        self.suspended = False
+        self.smoothed_temp = 0.0
+        if not self.suspend_save:
+            self.apply_profile()
+            if self.gpu_level == "manual" and self.manual_gpu_clock:
+                self.set_gpu_manual_clock(self.manual_gpu_clock)
+            self.fan_tick()
+            return
+        for policy, min_freq, max_freq in self.suspend_save.get("cpu", []):
+            freqs = self.cpu_available_freqs(policy)
+            if freqs:
+                write_text(policy / "scaling_min_freq", freqs[0])
+            if max_freq:
+                write_text(policy / "scaling_max_freq", max_freq)
+            if min_freq:
+                write_text(policy / "scaling_min_freq", min_freq)
+        gpu_save = self.suspend_save.get("gpu", {})
+        if self.gpu and gpu_save:
+            freqs = self.gpu_freqs()
+            if freqs:
+                write_text(self.gpu / "min_freq", freqs[0])
+            if gpu_save.get("max"):
+                write_text(self.gpu / "max_freq", gpu_save["max"])
+            if gpu_save.get("min"):
+                write_text(self.gpu / "min_freq", gpu_save["min"])
+            if gpu_save.get("governor"):
+                write_text(self.gpu / "governor", gpu_save["governor"])
+        self.suspend_save = {}
+        self.apply_profile()
+        if self.gpu_level == "manual" and self.manual_gpu_clock:
+            self.set_gpu_manual_clock(self.manual_gpu_clock)
+        self.fan_tick()
+
+    def apply_gpu_auto(self, settings=None):
+        freqs = self.gpu_freqs()
+        if not freqs:
+            return
+        settings = settings or self.profile_settings()
+        max_freq = self.choose_at_most(freqs, int(freqs[-1] * settings["gpu_max"]))
+        if settings["cpu_governor"] == "performance":
+            # simple_ondemand ramps the GPU clock up/down reactively based on
+            # load, which has some lag - fine for battery-conscious profiles,
+            # but works against the Performance profile's whole point (CPU
+            # governor is already pinned at max there, not ramped). Pin the
+            # GPU the same way: devfreq's own "performance" governor always
+            # runs at whatever max_freq is configured, no ramping involved.
+            write_text(self.gpu / "governor", "performance")
+            write_text(self.gpu / "max_freq", max_freq)
+            write_text(self.gpu / "min_freq", max_freq)
+            return
+        write_text(self.gpu / "governor", "simple_ondemand")
+        min_target = int(freqs[-1] * settings["gpu_min"])
+        min_freq = self.choose_at_least(freqs, min_target) if min_target else freqs[0]
+        write_text(self.gpu / "min_freq", freqs[0])
+        write_text(self.gpu / "max_freq", max_freq)
+        write_text(self.gpu / "min_freq", min(min_freq, max_freq))
+
+    def set_gpu_manual_clock(self, mhz):
+        freqs = self.gpu_freqs()
+        if not freqs:
+            return 0
+        hz = self.closest(freqs, mhz * 1000000)
+        write_text(self.gpu / "min_freq", freqs[0])
+        write_text(self.gpu / "governor", "userspace")
+        write_text(self.gpu / "max_freq", hz)
+        write_text(self.gpu / "min_freq", hz)
+        self.manual_gpu_clock = hz // 1000000
+        return self.manual_gpu_clock
+
+    def read_temps(self):
+        values = []
+        for path in self.temp_paths:
+            value = read_text(path)
+            if value.isdigit():
+                values.append(int(value) // 1000)
+        return values
+
+    def read_temp(self):
+        values = sorted(self.read_temps(), reverse=True)
+        if not values:
+            return 0
+        values = values[:3]
+        return sum(values) // len(values)
+
+    def read_temp_max(self):
+        values = self.read_temps()
+        return max(values) if values else 0
+
+    def suspend_target_pwm(self, temp):
+        config = self.suspend_config
+        if not temp:
+            return config["fan_safe_pwm"]
+        if temp >= config["fan_safe_above"]:
+            return config["fan_safe_pwm"]
+        return config["fan_low_pwm"]
+
+    def quantize_pwm(self, pwm):
+        quantum = self.fan_config["pwm_quantum"]
+        if quantum > 1:
+            pwm = round(pwm / quantum) * quantum
+        return clamp(int(pwm), self.fan_config["min_pwm"], self.fan_config["max_pwm"])
+
+    def target_pwm(self, temp):
+        curve = self.profile_settings()["fan_curve"]
+        if isinstance(curve, str):
+            curve = self.fan_curves[curve]
+        curve = sorted(curve)
+        if not curve:
+            return self.fan_config["min_pwm"]
+        if temp <= curve[0][0]:
+            return self.quantize_pwm(curve[0][1])
+        if temp >= curve[-1][0]:
+            return self.quantize_pwm(curve[-1][1])
+        for lower, upper in zip(curve, curve[1:]):
+            low_temp, low_pwm = lower
+            high_temp, high_pwm = upper
+            if low_temp <= temp <= high_temp:
+                span = high_temp - low_temp
+                if not span:
+                    return self.quantize_pwm(high_pwm)
+                pwm = low_pwm + (high_pwm - low_pwm) * (temp - low_temp) / span
+                return self.quantize_pwm(pwm)
+        return self.fan_config["min_pwm"]
+
+    def fan_tick(self):
+        try:
+            if not self.fan_pwm:
+                sd_notify("WATCHDOG=1")
+                return True
+            if self.fan_enable and self.fan_enable.exists():
+                write_text(self.fan_enable, "1")
+
+            if self.suspended:
+                temp = self.read_temp_max()
+                target = self.suspend_target_pwm(temp)
+                self.smoothed_temp = float(temp)
+                self.last_pwm = clamp(target, 0, self.fan_config["max_pwm"])
+            else:
+                temp = self.read_temp()
+                if temp:
+                    weight = self.fan_config["smoothing"]
+                    self.smoothed_temp = temp if not self.smoothed_temp else (self.smoothed_temp * weight + temp * (1.0 - weight))
+                    target = self.target_pwm(int(self.smoothed_temp))
+                else:
+                    target = FAN_SAFE_PWM
+                if target > self.last_pwm:
+                    next_pwm = min(target, self.last_pwm + self.fan_config["ramp_up"])
+                else:
+                    next_pwm = max(target, self.last_pwm - self.fan_config["ramp_down"])
+                self.last_pwm = clamp(next_pwm, self.fan_config["min_pwm"], self.fan_config["max_pwm"])
+
+            write_text(self.fan_pwm, self.last_pwm)
+            if self.connection:
+                self.emit_properties(
+                    {
+                        "FanPwm": GLib.Variant("u", self.last_pwm),
+                        "FanRpm": GLib.Variant("u", self.fan_rpm_value()),
+                        "Temperature": GLib.Variant("u", temp),
+                    }
+                )
+            sd_notify("WATCHDOG=1")
+        except Exception as exc:
+            print(f"nebel-powerd: fan tick failed: {exc}", file=sys.stderr)
+            self.fan_safe()
+            sd_notify("WATCHDOG=1")
+        return True
+
+    def power_source_online(self):
+        # Prefer an actual AC/USB/wireless power_supply node's own "online"
+        # attribute - the correct signal where it exists. Falls back to the
+        # battery's own "status" field (Charging/Full = plugged in,
+        # Discharging = not) for hardware that doesn't expose a separate
+        # supply node, same fallback stick-led-color's battery_rgb() uses
+        # for capacity/status.
+        try:
+            supplies = sorted(Path("/sys/class/power_supply").glob("*"))
+        except OSError:
+            return None
+        battery_status = None
+        for supply in supplies:
+            try:
+                kind = (supply / "type").read_text().strip()
+            except OSError:
+                continue
+            if kind != "Battery":
+                online = read_text(supply / "online")
+                if online.isdigit():
+                    return online != "0"
+                continue
+            battery_status = read_text(supply / "status").strip()
+        if battery_status in ("Charging", "Full"):
+            return True
+        if battery_status == "Discharging":
+            return False
+        return None
+
+    def power_source_tick(self):
+        try:
+            if not self.auto_profile:
+                return True
+            online = self.power_source_online()
+            if online is None:
+                return True
+            if self.ac_online is not None and online != self.ac_online:
+                target = self.auto_profile_ac if online else self.auto_profile_battery
+                if target != self.profile:
+                    self.profile = target
+                    self.apply_profile()
+                    self.save_state()
+                    if self.connection:
+                        self.emit_properties({"Profile": GLib.Variant("s", self.label_for(self.profile))})
+            self.ac_online = online
+        except Exception as exc:
+            print(f"nebel-powerd: power source tick failed: {exc}", file=sys.stderr)
+        return True
+
+    def fan_safe(self):
+        if not self.fan_pwm:
+            return
+        if self.fan_enable and self.fan_enable.exists():
+            write_text(self.fan_enable, "1")
+        write_text(self.fan_pwm, FAN_SAFE_PWM)
+        self.last_pwm = FAN_SAFE_PWM
+
+    def fan_rpm_value(self):
+        value = read_text(self.fan_rpm) if self.fan_rpm else ""
+        return int(value) if value.isdigit() else 0
+
+    def label_for(self, profile):
+        return self.profile_labels.get(profile, profile)
+
+    def profile_for_label(self, label):
+        target = label.strip()
+        for pid, lbl in self.profile_labels.items():
+            if lbl == target:
+                return pid
+        return normalize_profile(target)
+
+    def get_property(self, prop):
+        freqs = self.gpu_freqs()
+        if prop == "AvailableProfiles":
+            return GLib.Variant("as", [self.label_for(p) for p in PROFILES])
+        if prop == "Profile":
+            return GLib.Variant("s", self.label_for(self.profile))
+        if prop == "SuggestedDefaultProfile":
+            return GLib.Variant("s", self.label_for(self.default_profile))
+        if prop == "AvailableGpuPerformanceLevels":
+            return GLib.Variant("as", ["auto", "manual"] if self.gpu else [])
+        if prop == "GpuPerformanceLevel":
+            return GLib.Variant("s", self.gpu_level)
+        if prop == "ManualGpuClock":
+            value = self.manual_gpu_clock or (freqs[-1] // 1000000 if freqs else 0)
+            return GLib.Variant("u", value)
+        if prop == "ManualGpuClockMin":
+            return GLib.Variant("u", freqs[0] // 1000000 if freqs else 0)
+        if prop == "ManualGpuClockMax":
+            return GLib.Variant("u", freqs[-1] // 1000000 if freqs else 0)
+        if prop == "FanMode":
+            return GLib.Variant("s", "managed" if self.fan_pwm else "unavailable")
+        if prop == "FanPwm":
+            return GLib.Variant("u", self.last_pwm)
+        if prop == "FanRpm":
+            return GLib.Variant("u", self.fan_rpm_value())
+        if prop == "Temperature":
+            return GLib.Variant("u", self.read_temp())
+        raise KeyError(prop)
+
+    def set_property(self, prop, value):
+        changed = {}
+        if prop == "Profile":
+            profile = self.profile_for_label(value.get_string())
+            if profile not in PROFILES:
+                raise ValueError(value.get_string())
+            self.profile = profile
+            self.apply_profile()
+            changed["Profile"] = GLib.Variant("s", self.label_for(self.profile))
+        elif prop == "GpuPerformanceLevel":
+            level = value.get_string()
+            if level not in ("auto", "manual"):
+                raise ValueError(level)
+            self.gpu_level = level
+            if level == "auto":
+                self.apply_profile()
+            else:
+                freqs = self.gpu_freqs()
+                target = self.manual_gpu_clock or (freqs[-1] // 1000000 if freqs else 0)
+                if target:
+                    self.set_gpu_manual_clock(target)
+            changed["GpuPerformanceLevel"] = GLib.Variant("s", self.gpu_level)
+        elif prop == "ManualGpuClock":
+            mhz = value.get_uint32()
+            self.manual_gpu_clock = mhz
+            if self.gpu_level == "manual":
+                mhz = self.set_gpu_manual_clock(mhz)
+            changed["ManualGpuClock"] = GLib.Variant("u", mhz)
+        else:
+            raise KeyError(prop)
+        self.save_state()
+        self.emit_properties(changed)
+
+    def status(self):
+        gpu_min, gpu_max = self.resolved_gpu_auto_limits()
+        return {
+            "profile": self.get_property("Profile"),
+            "default_profile": self.get_property("SuggestedDefaultProfile"),
+            "cpu_underclock": GLib.Variant("s", self.profile_settings()["cpu_underclock"]),
+            "cpu_caps": GLib.Variant("a{su}", self.resolved_cpu_caps()),
+            "gpu_level": self.get_property("GpuPerformanceLevel"),
+            "gpu_auto_min": GLib.Variant("u", gpu_min // 1000000 if gpu_min else 0),
+            "gpu_auto_max": GLib.Variant("u", gpu_max // 1000000 if gpu_max else 0),
+            "manual_gpu_clock": self.get_property("ManualGpuClock"),
+            "manual_gpu_clock_min": self.get_property("ManualGpuClockMin"),
+            "manual_gpu_clock_max": self.get_property("ManualGpuClockMax"),
+            "fan_mode": self.get_property("FanMode"),
+            "fan_pwm": self.get_property("FanPwm"),
+            "fan_rpm": self.get_property("FanRpm"),
+            "temperature": self.get_property("Temperature"),
+            "suspended": GLib.Variant("b", self.suspended),
+        }
+
+    def emit_properties(self, changed):
+        self.connection.emit_signal(
+            None,
+            OBJECT_PATH,
+            "org.freedesktop.DBus.Properties",
+            "PropertiesChanged",
+            GLib.Variant("(sa{sv}as)", (IFACE, changed, [])),
+        )
+
+    def handle_method_call(self, _conn, _sender, _path, iface, method, _params, invocation):
+        if iface != IFACE:
+            invocation.return_dbus_error(f"{BUS_NAME}.Error.UnknownInterface", iface)
+            return
+        if method == "Reload":
+            try:
+                self.load_config()
+                self.discover()
+                self.apply_underclock_refs()
+                self.apply_profile()
+                if self.gpu_level == "manual" and self.manual_gpu_clock:
+                    self.set_gpu_manual_clock(self.manual_gpu_clock)
+            except Exception as exc:
+                print(f"nebel-powerd: reload failed: {exc}", file=sys.stderr)
+                invocation.return_dbus_error(f"{BUS_NAME}.Error.ReloadFailed", str(exc))
+                return
+            invocation.return_value(None)
+            return
+        if method == "Suspend":
+            self.suspend()
+            invocation.return_value(None)
+            return
+        if method == "Resume":
+            self.resume()
+            invocation.return_value(None)
+            return
+        if method == "GetStatus":
+            invocation.return_value(GLib.Variant("(a{sv})", (self.status(),)))
+            return
+        invocation.return_dbus_error(f"{BUS_NAME}.Error.UnknownMethod", method)
+
+    def handle_get_property(self, _conn, _sender, _path, iface, prop):
+        if iface != IFACE:
+            return None
+        try:
+            return self.get_property(prop)
+        except Exception:
+            return None
+
+    def handle_set_property(self, _conn, _sender, _path, iface, prop, value):
+        if iface != IFACE:
+            return False
+        try:
+            self.set_property(prop, value)
+            return True
+        except Exception as exc:
+            print(f"nebel-powerd: set {prop} failed: {exc}", file=sys.stderr)
+            return False
+
+    def register(self, connection):
+        self.connection = connection
+        self.node = Gio.DBusNodeInfo.new_for_xml(XML)
+        connection.register_object(
+            OBJECT_PATH,
+            self.node.interfaces[0],
+            self.handle_method_call,
+            self.handle_get_property,
+            self.handle_set_property,
+        )
+        if self.env.get("NEBEL_SUSPEND_MODE", "fake") != "fake":
+            connection.signal_subscribe(
+                LOGIN1_NAME,
+                LOGIN1_IFACE,
+                "PrepareForSleep",
+                LOGIN1_PATH,
+                None,
+                Gio.DBusSignalFlags.NONE,
+                self.handle_prepare_for_sleep,
+            )
+
+    def handle_prepare_for_sleep(
+        self, _connection, _sender, _path, _iface, _signal, params
+    ):
+        if not params.unpack()[0]:
+            self.apply_profile()
+            if self.gpu_level == "manual" and self.manual_gpu_clock:
+                self.set_gpu_manual_clock(self.manual_gpu_clock)
+
+
+def main():
+    if "--fan-safe" in sys.argv:
+        fan_safe_once()
+        return
+
+    global GLib, Gio
+    import gi
+
+    gi.require_version("Gio", "2.0")
+    from gi.repository import GLib, Gio
+
+    loop = GLib.MainLoop()
+    power = NebelPower()
+
+    def bus_acquired(connection, _name):
+        power.register(connection)
+
+    def name_lost(_connection, _name):
+        loop.quit()
+
+    owner_id = Gio.bus_own_name(
+        Gio.BusType.SYSTEM,
+        BUS_NAME,
+        Gio.BusNameOwnerFlags.NONE,
+        bus_acquired,
+        None,
+        name_lost,
+    )
+    def stop(_signum, _frame):
+        power.fan_safe()
+        loop.quit()
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, stop)
+    try:
+        loop.run()
+    finally:
+        power.fan_safe()
+        Gio.bus_unown_name(owner_id)
+
+
+if __name__ == "__main__":
+    main()

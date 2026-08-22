@@ -1,6 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Armada Desktop Bootstrap
-Exec=/usr/libexec/armada/desktop-bootstrap
-Terminal=false
-OnlyShowIn=KDE;

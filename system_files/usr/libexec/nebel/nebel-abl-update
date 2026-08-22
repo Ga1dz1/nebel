@@ -1,0 +1,39 @@
+#!/bin/bash
+# nebel-abl-update — flash the bundled ROCKNIX ABL when the device's ABL differs.
+#
+# The unified /KERNEL boot path needs ROCKNIX ABL's per-device DTB picker
+# (v1.1.6+). Installs on stock or older ABLs would otherwise stop booting
+# updated images. Idempotent: compares the live abl_a against the bundled
+# image's sha256 and flashes both slots only on mismatch. Runs from an
+# immutable /usr, so the bundled image always matches the booted deployment.
+set -euo pipefail
+
+eval "$(/usr/libexec/nebel/device-env 2>/dev/null)" || true
+SOC="${NEBEL_SOC_CLASS:-}"
+[ -n "${SOC}" ] || exit 0
+
+ABL_DIR=/usr/share/nebel/abl
+ELF="${ABL_DIR}/abl_signed-${SOC}.elf"
+[ -f "${ELF}" ] || exit 0  # not an ABL-supported SoC
+
+part_a=$(readlink -f /dev/block/by-name/abl_a 2>/dev/null || true)
+part_b=$(readlink -f /dev/block/by-name/abl_b 2>/dev/null || true)
+[ -b "${part_a:-/nonexistent}" ] && [ -b "${part_b:-/nonexistent}" ] || exit 0
+
+want=$(cut -d' ' -f1 "${ELF}.sha256")
+size=$(stat -c %s "${ELF}")
+have=$(dd if="${part_a}" bs=1 count="${size}" status=none | sha256sum | cut -d' ' -f1)
+
+if [ "${have}" = "${want}" ]; then
+    exit 0
+fi
+
+echo "nebel-abl-update: ABL mismatch (${have:0:12} != ${want:0:12}), flashing ROCKNIX ABL $(cat ${ABL_DIR}/VERSION) for ${SOC}" >&2
+dd if="${ELF}" of="${part_a}" bs=1M conv=fsync status=none
+dd if="${ELF}" of="${part_b}" bs=1M conv=fsync status=none
+sync
+
+# Verify what we just wrote; if it didn't take, scream — next boot depends on it.
+now=$(dd if="${part_a}" bs=1 count="${size}" status=none | sha256sum | cut -d' ' -f1)
+[ "${now}" = "${want}" ] || { echo "nebel-abl-update: VERIFY FAILED after flash" >&2; exit 1; }
+echo "nebel-abl-update: flashed and verified" >&2

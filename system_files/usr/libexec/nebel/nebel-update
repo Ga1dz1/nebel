@@ -1,0 +1,101 @@
+#!/bin/bash
+# Steam UI update hook (steamos-update): apply the selected channel via bootc
+# (switch on change, else upgrade), reporting N% to Steam. Exit 0=ok, 7=none/fail.
+set -uo pipefail
+source /usr/lib/nebel/update-lib
+
+check=0
+for arg in "$@"; do
+    case "${arg}" in
+        --supports-duplicate-detection) exit 0 ;;
+        check) check=1 ;;
+    esac
+done
+
+# Defer updates until a user has signed into Steam, so an update never downloads mid-onboarding.
+if ! grep -qs '"AccountName"' /var/home/armada/.local/share/Steam/config/loginusers.vdf; then
+    exit 7
+fi
+
+command -v bootc >/dev/null || exit 7
+
+booted_ref=$(nebel_booted_ref)
+booted=$(nebel_tag_from_ref "$booted_ref")
+desired=$(nebel_desired_channel "$booted")
+case "$booted_ref" in ostree-image-signed:*) verified=1 ;; *) verified=0 ;; esac
+
+# Registry migration: installs whose bootc origin still points at the old
+# armada repo move to the nebel repo, keeping the configured channel tag.
+migrating=0
+case "$booted_ref" in *ghcr.io/ga1dz1/armada[:@]*) migrating=1 ;; esac
+
+# Steam parses check stdout as the update's version and refuses to re-offer a
+# version it already applied, so every exit-0 must print a per-build identity.
+if [ "${check}" = 1 ]; then
+    read -r b_digest s_digest s_ref s_ver <<<"$(nebel_local_state)" || true
+    [ "${b_digest:-}" = "-" ] && b_digest=""
+    [ "${s_digest:-}" = "-" ] && s_digest=""
+    [ "${s_ref:-}" = "-" ] && s_ref=""
+    [ "${s_ver:-}" = "-" ] && s_ver=""
+    # Fail closed without deployment state (bootc status needs root).
+    [ -n "${b_digest}" ] || exit 7
+    staged=$(nebel_tag_from_ref "${s_ref}")
+    # A pending registry migration is itself an available update.
+    if [ "${migrating}" = 1 ]; then
+        nebel_remote_version "${desired}"
+        exit 0
+    fi
+    # A pending or stale channel switch is itself an available update.
+    if [ "${staged}" != "${desired}" ] && { [ "${desired}" != "${booted}" ] || [ -n "${staged}" ]; }; then
+        nebel_remote_version "${desired}"
+        exit 0
+    fi
+    # Registry digests, not `bootc upgrade --check`: it caches its verdict, so
+    # repeat checks cannot answer "newer than what is already held".
+    read -r r_digest r_ver <<<"$(nebel_remote_info "${desired}")" || true
+    [ -n "${r_digest:-}" ] || exit 7
+    if [ "${r_digest}" != "${b_digest}" ] && [ "${r_digest}" != "${s_digest}" ]; then
+        printf '%s\n' "${r_ver:-${r_digest}}"
+        exit 0
+    fi
+    if [ -n "${s_digest}" ]; then
+        # Steam maps the reprinted staged version to restart-pending.
+        printf '%s\n' "${s_ver:-${s_digest}}"
+        exit 0
+    fi
+    exit 7
+fi
+
+# Bail if there isn't enough free disk space.
+avail_b=$(df -B1 --output=avail /var 2>/dev/null | tail -1 | tr -dc '0-9')
+if [ "${avail_b:-0}" -lt $((5 * 1024 * 1024 * 1024)) ]; then
+    echo "nebel-update: under 5 GB free on /var, skipping update" >&2
+    exit 7
+fi
+
+staged=$(nebel_tag_from_ref "$(nebel_staged_ref)")
+
+# Registry migration first: re-point the origin at the nebel repo with the
+# configured channel tag. policy.json accepts both repos (same cosign key),
+# so the switch keeps a verified origin; the next run is a plain upgrade.
+if [ "${migrating}" = 1 ]; then
+    nebel_bootc_with_progress bootc switch --enforce-container-sigpolicy "${NEBEL_REGISTRY}:${desired}" || exit 7
+    exit 0
+fi
+
+# Stage only; /KERNEL is regenerated for the finalized deployment at shutdown by
+# nebel-bootimg-sync. Switch when the staged tag misses the desired channel or
+# to re-assert a verified origin; else upgrade in place, which also re-stages
+# past a pending older build. desired is validated (stable|beta|testing).
+if [ "${staged}" != "${desired}" ] && { [ "${desired}" != "${booted}" ] || [ -n "${staged}" ]; } || [ "${verified}" = 0 ]; then
+    if ! nebel_bootc_with_progress bootc switch --enforce-container-sigpolicy "${NEBEL_REGISTRY}:${desired}"; then
+        # Target tag may not exist (e.g. unpublished channel) — revert so we don't nag forever.
+        mkdir -p "$(dirname "${NEBEL_CHANNEL_STATE}")" 2>/dev/null
+        printf '%s\n' "${booted}" > "${NEBEL_CHANNEL_STATE}" 2>/dev/null \
+            || echo "nebel-update: could not revert channel state to ${booted}" >&2
+        exit 7
+    fi
+else
+    nebel_bootc_with_progress bootc upgrade || exit 7
+fi
+exit 0

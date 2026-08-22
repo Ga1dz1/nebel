@@ -1,0 +1,19 @@
+#!/bin/bash
+# Steam UI "OS Update Channel" hook (steamos-select-branch). Records the chosen
+# channel; steamos-update does the download later, so it shows a progress bar.
+set -uo pipefail
+source /usr/lib/nebel/update-lib
+
+case "${1:-}" in
+    -l)
+        for ch in ${NEBEL_CHANNELS}; do nebel_channel_to_token "$ch"; done
+        ;;
+    -c)
+        nebel_channel_to_token "$(nebel_desired_channel)"
+        ;;
+    *)
+        channel=$(nebel_token_to_channel "$1") || { echo "usage: steamos-select-branch <-l|-c|rel|beta|main>" >&2; exit 1; }
+        mkdir -p "$(dirname "$NEBEL_CHANNEL_STATE")"
+        printf '%s\n' "$channel" > "$NEBEL_CHANNEL_STATE"
+        ;;
+esac

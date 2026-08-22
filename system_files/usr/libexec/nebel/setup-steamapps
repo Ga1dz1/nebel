@@ -1,0 +1,18 @@
+#!/bin/bash
+set -uo pipefail
+
+USER=nebel
+HOME_DIR="/var/home/${USER}"
+SA="${HOME_DIR}/.local/share/Steam/steamapps"
+
+if [[ "$(stat -f -c %T /var/home 2>/dev/null)" != btrfs ]]; then exit 0; fi
+if [[ -e "${SA}" ]]; then exit 0; fi
+
+set -e
+[[ -d "${HOME_DIR}" ]] || install -d -o "${USER}" -g "${USER}" -m 0700 "${HOME_DIR}"
+install -d -o "${USER}" -g "${USER}" -m 0755 \
+    "${HOME_DIR}/.local" "${HOME_DIR}/.local/share" "${HOME_DIR}/.local/share/Steam"
+btrfs subvolume create "${SA}"
+chattr +C "${SA}"
+chown "${USER}:${USER}" "${SA}"
+logger -t nebel-steamapps "created nodatacow Steam library: ${SA}"

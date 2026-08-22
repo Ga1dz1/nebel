@@ -54,7 +54,7 @@ source_devices:
       phys_path: rsinput-gamepad/input0
       handler: event*
     capability_map_id: ayn_mcu
-    # Lets armada-stick-led's "reactive" LED mode (Retroid Pocket 6 shares
+    # Lets nebel-stick-led's "reactive" LED mode (Retroid Pocket 6 shares
     # the same HTR3212 stick RGB hardware as Retroid Pocket Mini V2) open a
     # second, non-exclusive reader of this same node - same fix as Mini V2's
     # own composite device config (01-retroid-controller.yaml), see its

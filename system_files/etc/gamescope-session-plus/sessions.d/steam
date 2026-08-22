@@ -1,50 +1,50 @@
-eval "$(/usr/libexec/armada/device-env)"
+eval "$(/usr/libexec/nebel/device-env)"
 
-[[ -n "${ARMADA_PRIMARY_CONNECTOR:-}" ]] && OUTPUT_CONNECTOR="$ARMADA_PRIMARY_CONNECTOR"
-[[ -n "${ARMADA_PANEL_TYPE:-}" ]] && PANEL_TYPE="$ARMADA_PANEL_TYPE"
-[[ -n "${ARMADA_PANEL_ORIENTATION:-}" ]] && ORIENTATION="$ARMADA_PANEL_ORIENTATION"
-[[ -n "${ARMADA_PANEL_NATIVE_WIDTH:-}" ]] && SCREEN_WIDTH="$ARMADA_PANEL_NATIVE_WIDTH"
-[[ -n "${ARMADA_PANEL_NATIVE_HEIGHT:-}" ]] && SCREEN_HEIGHT="$ARMADA_PANEL_NATIVE_HEIGHT"
-if [[ -n "${ARMADA_PANEL_REFRESH_RATES:-}" ]]; then
-    CUSTOM_REFRESH_RATES="$ARMADA_PANEL_REFRESH_RATES"
-    IFS=',' read -r -a ARMADA_REFRESH_RATE_LIST <<< "$ARMADA_PANEL_REFRESH_RATES"
-    if (( ${#ARMADA_REFRESH_RATE_LIST[@]} > 1 )); then
-        STEAM_DISPLAY_REFRESH_LIMITS="${ARMADA_REFRESH_RATE_LIST[0]},${ARMADA_REFRESH_RATE_LIST[-1]}"
+[[ -n "${NEBEL_PRIMARY_CONNECTOR:-}" ]] && OUTPUT_CONNECTOR="$NEBEL_PRIMARY_CONNECTOR"
+[[ -n "${NEBEL_PANEL_TYPE:-}" ]] && PANEL_TYPE="$NEBEL_PANEL_TYPE"
+[[ -n "${NEBEL_PANEL_ORIENTATION:-}" ]] && ORIENTATION="$NEBEL_PANEL_ORIENTATION"
+[[ -n "${NEBEL_PANEL_NATIVE_WIDTH:-}" ]] && SCREEN_WIDTH="$NEBEL_PANEL_NATIVE_WIDTH"
+[[ -n "${NEBEL_PANEL_NATIVE_HEIGHT:-}" ]] && SCREEN_HEIGHT="$NEBEL_PANEL_NATIVE_HEIGHT"
+if [[ -n "${NEBEL_PANEL_REFRESH_RATES:-}" ]]; then
+    CUSTOM_REFRESH_RATES="$NEBEL_PANEL_REFRESH_RATES"
+    IFS=',' read -r -a NEBEL_REFRESH_RATE_LIST <<< "$NEBEL_PANEL_REFRESH_RATES"
+    if (( ${#NEBEL_REFRESH_RATE_LIST[@]} > 1 )); then
+        STEAM_DISPLAY_REFRESH_LIMITS="${NEBEL_REFRESH_RATE_LIST[0]},${NEBEL_REFRESH_RATE_LIST[-1]}"
     else
         unset STEAM_DISPLAY_REFRESH_LIMITS
     fi
 fi
-USE_ROTATION_SHADER="${ARMADA_GAMESCOPE_USE_ROTATION_SHADER:-0}"
+USE_ROTATION_SHADER="${NEBEL_GAMESCOPE_USE_ROTATION_SHADER:-0}"
 # Gamescope only lights up the primary panel; silence the secondary
 # touchscreen so fingers on the dark glass don't move Steam's cursor.
 # The desktop session re-enables it (see desktop-bootstrap).
-if [[ -n "${ARMADA_SECONDARY_TOUCHSCREEN:-}" ]]; then
-    /usr/libexec/armada/touchscreen-inhibit "$ARMADA_SECONDARY_TOUCHSCREEN" 1 2>/dev/null || true
+if [[ -n "${NEBEL_SECONDARY_TOUCHSCREEN:-}" ]]; then
+    /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_SECONDARY_TOUCHSCREEN" 1 2>/dev/null || true
 fi
-if [[ -n "${ARMADA_GAMESCOPE_FAKE_OUTPUT_MM:-}" ]]; then
-    export GAMESCOPE_FAKE_OUTPUT_MM="$ARMADA_GAMESCOPE_FAKE_OUTPUT_MM"
+if [[ -n "${NEBEL_GAMESCOPE_FAKE_OUTPUT_MM:-}" ]]; then
+    export GAMESCOPE_FAKE_OUTPUT_MM="$NEBEL_GAMESCOPE_FAKE_OUTPUT_MM"
 fi
 
-# Decky's Display menu writes this (armada-control's set_display_config
+# Decky's Display menu writes this (nebel-control's set_display_config
 # action) when the player picks an external screen as primary. Only trusted
 # if that connector is ACTUALLY connected right now: gamescope's own output
 # choice is a startup-time flag (no live hotplug re-pick), so a stale choice
 # from a monitor that's since been unplugged must fall back to the internal
 # panel defaults already set above, not strand the session on a dead output.
-ARMADA_DISPLAY_OVERRIDE=/etc/armada/display-override.conf
+NEBEL_DISPLAY_OVERRIDE=/etc/nebel/display-override.conf
 # Records which external connector this session actually launched on (not
-# merely which one is configured) - armada-display-hotplug restarts the
+# merely which one is configured) - nebel-display-hotplug restarts the
 # session back onto the internal panel only when THIS connector unplugs,
 # and the absence of the marker after that restart is what stops it from
 # restarting again in a loop.
-ARMADA_DISPLAY_MARKER="${XDG_RUNTIME_DIR:-/run/user/1000}/armada-display-connector"
-rm -f "$ARMADA_DISPLAY_MARKER"
-if [[ -f "$ARMADA_DISPLAY_OVERRIDE" ]]; then
+NEBEL_DISPLAY_MARKER="${XDG_RUNTIME_DIR:-/run/user/1000}/nebel-display-connector"
+rm -f "$NEBEL_DISPLAY_MARKER"
+if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
     # shellcheck source=/dev/null
-    source "$ARMADA_DISPLAY_OVERRIDE"
-    if [[ -n "${ARMADA_DISPLAY_CONNECTOR:-}" ]]; then
+    source "$NEBEL_DISPLAY_OVERRIDE"
+    if [[ -n "${NEBEL_DISPLAY_CONNECTOR:-}" ]]; then
         display_connected=0
-        for status_file in /sys/class/drm/card*-"${ARMADA_DISPLAY_CONNECTOR}"/status; do
+        for status_file in /sys/class/drm/card*-"${NEBEL_DISPLAY_CONNECTOR}"/status; do
             [[ -f "$status_file" ]] || continue
             [[ "$(cat "$status_file" 2>/dev/null)" == "connected" ]] && display_connected=1
         done
@@ -56,19 +56,19 @@ if [[ -f "$ARMADA_DISPLAY_OVERRIDE" ]]; then
         # game mode sideways with no way to fix it except SSH, so it's
         # treated the same as "not connected" - fall back to internal.
         if (( display_connected )) \
-            && [[ -n "${ARMADA_DISPLAY_WIDTH:-}" && -n "${ARMADA_DISPLAY_HEIGHT:-}" ]] \
-            && (( ARMADA_DISPLAY_WIDTH < ARMADA_DISPLAY_HEIGHT )); then
+            && [[ -n "${NEBEL_DISPLAY_WIDTH:-}" && -n "${NEBEL_DISPLAY_HEIGHT:-}" ]] \
+            && (( NEBEL_DISPLAY_WIDTH < NEBEL_DISPLAY_HEIGHT )); then
             display_connected=0
         fi
         if (( display_connected )); then
-            printf '%s\n' "$ARMADA_DISPLAY_CONNECTOR" > "$ARMADA_DISPLAY_MARKER"
+            printf '%s\n' "$NEBEL_DISPLAY_CONNECTOR" > "$NEBEL_DISPLAY_MARKER"
             # Listed first as a preference, not the only option: if the same
             # connector somehow vanishes between this check and gamescope's
             # own probe a moment later, it still falls back to the internal
             # panel instead of failing to start.
-            OUTPUT_CONNECTOR="${ARMADA_DISPLAY_CONNECTOR},${OUTPUT_CONNECTOR}"
-            [[ -n "${ARMADA_DISPLAY_WIDTH:-}" ]] && SCREEN_WIDTH="$ARMADA_DISPLAY_WIDTH"
-            [[ -n "${ARMADA_DISPLAY_HEIGHT:-}" ]] && SCREEN_HEIGHT="$ARMADA_DISPLAY_HEIGHT"
+            OUTPUT_CONNECTOR="${NEBEL_DISPLAY_CONNECTOR},${OUTPUT_CONNECTOR}"
+            [[ -n "${NEBEL_DISPLAY_WIDTH:-}" ]] && SCREEN_WIDTH="$NEBEL_DISPLAY_WIDTH"
+            [[ -n "${NEBEL_DISPLAY_HEIGHT:-}" ]] && SCREEN_HEIGHT="$NEBEL_DISPLAY_HEIGHT"
             # NOT settable per-output: confirmed live (not just from
             # gamescope's own --help, which says --force-orientation
             # "rotate[s] the internal display") - made an external output
@@ -87,20 +87,20 @@ if [[ -f "$ARMADA_DISPLAY_OVERRIDE" ]]; then
     fi
 fi
 
-# The 1024-sample PipeWire quantum SM8250 needs is set by armada-device-quirks
+# The 1024-sample PipeWire quantum SM8250 needs is set by nebel-device-quirks
 # (system-level, before pipewire/wireplumber ever start - there's no pw-metadata
 # binary on this image to poke it at session time, and it wouldn't need to be
 # session-scoped anyway).
-if [[ "${ARMADA_SOC_CLASS:-}" == "SM8250" ]]; then
+if [[ "${NEBEL_SOC_CLASS:-}" == "SM8250" ]]; then
     # Steam's own auto-scale heuristic badly overestimates the UI scale for
-    # this device's small high-DPI panel; see armada-fix-steam-scale for why.
+    # this device's small high-DPI panel; see nebel-fix-steam-scale for why.
     # No-ops once the user has picked their own value via Steam's slider.
-    /usr/libexec/armada/armada-fix-steam-scale || true
+    /usr/libexec/nebel/nebel-fix-steam-scale || true
 fi
 
 export STEAM_EXTRA_COMPAT_TOOLS_PATHS="/usr/share/steam/compatibilitytools.d:${HOME}/.local/share/Steam/compatibilitytools.d"
 
-CLIENTCMD='/usr/libexec/armada/launch-steam -gamepadui -steamos3 -steampal -steamdeck -noverifyfiles -noshaders'
+CLIENTCMD='/usr/libexec/nebel/launch-steam -gamepadui -steamos3 -steampal -steamdeck -noverifyfiles -noshaders'
 
 # gamescope-session-plus (/usr/share/gamescope-session-plus/gamescope-session-plus)
 # has no passthrough for the extra flags we need (e.g. --mangoapp). The only
@@ -168,12 +168,12 @@ if [[ -n "${GAMESCOPE_HDR_NITS:-}" ]] && gamescope_has_option "--hdr-itm-sdr-nit
 fi
 
 # Decky's "Performance Overlay" toggle (Compatibility tab) writes this into
-# the same game-tweaks.json armada-game-launch already reads per-game -
+# the same game-tweaks.json nebel-game-launch already reads per-game -
 # global.mangoapp is the one field read here, at session-launch time, since
 # gamescope's own overlay is a whole-session flag, not a per-game one.
 MANGOAPP_OPTION=""
-if [[ -f /etc/armada/game-tweaks.json ]] \
-    && [[ "$(jq -r '.global.mangoapp // false' /etc/armada/game-tweaks.json 2>/dev/null)" == "true" ]] \
+if [[ -f /etc/nebel/game-tweaks.json ]] \
+    && [[ "$(jq -r '.global.mangoapp // false' /etc/nebel/game-tweaks.json 2>/dev/null)" == "true" ]] \
     && gamescope_has_option "--mangoapp"; then
     MANGOAPP_OPTION="--mangoapp"
 fi

@@ -1,0 +1,273 @@
+#!/bin/bash
+# systemd-sleep hook for real (non-fake) suspend, i.e. NEBEL_SUSPEND_MODE != fake
+# (currently AYN Odin 3, and SM8250 devices once s2idle wake is confirmed on
+# real hardware). Runs for every real suspend/resume, called by systemd-sleep
+# as "$0 pre|post suspend|...". Handles the things real suspend's kernel-level
+# device PM does NOT cover on its own:
+#
+#  - stick RGB: no kernel driver owns it, so it must be blanked/restored by
+#    hand (reuses stick-led-color's existing SUSPEND_FLAG poll, the same flag
+#    fake-suspend touches).
+#  - audio pop/click at the freeze/thaw edge.
+#  - the power-key "rebound": the same physical press that wakes the kernel
+#    also lands in evdev as an ordinary KEY_POWER press+release once
+#    userspace thaws, and powerbuttond (which does NOT grab the key, see
+#    that script) would otherwise read it as a fresh short-press and put the
+#    device straight back to sleep. fake-suspend dodges this because its own
+#    wait_for_wake() holds an exclusive grab on the key the whole time it's
+#    "asleep", so powerbuttond's ungrabbed reader only ever sees the grab's
+#    leftover release, which its idle-state handler already discards. Real
+#    suspend has no such grab (the kernel wakes on the IRQ regardless of any
+#    userspace grab) so we install one ourselves for a short window right
+#    after resume, and back it up with a resume-timestamp flag (see
+#    powerbuttond's grace-period check) in case the grab loses the race with
+#    powerbuttond's own reader waking up first.
+#  - an RTC watchdog: armed before every real suspend so a device that
+#    genuinely can't wake on the power key (the thing we can't fully verify
+#    without a human pressing it) still comes back on its own rather than
+#    staying asleep indefinitely. Configurable, off by default.
+#  - wifi reconnection reliability: see suspend_radios()/resume_radios()
+#    below for why the radio is explicitly blocked/unblocked around sleep.
+#  - InputPlumber's vhci_hcd (USB/IP) targets - currently just Flip2's
+#    "deck", see 01-retroid-flip2-controller.yaml - refuse to suspend at
+#    all while a virtual device is attached ("We have N active connection.
+#    Do not suspend" -> -EBUSY -> the WHOLE system suspend aborts, not just
+#    InputPlumber). Confirmed via shuuri-labs/pocknix-os hitting the exact
+#    same thing (their own inputplumber-sleep-pre/post hooks); deck-uhid
+#    (every other device) is UHID-based, not USB/IP, so this is a no-op for
+#    them - suspend_inputplumber_if_vhci() below only acts if it actually
+#    finds an active vhci_hcd connection.
+#  - per-cycle wake diagnostics under /var/log/nebel-suspend/ (latest.log is
+#    always the most recent cycle): community reports of an inconsistent
+#    ("every other time") wake on SM8250 couldn't be root-caused without a
+#    live failing device to catch in the act, so every cycle now records the
+#    kernel log across the freeze/thaw window, the last IRQ that woke the
+#    kernel, and whether the power key's own IRQ count moved - enough to
+#    diagnose the NEXT failure from the log alone.
+set -uo pipefail
+
+[[ "${2:-}" == "suspend" ]] || exit 0
+
+eval "$(/usr/libexec/nebel/device-env 2>/dev/null)" || true
+[[ "${NEBEL_SUSPEND_MODE:-fake}" != "fake" ]] || exit 0
+
+LOG_TAG="nebel-real-suspend"
+log() { logger -t "$LOG_TAG" -- "$*"; }
+
+STICK_LED_FLAG="/run/nebel/fake-suspend.active"
+RESUME_FLAG="/run/nebel/real-suspend.resumed-at"
+SESSION_USER="${NEBEL_SESSION_USER:-armada}"
+SESSION_UID="$(id -u "$SESSION_USER" 2>/dev/null || echo 1000)"
+SESSION_RUNTIME="/run/user/${SESSION_UID}"
+
+as_session() {
+    timeout 5 runuser -u "$SESSION_USER" -- env XDG_RUNTIME_DIR="$SESSION_RUNTIME" "$@"
+}
+
+power_device() {
+    local dev name
+    for dev in /dev/input/event*; do
+        [[ -e "$dev" ]] || continue
+        name="$(cat "/sys/class/input/$(basename "$dev")/device/name" 2>/dev/null)" || continue
+        case "$name" in *pwrkey*|*[Pp]ower\ [Bb]utton*) echo "$dev"; return 0 ;; esac
+    done
+    return 1
+}
+
+# Minutes of RTC-backed safety net; 0 disables it. Override in device-env if a
+# device's real-suspend wake path is still unconfirmed but worth shipping
+# anyway with a hard ceiling on how long it can stay asleep.
+WATCHDOG_MINUTES="${NEBEL_SUSPEND_WATCHDOG_MINUTES:-0}"
+
+arm_watchdog() {
+    (( WATCHDOG_MINUTES > 0 )) || return 0
+    command -v rtcwake >/dev/null 2>&1 || return 0
+    if rtcwake -m no -s $(( WATCHDOG_MINUTES * 60 )) >/dev/null 2>&1; then
+        log "armed RTC watchdog for ${WATCHDOG_MINUTES}m"
+    else
+        log "failed to arm RTC watchdog"
+    fi
+}
+
+disarm_watchdog() {
+    echo 0 > /sys/class/rtc/rtc0/wakealarm 2>/dev/null || true
+}
+
+# wifi/NetworkManager reconnection after the deauth/reassociate a real
+# resume forces was observed taking anywhere from 0s to 20+ minutes (once
+# effectively indefinitely, needing a physical power cycle) depending on
+# the AP environment, even though the kernel-level suspend/resume itself
+# is consistently done in ~2s. Root cause looked like NetworkManager's own
+# reconnect-after-unexpected-deauth handling (roaming/retry logic reacting
+# to a surprise disconnect), not the radio or driver itself. Explicitly
+# blocking the radio before sleep and unblocking it after gives
+# NetworkManager a clean, deliberate "radio just came on" event instead -
+# confirmed live across repeated real suspend/resume cycles: wifi
+# reassociated in 1-9 seconds every time, versus the wild variance seen
+# without this. (BSSID-pinning was tried earlier as a different fix for
+# the same symptom and made things categorically worse - don't do that.)
+suspend_radios() {
+    command -v rfkill >/dev/null 2>&1 || return 0
+    : > "$SAVE_DIR/radios"
+    local kind
+    for kind in wifi bluetooth; do
+        rfkill list "$kind" >/dev/null 2>&1 || continue
+        rfkill list "$kind" 2>/dev/null | grep -q 'Soft blocked: yes' && continue
+        if rfkill block "$kind"; then
+            printf '%s\n' "$kind" >> "$SAVE_DIR/radios"
+        else
+            log "failed to block ${kind}"
+        fi
+    done
+}
+resume_radios() {
+    [[ -r "$SAVE_DIR/radios" ]] || return 0
+    local kind
+    while IFS= read -r kind; do
+        [[ -n "$kind" ]] || continue
+        rfkill unblock "$kind" || log "failed to restore ${kind}"
+    done < "$SAVE_DIR/radios"
+}
+
+SAVE_DIR="/run/nebel/real-suspend"
+INPUTPLUMBER_RESUME_FLAG="/run/nebel/inputplumber-resume"
+
+# vhci_hcd hard-refuses to suspend while any virtual USB/IP device is still
+# attached, aborting the WHOLE system suspend - not just InputPlumber's own
+# state. Stop it (which detaches the vhci device) before sleep if it's
+# using that path, and restart it on resume, but only if we're the one who
+# stopped it (don't start it if the user had already disabled it).
+inputplumber_vhci_busy() {
+    local status="/sys/devices/platform/vhci_hcd.0/status"
+    [[ -r "$status" ]] || return 1
+    awk 'NR>1 && $6 != "000000" {f=1} END{exit !f}' "$status" 2>/dev/null
+}
+
+suspend_inputplumber_if_vhci() {
+    inputplumber_vhci_busy || return 0
+    if systemctl is-active --quiet inputplumber; then
+        touch "$INPUTPLUMBER_RESUME_FLAG"
+        systemctl stop inputplumber
+    fi
+    # Give the kernel a moment to tear down the virtual USB port so suspend
+    # isn't aborted by a still-attached one (max ~3s).
+    local i=0
+    while inputplumber_vhci_busy; do
+        (( i >= 30 )) && break
+        i=$((i + 1))
+        sleep 0.1
+    done
+}
+
+resume_inputplumber() {
+    [[ -e "$INPUTPLUMBER_RESUME_FLAG" ]] || return 0
+    rm -f "$INPUTPLUMBER_RESUME_FLAG"
+    systemctl start inputplumber
+}
+
+# Community reports of an inconsistent ("every other time") wake failure on
+# SM8250 - the first default rollout of real suspend for this SoC - couldn't
+# be root-caused without either a live device or evidence from the failure
+# itself. This captures exactly that evidence on every cycle so the NEXT
+# failure is diagnosable after the fact (report the log, no live repro
+# needed): the kernel log across the freeze/thaw window (via journalctl, not
+# dmesg - the ring buffer wraps and loses the boundary on a chatty system),
+# which wakeup IRQ actually fired, and whether the power key's own IRQ count
+# moved at all (distinguishes "kernel never saw the press" from "kernel woke
+# fine but something later in resume hung"). Capped to the last 20 cycles so
+# it can't grow unbounded on a device that's suspended thousands of times.
+DIAG_DIR="/var/log/nebel-suspend"
+DIAG_LOG_PATH_FLAG="$SAVE_DIR/diag-log"
+
+pwrkey_irq_count() {
+    # gpio-keys/pon_pwrkey show up under different names across kernels; grab
+    # every /proc/interrupts line whose action mentions the key so a rename
+    # doesn't silently blank this out.
+    grep -i "pwrkey\|pwr_key\|power.button\|key_power" /proc/interrupts 2>/dev/null
+}
+
+case "$1" in
+    pre)
+        mkdir -p /run/nebel "$SAVE_DIR" "$DIAG_DIR"
+        # First and before anything else: a still-attached vhci_hcd device
+        # aborts the WHOLE suspend, so this needs to be clear before any of
+        # the rest of this hook (or the kernel's own suspend) bothers.
+        suspend_inputplumber_if_vhci
+        as_session wpctl set-mute @DEFAULT_AUDIO_SINK@ 1 2>/dev/null || true
+        touch "$STICK_LED_FLAG"
+        # Give the stick-led daemon (polls every 0.5s) a full cycle to blank
+        # the LEDs before the kernel's own freeze_processes() takes it too.
+        sleep 0.6
+        suspend_radios
+        arm_watchdog
+
+        ls -1t "$DIAG_DIR"/cycle-*.log 2>/dev/null | tail -n +20 | xargs -r rm -f
+        diag_log="$DIAG_DIR/cycle-$(date -u +%Y%m%dT%H%M%SZ).log"
+        pre_ts="$(date -Is)"
+        printf '%s\n%s\n' "$diag_log" "$pre_ts" > "$DIAG_LOG_PATH_FLAG"
+        {
+            echo "=== pre-suspend ${pre_ts} ==="
+            echo "-- power-key IRQ count before --"
+            pwrkey_irq_count
+        } > "$diag_log" 2>&1
+        ln -sf "$(basename "$diag_log")" "$DIAG_DIR/latest.log"
+
+        log "pre-suspend done"
+        ;;
+    post)
+        # RESUME_FLAG first, before anything else that takes real time
+        # (including the grab below) - it's powerbuttond's ONLY backstop for
+        # the race where its own ungrabbed reader sees the wake press's
+        # leftover release before this hook's grab lands (see the comment
+        # a few lines down), and that race is most likely to land in the
+        # first moments after resume, not after a 2s grab has already run
+        # its course. Writing this after the grab (as before) left the flag
+        # entirely absent for that whole window - exactly when the backstop
+        # was needed most - which matched a real symptom: the device waking
+        # for a moment and immediately going back to sleep (powerbuttond
+        # reading the wake press's rebound as a fresh short-press because
+        # just_resumed() had nothing to check yet).
+        date +%s%3N > "$RESUME_FLAG" 2>/dev/null || true
+        # First line after that, before anything else - real suspend's own
+        # kernel-level DRM resume already turns the panel back on, but
+        # relying on that alone means "wake feels instant" depends on the
+        # DRM driver's own resume ordering priority relative to everything
+        # else the kernel is bringing back up. An explicit, immediate write
+        # here costs nothing if the kernel already did it (bl_power is
+        # already 0), and removes any dependency on that ordering if it
+        # ever isn't first.
+        for bl in /sys/class/backlight/*/bl_power; do [[ -w "$bl" ]] && echo 0 > "$bl" 2>/dev/null || true; done
+        disarm_watchdog
+        rm -f "$STICK_LED_FLAG"
+        pdev="$(power_device || true)"
+        if [[ -n "$pdev" ]]; then
+            # Swallow the wake press's evdev echo before powerbuttond's own
+            # (ungrabbed) reader can misread it as a fresh short-press.
+            timeout 2 evtest --grab "$pdev" >/dev/null 2>&1
+        fi
+
+        if [[ -r "$DIAG_LOG_PATH_FLAG" ]]; then
+            { read -r diag_log; read -r pre_ts; } < "$DIAG_LOG_PATH_FLAG"
+            if [[ -n "${diag_log:-}" ]]; then
+                {
+                    echo "=== post-resume $(date -Is) ==="
+                    echo "-- power-key IRQ count after --"
+                    pwrkey_irq_count
+                    echo "-- last wakeup IRQ the kernel recorded --"
+                    cat /sys/power/pm_wakeup_irq 2>/dev/null || echo "(not exposed by this kernel)"
+                    echo "-- active wakeup sources --"
+                    cat /sys/kernel/debug/wakeup_sources 2>/dev/null || echo "(debugfs not mounted)"
+                    echo "-- kernel log across the freeze/thaw window --"
+                    journalctl -k --no-pager --since "${pre_ts:-1 hour ago}" 2>/dev/null \
+                        || echo "(journalctl unavailable)"
+                } >> "$diag_log" 2>&1
+            fi
+        fi
+
+        resume_radios
+        resume_inputplumber
+        rm -rf "$SAVE_DIR"
+        as_session wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 2>/dev/null || true
+        log "post-resume done"
+        ;;
+esac

@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+import sys
+
+import gi
+
+gi.require_version("Gio", "2.0")
+from gi.repository import GLib, Gio
+
+
+BUS_NAME = "org.nebel.Power"
+OBJECT_PATH = "/org/nebel/Power"
+IFACE = "org.nebel.Power1"
+PROPS = "org.freedesktop.DBus.Properties"
+GET_TIMEOUT_MS = 2000
+SET_TIMEOUT_MS = 5000
+METHOD_TIMEOUT_MS = 5000
+
+
+def proxy():
+    return Gio.DBusProxy.new_for_bus_sync(
+        Gio.BusType.SYSTEM,
+        Gio.DBusProxyFlags.NONE,
+        None,
+        BUS_NAME,
+        OBJECT_PATH,
+        IFACE,
+        None,
+    )
+
+
+def prop_proxy():
+    return Gio.DBusProxy.new_for_bus_sync(
+        Gio.BusType.SYSTEM,
+        Gio.DBusProxyFlags.NONE,
+        None,
+        BUS_NAME,
+        OBJECT_PATH,
+        PROPS,
+        None,
+    )
+
+
+def get_prop(name):
+    result = prop_proxy().call_sync(
+        "Get",
+        GLib.Variant("(ss)", (IFACE, name)),
+        Gio.DBusCallFlags.NONE,
+        GET_TIMEOUT_MS,
+        None,
+    )
+    return result.unpack()[0]
+
+
+def set_prop(name, value):
+    prop_proxy().call_sync(
+        "Set",
+        GLib.Variant("(ssv)", (IFACE, name, value)),
+        Gio.DBusCallFlags.NONE,
+        SET_TIMEOUT_MS,
+        None,
+    )
+
+
+def status():
+    result = proxy().call_sync("GetStatus", None, Gio.DBusCallFlags.NONE, METHOD_TIMEOUT_MS, None)
+    data = result.unpack()[0]
+    for key in (
+        "profile",
+        "default_profile",
+        "cpu_underclock",
+        "cpu_caps",
+        "gpu_level",
+        "gpu_auto_min",
+        "gpu_auto_max",
+        "manual_gpu_clock",
+        "manual_gpu_clock_min",
+        "manual_gpu_clock_max",
+        "fan_mode",
+        "fan_pwm",
+        "fan_rpm",
+        "temperature",
+        "suspended",
+    ):
+        value = data[key].unpack() if hasattr(data[key], "unpack") else data[key]
+        print(f"{key}={value}")
+
+
+def call_method(name):
+    proxy().call_sync(name, None, Gio.DBusCallFlags.NONE, METHOD_TIMEOUT_MS, None)
+
+
+def usage():
+    print(
+        "Usage: nebel-power status|reload|profile [name]|gpu-auto|gpu-manual <mhz>|suspend|resume",
+        file=sys.stderr,
+    )
+    return 2
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
+    if cmd == "status":
+        status()
+        return 0
+    if cmd == "reload":
+        call_method("Reload")
+        return 0
+    if cmd == "profile":
+        if len(sys.argv) == 2:
+            print(get_prop("Profile"))
+            return 0
+        set_prop("Profile", GLib.Variant("s", sys.argv[2]))
+        return 0
+    if cmd == "gpu-auto":
+        set_prop("GpuPerformanceLevel", GLib.Variant("s", "auto"))
+        return 0
+    if cmd == "gpu-manual" and len(sys.argv) == 3:
+        set_prop("GpuPerformanceLevel", GLib.Variant("s", "manual"))
+        set_prop("ManualGpuClock", GLib.Variant("u", int(sys.argv[2])))
+        return 0
+    if cmd == "suspend":
+        call_method("Suspend")
+        return 0
+    if cmd == "resume":
+        call_method("Resume")
+        return 0
+    return usage()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

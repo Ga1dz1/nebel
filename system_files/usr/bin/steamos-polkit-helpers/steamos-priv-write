@@ -14,25 +14,25 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 log() {
-    systemd-cat -t armada-steamos-priv-write -p info <<<"$*"
+    systemd-cat -t nebel-steamos-priv-write -p info <<<"$*"
 }
 
-run_armada_power() {
-    /usr/bin/armada-power "$@"
+run_nebel_power() {
+    /usr/bin/nebel-power "$@"
 }
 
 if [[ "$WRITE_PATH" == /sys/class/drm/card*/device/power_dpm_force_performance_level ]]; then
     case "$WRITE_VALUE" in
-        auto) run_armada_power gpu-auto ;;
+        auto) run_nebel_power gpu-auto ;;
         manual|high)
-            max_mhz="$(/usr/bin/armada-power status | awk -F= '/^manual_gpu_clock_max=/{print $2}')"
+            max_mhz="$(/usr/bin/nebel-power status | awk -F= '/^manual_gpu_clock_max=/{print $2}')"
             [[ -n "$max_mhz" ]] || exit 1
-            run_armada_power gpu-manual "$max_mhz"
+            run_nebel_power gpu-manual "$max_mhz"
             ;;
         low)
-            min_mhz="$(/usr/bin/armada-power status | awk -F= '/^manual_gpu_clock_min=/{print $2}')"
+            min_mhz="$(/usr/bin/nebel-power status | awk -F= '/^manual_gpu_clock_min=/{print $2}')"
             [[ -n "$min_mhz" ]] || exit 1
-            run_armada_power gpu-manual "$min_mhz"
+            run_nebel_power gpu-manual "$min_mhz"
             ;;
         *) exit 1 ;;
     esac
@@ -47,23 +47,23 @@ if [[ "$WRITE_PATH" == /sys/class/drm/card*/device/pp_od_clk_voltage ]]; then
         echo "unsupported pp_od_clk_voltage write: $WRITE_VALUE" >&2
         exit 1
     fi
-    run_armada_power gpu-manual "$mhz"
+    run_nebel_power gpu-manual "$mhz"
     log "gpu manual clock: ${mhz} MHz"
     exit 0
 fi
 
 if [[ "$WRITE_PATH" == /sys/devices/system/cpu/cpufreq/policy*/scaling_governor ]]; then
-    echo "CPU governor writes are managed by armada-power profiles" >&2
+    echo "CPU governor writes are managed by nebel-power profiles" >&2
     exit 1
 fi
 
 if [[ "$WRITE_PATH" == /sys/devices/system/cpu/cpufreq/policy*/scaling_max_freq ]]; then
-    echo "CPU max frequency writes are managed by armada-power profiles" >&2
+    echo "CPU max frequency writes are managed by nebel-power profiles" >&2
     exit 1
 fi
 
 if [[ "$WRITE_PATH" == /sys/devices/system/cpu/cpufreq/policy*/scaling_min_freq ]]; then
-    echo "CPU min frequency writes are managed by armada-power profiles" >&2
+    echo "CPU min frequency writes are managed by nebel-power profiles" >&2
     exit 1
 fi
 

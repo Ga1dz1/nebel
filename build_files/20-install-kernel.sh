@@ -21,9 +21,9 @@ cp -a /ctx/system_files/usr/lib/firmware/. /usr/lib/firmware/
 
 # Plymouth theme must exist before dracut bakes the splash into initramfs.
 mkdir -p /usr/share/plymouth/themes
-cp -a /ctx/system_files/usr/share/plymouth/themes/armada /usr/share/plymouth/themes/
+cp -a /ctx/system_files/usr/share/plymouth/themes/nebel /usr/share/plymouth/themes/
 
-plymouth-set-default-theme armada
+plymouth-set-default-theme nebel
 
 dracut \
     --force \
@@ -34,5 +34,5 @@ dracut \
     --add plymouth \
     "/usr/lib/modules/${KVER}/initramfs.img" "${KVER}"
 
-echo "armada kernel ${KVER} installed at /usr/lib/modules/${KVER}/"
+echo "nebel kernel ${KVER} installed at /usr/lib/modules/${KVER}/"
 ls -la "/usr/lib/modules/${KVER}/" | head -10

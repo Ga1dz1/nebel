@@ -1,0 +1,1575 @@
+#!/usr/bin/env python3
+"""Get/set/apply the Retroid Pocket Mini V2 stick RGB (HTR3212, 4 zones per
+stick). Mirrors controller-type's get/set/apply + /etc/nebel/*.conf pattern.
+
+Every setting below (mode, color, per-mode tunables, duotone colors/split) is
+independent per stick - the left and right stick can run completely
+different modes at once. Commands that touch one stick's settings take a
+<l|r> argument (set, set-mode, set-param, set-duotone-color,
+set-duotone-orientation). set-screen-link and set-flash-color stay global:
+screen_link is a single brightness-coupling toggle, and flash colors are
+keyed by button (a physical button isn't "on" one stick or the other).
+
+Modes:
+  static            - always the saved color (or color_source's color).
+  breathing         - same color, pulsing.
+  rainbow           - saved color ignored; hue cycles continuously, all
+                       four zones in lockstep.
+  wave              - like rainbow, but each of the 4 zones is offset a
+                       quarter-turn around the hue wheel from the next, so
+                       the spectrum visibly spreads around the ring instead
+                       of the whole stick pulsing as one color.
+  starlight         - each zone independently sparks to full brightness at
+                       random and fades back on its own, instead of every
+                       zone following the same deterministic pattern.
+  spin              - same color, ONE zone lit at full brightness, the rest
+                       at the intensity floor, stepping around the 4 zones.
+                       set-chase <l|r> <on|off> switches the lit zone from a
+                       hard single dot to a soft trailing one (uses `size`).
+  reactive          - saved color ignored; the stick's own deflection drives
+                       its brightness (centered/idle=off, full throw=bright)
+                       and angle drives hue, applied evenly across all 4
+                       zones. Every button press triggers a brief flash (in
+                       that button's own configurable color, set-flash-color
+                       <button> <RRGGBB>, default white) on every stick
+                       currently in reactive mode. set-compass <l|r>
+                       <on|off> instead points the lit zone(s) at the
+                       stick's actual push direction (uses `size` for how
+                       wide the point is), rather than lighting evenly.
+  multidot          - three fixed-hue dots (red/green/blue) chase each other
+                       around the 4 zones of the stick.
+  ambilight         - saved color ignored; the stick tracks the average
+                       color of a strip near its own side of the screen
+                       (sampled off the DRM framebuffer via ffmpeg's
+                       kmsgrab), fading smoothly between samples rather
+                       than snapping.
+  duotone           - two configurable colors split across the stick's
+                       zones (horizontal/vertical/diagonal, set-duotone-
+                       orientation <l|r> <orientation>, colors via
+                       set-duotone-color <l|r> <a|b> <RRGGBB>). set-seesaw
+                       <l|r> <on|off> makes the two zone groups breathe
+                       against each other instead of sitting static.
+
+color_source (set-color-source <l|r> <static|battery|random|shimmer>) - what
+"the saved color" actually is, for every mode above that has one (everything
+except rainbow/wave/reactive/ambilight/multidot/duotone, which generate
+their own):
+  static  - the color set via `set`/set-flash-color-style RRGGBB hex.
+  battery - interpolated from current battery capacity: red at 20% and
+            below, yellow at 60%, green at 100%, gradient between those
+            anchors, quantized to 5% steps so ordinary capacity-reading
+            jitter doesn't visibly flicker the color. While actually
+            charging (not just "Full"), a single zone lights solid blue
+            and steps around the stick once per second, overlaid on top
+            of whatever the battery-color render already put there -
+            toggle with set-charging-indicator <l|r> <on|off>.
+  random  - ignores the saved color; jumps to a new random hue every few
+            seconds and fades smoothly toward it, unlike rainbow/wave's
+            fixed, predictable sweep through the spectrum.
+  shimmer - the saved color breathes between a pale, cool version of
+            itself and a saturated, warm one (hue swings a few degrees
+            toward green/cyan at the cool trough and red/orange at the
+            warm peak, saturation swings with it).
+
+(Removed: the old dedicated "battery"/"battery-breathing" modes - color_source
+now applies to any mode, and the old "alternating" mode, which lost its
+reason to exist once each stick's mode became independently configurable:
+its whole point was a phase relationship between the two sticks, which
+doesn't mean anything if they're not both running it. "chase" also used to
+be its own mode - same ring position/speed as spin, just a different
+falloff shape - now it's spin's set-chase toggle instead of a separate
+entry.)
+
+Per-mode tunables (set-param <l|r> <param> <mode> <value>), persisted per
+stick per mode:
+  speed     - animation rate multiplier (0.25-3.0). breathing, spin,
+              rainbow, wave, multidot, ambilight (how fast the color chases
+              each new screen sample; the sample rate itself is fixed),
+              duotone (seesaw's breathing rate), starlight (twinkle rate).
+  intensity - how dim the "low point" gets (0.0-0.5): the breathing trough,
+              spin/multidot's unlit zones, reactive's brightness right past
+              its deadzone, duotone's seesaw trough, starlight's base level.
+              Higher = less contrast between lit and unlit.
+  size      - how wide the lit point is (1-3 zones). spin (when set-chase
+              is on), multidot, reactive (when set-compass is on).
+
+`daemon` runs forever (see nebel-stick-led.service): idles at IDLE_INTERVAL
+when neither stick is in an animated mode, animates at BREATH_INTERVAL
+whenever either stick is.
+
+screen_link (set-screen-link on|off) scales the final brightness by the
+panel backlight's current/max ratio, independent of mode, so the sticks dim
+and brighten along with the screen.
+"""
+import colorsys
+import fcntl
+import math
+import os
+import random
+import re
+import select
+import struct
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+CONFIG = Path("/etc/nebel/stick-led.conf")
+# Same flag fake-suspend.sh touches for STATE_FLAG - checked here instead of
+# having fake-suspend poke the daemon directly, since it's the daemon (not a
+# one-shot "off" command) that would otherwise keep re-lighting the sticks
+# every tick regardless of suspend state.
+SUSPEND_FLAG = Path("/run/nebel/fake-suspend.active")
+SUSPEND_POLL_INTERVAL = 0.5
+DEFAULT_COLOR = "0050FF"
+DEFAULT_MODE = "static"
+DEFAULT_SCREEN_LINK = False
+DEFAULT_MAX_BRIGHTNESS = 1.0
+DEFAULT_ENABLED = True
+DEFAULT_COLOR_SOURCE = "static"
+DEFAULT_CHARGING_INDICATOR = True
+COLOR_SOURCES = ("static", "battery", "random", "shimmer")
+# "chase" (soft trailing dot) folded into "spin" as a per-side toggle - the
+# two only ever differed in the falloff shape (apply_chase's gradient vs
+# apply_spin's hard edge), same ring position/speed underneath. Likewise
+# "compass" (reactive: point at push direction instead of lighting
+# uniformly) and "seesaw" (duotone: breathe the two color groups against
+# each other instead of a static split) are toggles on their base mode, not
+# separate entries here - see the "chase"/"compass"/"seesaw" per-side state.
+MODES = ("static", "breathing", "rainbow", "spin", "reactive", "multidot", "ambilight", "duotone", "wave", "starlight")
+ANIMATED_MODES = ("breathing", "rainbow", "spin", "reactive", "multidot", "ambilight", "wave", "starlight")
+LED_BASE = Path("/sys/class/leds")
+POWER_SUPPLY_BASE = Path("/sys/class/power_supply")
+BACKLIGHT_BASE = Path("/sys/class/backlight")
+SIDES = ("l", "r")
+ZONES = (1, 2, 3, 4)
+# Some RP6 units ship with the left stick module rotated 180° relative to the
+# shell (the "nod" stick variant).  Instead of a manual toggle, we store a
+# per-stick orientation offset (radians).  A one-time "push the stick up"
+# calibration measures the raw stick angle for "up" and computes the offset
+# needed so every LED mode (compass, spin direction, duotone split, etc.)
+# treats the stick's physical up as up.
+DEFAULT_ORIENTATION_OFFSET = 0.0
+# Populated from config by _update_zone_rotation() before rendering.
+_ZONE_ROTATION = {"l": 0.0, "r": 0.0}
+IDLE_INTERVAL = 5.0
+# See _gamma_correct()'s own comment for why this exists at all.
+LED_GAMMA = 2.2
+# "duotone" is a normal mode: two colors and a split orientation, same
+# get/set pattern as the other per-mode settings.
+DEFAULT_DUOTONE_COLOR_A = "0050FF"
+# Confirmed live: pure gold (FFD700, 84% green) read as noticeably
+# greenish on this LED rather than gold/yellow - warmed up to cut the
+# green channel's share.
+DEFAULT_DUOTONE_COLOR_B = "FFAA00"
+DEFAULT_DUOTONE_ORIENTATION = "horizontal"
+DUOTONE_ORIENTATIONS = ("horizontal", "vertical", "diagonal")
+# Zone-to-physical-position mapping, confirmed live by lighting each zone
+# individually on both sticks: 1=SW, 2=NW, 3=NE, 4=SE - identical numbering
+# on both sticks (not mirrored between l/r).
+DUOTONE_ZONE_GROUPS = {
+    "horizontal": ((2, 3), (1, 4)),  # top (NW+NE) vs bottom (SW+SE)
+    "vertical": ((4, 3), (1, 2)),    # right (NE+SE) vs left (NW+SW)
+    "diagonal": ((4, 2), (1, 3)),    # NW+SE vs NE+SW
+}
+# compass mode's angle-to-zone mapping, built on the same confirmed layout:
+# zone 1 sits at 225 deg (SW) in atan2(y, x) convention, and zones step -90
+# deg (clockwise) per index - 2=NW(135), 3=NE(45), 4=SE(-45/315). Lets
+# compass reuse apply_chase()'s existing ring-position falloff unchanged by
+# just converting a live push angle into the same continuous 0..4 "pos" unit
+# chase/multidot already animate with a clock instead.
+ZONE_BASE_ANGLE = 5 * math.pi / 4
+ZONE_ANGLE_STEP = -math.pi / 2
+
+
+def angle_to_chase_pos(theta):
+    return ((ZONE_BASE_ANGLE - theta) / (-ZONE_ANGLE_STEP)) % len(ZONES)
+BREATH_INTERVAL = 0.05
+BREATH_PERIOD_S = 3.5
+BASE_BREATH_STEP = (2 * math.pi) / (BREATH_PERIOD_S / BREATH_INTERVAL)  # at speed=1.0
+CHASE_ZONES_PER_SEC = 1.5  # at speed=1.0
+SPIN_ZONES_PER_SEC = 1.0  # at speed=1.0 - matches the charging indicator's fixed 1 rev/sec
+MULTIDOT_ZONES_PER_SEC = 1.2  # at speed=1.0
+MULTIDOT_COLORS = ((255, 0, 0), (0, 255, 0), (0, 100, 255))
+# The charging indicator's rotation is a fixed 1 rev/sec (not user-adjustable
+# the way spin mode's own speed param is) - it's a status glance, not a
+# decorative animation.
+CHARGING_DOT_ZONES_PER_SEC = 1.0
+CHARGING_DOT_COLOR = (0, 0, 255)
+# Battery-color gradient anchors (see color_source's docstring entry above):
+# solid red at/below this...
+BATTERY_RED_MAX_PCT = 20
+# ...gradient to yellow at this...
+BATTERY_YELLOW_PCT = 60
+# ...gradient to solid green at 100%. Quantized to steps this wide so
+# ordinary capacity-reading jitter doesn't visibly flicker the color.
+BATTERY_GRADIENT_STEP_PCT = 5
+# "wave": rainbow, but each zone is offset around the hue wheel instead of
+# all four cycling in lockstep - the spectrum visibly spreads around the
+# ring rather than pulsing as one color. Zones are 90 deg apart on the ring
+# (see ZONE_BASE_ANGLE/ZONE_ANGLE_STEP above), so a matching 90 deg hue step
+# per zone keeps the color spacing visually even.
+WAVE_ZONE_HUE_STEP = (2 * math.pi) / len(ZONES)
+# "starlight": each zone independently sparks to full brightness at random
+# and fades back, rather than every zone moving in the same deterministic
+# pattern like every other mode here - trigger_chance is a per-tick, per-idle
+# -zone probability (so higher speed = more frequent sparks, not faster
+# fades), STARLIGHT_DECAY is the per-tick fade multiplier back toward floor.
+STARLIGHT_TRIGGER_CHANCE = 0.05  # at speed=1.0
+STARLIGHT_DECAY = 0.85
+# color_source "random": jumps to a new random hue periodically and fades
+# smoothly toward it, rather than sweeping the spectrum in order like
+# rainbow does - unpredictable instead of a fixed cycle.
+RANDOM_COLOR_CHANGE_INTERVAL_S = 4.0
+RANDOM_COLOR_SMOOTHING = 0.03
+# color_source "shimmer": breathes the saved color between a pale, cool
+# version of itself and a saturated, warm one - hue swings a few degrees
+# toward red/orange at the warm peak and toward green/cyan at the cool
+# trough, saturation swings with it, unlike "random" which jumps between
+# unrelated hues entirely.
+SHIMMER_PERIOD_S = 2.5  # one full cold<->warm cycle, at speed=1.0
+SHIMMER_COOL_SATURATION = 0.35  # the pale/cool trough
+SHIMMER_WARM_SATURATION = 1.0   # the saturated/warm peak
+SHIMMER_HUE_SWING = 0.05        # fraction of the hue wheel shifted warm/cool
+SHIMMER_PHASE_STEP = (2 * math.pi) / (SHIMMER_PERIOD_S / BREATH_INTERVAL)
+
+PARAM_SPECS = {
+    "speed": {"min": 0.25, "max": 3.0, "default": 1.0, "modes": ("breathing", "spin", "rainbow", "multidot", "ambilight", "duotone", "wave", "starlight")},
+    "intensity": {"min": 0.0, "max": 0.5, "default": 0.15, "modes": ("breathing", "spin", "multidot", "reactive", "duotone", "starlight")},
+    "size": {"min": 1, "max": 3, "default": 2, "modes": ("spin", "multidot", "reactive")},
+}
+
+
+def param_key(param, mode):
+    spec = PARAM_SPECS[param]
+    return mode if mode in spec["modes"] else None
+
+
+def get_param(settings, param, mode):
+    spec = PARAM_SPECS[param]
+    key = param_key(param, mode)
+    return settings.get(f"{param}_{key}", spec["default"]) if key else spec["default"]
+
+
+def clamp_param(param, value):
+    spec = PARAM_SPECS[param]
+    return max(spec["min"], min(spec["max"], value))
+
+
+# --- reactive mode: raw gamepad evdev reader -------------------------------
+# Raw gamepad MCU device name, checked against /sys/class/input/event*/device/name.
+# Devices sharing the HTR3212 stick RGB hardware use different gamepad
+# drivers/MCUs depending on family: Retroid Pocket Mini V2/5/Flip2 use the
+# "retroid-gamepad" driver (reports "Retroid Pocket Gamepad"); Retroid Pocket
+# 6 shares its InputPlumber composite device config with the AYN family and
+# uses the "rsinput" driver instead, reporting "AYN Odin2 Gamepad" even on
+# Retroid-branded hardware (confirmed on real Retroid Pocket 6 hardware) -
+# unverified whether AYN Odin 2/Mini/Portal/Thor report this same exact
+# string or their own variant.
+GAMEPAD_NAMES = ("Retroid Pocket Gamepad", "AYN Odin2 Gamepad")
+EV_KEY = 0x01
+EV_ABS = 0x03
+ABS_X, ABS_Y, ABS_RX, ABS_RY = 0x00, 0x01, 0x03, 0x04
+INPUT_EVENT_FMT = "llHHi"  # 64-bit timeval (aarch64) + type + code + value
+INPUT_EVENT_SIZE = struct.calcsize(INPUT_EVENT_FMT)
+FLASH_DECAY = 0.72
+FLASH_DEFAULT_COLOR = "FFFFFF"
+# Raw BTN_* codes (linux/input-event-codes.h) mapped to the same logical
+# button names InputPlumber's retroid_mcu.yaml capability map translates
+# them to (including its North/West swap - BTN_NORTH really is wired to the
+# "West" gamepad button and vice versa on this MCU), so a button's flash
+# color lines up with whatever Steam itself calls that button. Anything not
+# listed here (e.g. BTN_MODE/Guide, or a code we don't recognize) falls into
+# the shared "other" bucket.
+FLASH_BUTTON_CODES = {
+    0x130: "south",       # BTN_SOUTH
+    0x131: "east",        # BTN_EAST
+    0x132: "r4",          # BTN_C -> RightPaddle1
+    0x133: "west",        # BTN_NORTH -> gamepad West (see comment above)
+    0x134: "north",       # BTN_WEST -> gamepad North (see comment above)
+    0x135: "l4",          # BTN_Z -> LeftPaddle1
+    0x136: "l1",          # BTN_TL -> LeftBumper
+    0x137: "r1",          # BTN_TR -> RightBumper
+    0x13a: "select",      # BTN_SELECT
+    0x13b: "start",       # BTN_START
+    0x13d: "l3",          # BTN_THUMBL -> LeftStick click
+    0x13e: "r3",          # BTN_THUMBR -> RightStick click
+    0x220: "dpad_up",      # BTN_DPAD_UP
+    0x221: "dpad_down",    # BTN_DPAD_DOWN
+    0x222: "dpad_left",    # BTN_DPAD_LEFT
+    0x223: "dpad_right",   # BTN_DPAD_RIGHT
+}
+FLASH_BUTTONS = (
+    "south", "east", "north", "west",
+    "l1", "r1", "l3", "r3", "l4", "r4",
+    "start", "select",
+    "dpad_up", "dpad_down", "dpad_left", "dpad_right",
+    "other",
+)
+
+
+def _eviocgabs(code):
+    # _IOR('E', 0x40 + code, struct input_absinfo) - 6 x __s32 = 24 bytes.
+    _IOC_READ = 2
+    return (_IOC_READ << 30) | (24 << 16) | (ord("E") << 8) | (0x40 + code)
+
+
+def gamepad_device_path():
+    try:
+        entries = Path("/sys/class/input").glob("event*")
+    except OSError:
+        return None
+    for d in entries:
+        try:
+            if (d / "device" / "name").read_text().strip() in GAMEPAD_NAMES:
+                return Path("/dev/input") / d.name
+        except OSError:
+            continue
+    return None
+
+
+class ReactiveInput:
+    """Non-exclusive raw evdev reader for the gamepad's raw MCU device -
+    InputPlumber keeps reading the same node concurrently for real input
+    (passthrough: true on its source device, see 01-retroid-controller.yaml),
+    this is just an extra open() for LED purposes, never EVIOCGRAB'd."""
+
+    def __init__(self):
+        self.fd = None
+        self.ranges = {}
+        self.lx = self.ly = self.rx = self.ry = 0.0
+        self.flash = 0.0
+        self.flash_button = "other"
+
+    def ensure_open(self):
+        if self.fd is not None:
+            return True
+        path = gamepad_device_path()
+        if path is None:
+            return False
+        try:
+            fd = os.open(str(path), os.O_RDONLY | os.O_NONBLOCK)
+        except OSError:
+            return False
+        self.fd = fd
+        self.ranges = {}
+        for code in (ABS_X, ABS_Y, ABS_RX, ABS_RY):
+            buf = bytearray(24)
+            try:
+                fcntl.ioctl(fd, _eviocgabs(code), buf)
+                _, minimum, maximum, _, _, _ = struct.unpack("iiiiii", buf)
+                if maximum > minimum:
+                    self.ranges[code] = (minimum, maximum)
+            except OSError:
+                pass
+        return True
+
+    def close(self):
+        if self.fd is not None:
+            try:
+                os.close(self.fd)
+            except OSError:
+                pass
+            self.fd = None
+
+    def _normalize(self, code, value):
+        lo, hi = self.ranges.get(code, (-32768, 32767))
+        span = (hi - lo) or 1
+        return max(-1.0, min(1.0, (2 * (value - lo) / span) - 1))
+
+    def poll(self):
+        if not self.ensure_open():
+            return
+        try:
+            while select.select([self.fd], [], [], 0)[0]:
+                chunk = os.read(self.fd, INPUT_EVENT_SIZE)
+                if len(chunk) != INPUT_EVENT_SIZE:
+                    break
+                _, _, ev_type, code, value = struct.unpack(INPUT_EVENT_FMT, chunk)
+                if ev_type == EV_ABS:
+                    if code == ABS_X:
+                        self.lx = self._normalize(code, value)
+                    elif code == ABS_Y:
+                        self.ly = self._normalize(code, value)
+                    elif code == ABS_RX:
+                        self.rx = self._normalize(code, value)
+                    elif code == ABS_RY:
+                        self.ry = self._normalize(code, value)
+                elif ev_type == EV_KEY and value == 1:
+                    self.flash = 1.0
+                    self.flash_button = FLASH_BUTTON_CODES.get(code, "other")
+        except OSError:
+            self.close()
+
+    def tick_decay(self):
+        self.flash *= FLASH_DECAY
+        if self.flash < 0.02:
+            self.flash = 0.0
+
+
+REACTIVE_DEADZONE = 0.17  # below this magnitude, treat the stick as centered/idle (off)
+
+
+def stick_reactive_rgb(x, y, floor):
+    magnitude = min(1.0, math.hypot(x, y))
+    if magnitude < REACTIVE_DEADZONE:
+        return (0.0, 0.0, 0.0)
+    hue = (math.atan2(y, x) % (2 * math.pi)) / (2 * math.pi)
+    travel = (magnitude - REACTIVE_DEADZONE) / (1.0 - REACTIVE_DEADZONE)
+    level = floor + (1 - floor) * travel
+    return tuple(c * 255 * level for c in colorsys.hsv_to_rgb(hue, 1.0, 1.0))
+
+
+# --- ambilight mode: screen color sampling via grim -------------------------
+# Each stick sits below and to its own side of the panel, not behind the
+# whole screen, so this samples a strip near each screen edge instead of
+# averaging everything: skip a small margin in from the edge (in case of a
+# letterboxed/bezel-masked black border), take a band of pixels beyond that,
+# and only look at the lower part of the screen's height (top ~40% is too far
+# from either stick to feel connected to it; the very bottom ~5% is often a
+# HUD/taskbar strip that isn't representative of "what's on screen"). These
+# are screen-position FRACTIONS (not this file's other ambilight constants,
+# which are pixel counts - grim tells us the actual output size per capture,
+# unlike the old kmsgrab path which needed fixed pixel margins/widths tuned
+# for one known resolution) - see AMBILIGHT_EDGE_MARGIN_PX/WIDTH_PX below for
+# the one pair that's still pixels, kept small enough not to matter much if
+# the resolution ever changes.
+#
+# The previous approach (ffmpeg's kmsgrab demuxer, opening the primary DRM
+# node directly as root) confirmed live that it wedges gamescope's own
+# atomic commits on this msm/DPU driver (drmModeAtomicCommit failing with
+# EACCES continuously, over 1000/min, needing a full session restart to
+# recover even after switching modes away from it). A follow-up attempt to
+# use grim (a plain Wayland client speaking wlr-screencopy-unstable-v1)
+# was also tried and confirmed live NOT to work: gamescope does not
+# advertise that protocol at all ("compositor doesn't support the screen
+# capture protocol"). What actually works, confirmed live on real
+# hardware: gamescope ships its own debug control tool, `gamescopectl`,
+# whose `screenshot <path>` command asks gamescope directly (over its own
+# gamescope_control Wayland protocol) to write a PNG of its already-
+# composited output to disk - never touches DRM, so unlike kmsgrab it
+# can't contend with gamescope's own atomic commits for the primary node.
+# Confirmed quirks worth remembering: the write is fire-and-forget async
+# (gamescopectl's process exits before gamescope finishes writing the
+# file - poll for the size to stop changing rather than reading
+# immediately), and the PNG needs decoding (ffmpeg's image2pipe/ppm muxer
+# handles that in one shot, reusing the same _parse_ppm() this file
+# already had for the old pipeline).
+AMBILIGHT_CAPTURE_FPS = 2  # how often to request a screenshot - see AmbilightSampler docstring
+AMBILIGHT_CAPTURE_TIMEOUT_S = 2.0  # max time to wait for gamescopectl's async write to settle
+AMBILIGHT_CAPTURE_PATH = "/tmp/.nebel-stick-led-ambilight.png"
+AMBILIGHT_SMOOTHING = 0.35  # fraction of the way to the new sample each time, at speed=1.0
+AMBILIGHT_EDGE_MARGIN_PX = 10  # skip this many pixels in from the left/right screen edge
+AMBILIGHT_EDGE_WIDTH_PX = 100  # sample this many pixels beyond the margin
+AMBILIGHT_TOP_EXCLUDE = 0.40  # fraction of screen height excluded from the top
+AMBILIGHT_BOTTOM_EXCLUDE = 0.05  # fraction of screen height excluded from the bottom
+AMBILIGHT_DEFAULT = (0, 80, 255)
+AMBILIGHT_SESSION_USER = "armada"
+# gamescopectl screenshot + ffmpeg decode confirmed live on a Retroid
+# Pocket Mini V2 (2026-07-23): the screenshot lands as a valid PNG at the
+# requested path and ffmpeg decodes it to PPM cleanly. Capture is enabled;
+# if a future device/gamescope build doesn't expose gamescopectl the
+# sampler just keeps returning AMBILIGHT_DEFAULT (see _capture()'s guards).
+AMBILIGHT_CAPTURE_DISABLED = False
+
+
+def cmd_test_zones():
+    """Light each LED zone individually (~1.5s each, white) so someone can
+    read off the physical zone-to-position mapping by eye instead of poking
+    sysfs by hand - stops the daemon first since it would otherwise fight
+    over the same LEDs, and restarts it on the way out."""
+    subprocess.run(["systemctl", "stop", "nebel-stick-led"], check=False)
+    try:
+        for s in SIDES:
+            for z in ZONES:
+                write_zone(s, z, 0, 0, 0)
+        for side in SIDES:
+            for zone in ZONES:
+                for s in SIDES:
+                    for z in ZONES:
+                        write_zone(s, z, 0, 0, 0)
+                print(f"{side}:{zone}", flush=True)
+                write_zone(side, zone, 200, 200, 200)
+                time.sleep(1.5)
+        for s in SIDES:
+            for z in ZONES:
+                write_zone(s, z, 0, 0, 0)
+    finally:
+        subprocess.run(["systemctl", "start", "nebel-stick-led"], check=False)
+    return 0
+
+
+def cmd_test_ambilight(seconds):
+    """Print the sampled left/right ambilight colors once a second so
+    someone can watch the numbers next to the physical screen and stick to
+    confirm the capture is reading the intended edge and reacting at all -
+    the sanity check AMBILIGHT_CAPTURE_DISABLED's own comment refers to.
+    Deliberately bypasses that flag for its own duration - running this
+    command IS the deliberate verification step."""
+    global AMBILIGHT_CAPTURE_DISABLED
+    previously_disabled = AMBILIGHT_CAPTURE_DISABLED
+    AMBILIGHT_CAPTURE_DISABLED = False
+    sampler = AmbilightSampler()
+    try:
+        end = time.time() + seconds
+        while time.time() < end:
+            color_l, color_r = sampler.sample(1.0, 1.0)
+            l = tuple(round(c) for c in color_l)
+            r = tuple(round(c) for c in color_r)
+            print(f"L={l}  R={r}", flush=True)
+            time.sleep(1.0)
+    finally:
+        sampler.close()
+        AMBILIGHT_CAPTURE_DISABLED = previously_disabled
+    return 0
+
+
+def _session_uid(user):
+    try:
+        return subprocess.check_output(["id", "-u", user], text=True, timeout=2).strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def _gamescope_wayland_display(runtime_dir):
+    # gamescope's documented convention for its own nested compositor
+    # socket; fall back to scanning the runtime dir in case a given
+    # gamescope build/config names it differently.
+    if (Path(runtime_dir) / "gamescope-0").exists():
+        return "gamescope-0"
+    try:
+        entries = sorted(Path(runtime_dir).glob("gamescope-*"))
+    except OSError:
+        entries = []
+    for entry in entries:
+        if not entry.name.endswith(".lock"):
+            return entry.name
+    try:
+        entries = sorted(Path(runtime_dir).glob("wayland-*"))
+    except OSError:
+        entries = []
+    for entry in entries:
+        if not entry.name.endswith(".lock"):
+            return entry.name
+    return None
+
+
+def _parse_ppm(data):
+    # grim's own raw PPM output: "P6\n<width> <height>\n255\n<RGB bytes>",
+    # no comments - a plain split is enough (no need for a general PPM
+    # parser here).
+    parts = data.split(b"\n", 3)
+    if len(parts) != 4 or parts[0] != b"P6":
+        return None
+    try:
+        width, height = (int(v) for v in parts[1].split())
+    except ValueError:
+        return None
+    pixels = parts[3]
+    if len(pixels) < width * height * 3:
+        return None
+    return width, height, pixels
+
+
+def _average_region_rgb(data, width, x0, x1, y0, y1):
+    tr = tg = tb = 0.0
+    n = 0
+    for y in range(y0, y1):
+        row = y * width
+        for x in range(x0, x1):
+            off = (row + x) * 3
+            tr += data[off]
+            tg += data[off + 1]
+            tb += data[off + 2]
+            n += 1
+    return (tr / n, tg / n, tb / n) if n else None
+
+
+class AmbilightSampler:
+    """Asks gamescope itself for a screenshot of its already-composited
+    output (via `gamescopectl screenshot <path>`, gamescope's own debug
+    control tool) once per sample rather than keeping a persistent
+    process - it's a one-shot request, not a stream, so there's no
+    persistent-process cost to amortize the way the old kmsgrab pipeline's
+    setup cost was. The screenshot request itself has to run as
+    AMBILIGHT_SESSION_USER (it talks to gamescope over the session's own
+    Wayland socket), but never touches DRM directly, so unlike kmsgrab it
+    can't contend with gamescope's own atomic commits for the primary
+    node."""
+
+    def __init__(self):
+        self.color_l = AMBILIGHT_DEFAULT
+        self.color_r = AMBILIGHT_DEFAULT
+        self.last_sample_time = 0.0
+
+    def close(self):
+        try:
+            os.remove(AMBILIGHT_CAPTURE_PATH)
+        except OSError:
+            pass
+
+    def _capture(self):
+        uid = _session_uid(AMBILIGHT_SESSION_USER)
+        if uid is None:
+            return None
+        runtime_dir = f"/run/user/{uid}"
+        display = _gamescope_wayland_display(runtime_dir)
+        if display is None:
+            return None
+        path = AMBILIGHT_CAPTURE_PATH
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        try:
+            proc = subprocess.run(
+                [
+                    "runuser", "-u", AMBILIGHT_SESSION_USER, "--",
+                    "env", f"XDG_RUNTIME_DIR={runtime_dir}", f"WAYLAND_DISPLAY={display}",
+                    "gamescopectl", "screenshot", path,
+                ],
+                capture_output=True,
+                timeout=2,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if proc.returncode != 0:
+            return None
+        # gamescopectl's screenshot command is fire-and-forget over
+        # gamescope's own control protocol - it returns before gamescope
+        # has actually finished writing the file, so poll for the size to
+        # stop changing rather than reading it immediately.
+        deadline = time.time() + AMBILIGHT_CAPTURE_TIMEOUT_S
+        last_size = -1
+        settled = False
+        while time.time() < deadline:
+            try:
+                size = os.path.getsize(path)
+            except OSError:
+                size = -1
+            if size > 0 and size == last_size:
+                settled = True
+                break
+            last_size = size
+            time.sleep(0.05)
+        if not settled:
+            return None
+        try:
+            proc = subprocess.run(
+                ["ffmpeg", "-y", "-i", path, "-f", "image2pipe", "-vcodec", "ppm", "-"],
+                capture_output=True,
+                timeout=2,
+            )
+        finally:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        if proc.returncode != 0 or not proc.stdout:
+            return None
+        return _parse_ppm(proc.stdout)
+
+    def sample(self, speed_l, speed_r):
+        if AMBILIGHT_CAPTURE_DISABLED:
+            return self.color_l, self.color_r
+        now = time.time()
+        if now - self.last_sample_time < 1.0 / AMBILIGHT_CAPTURE_FPS:
+            return self.color_l, self.color_r
+        self.last_sample_time = now
+        frame = self._capture()
+        if frame is None:
+            return self.color_l, self.color_r
+        width, height, pixels = frame
+        m, w = AMBILIGHT_EDGE_MARGIN_PX, AMBILIGHT_EDGE_WIDTH_PX
+        y0 = int(height * AMBILIGHT_TOP_EXCLUDE)
+        y1 = int(height * (1.0 - AMBILIGHT_BOTTOM_EXCLUDE))
+        left = _average_region_rgb(pixels, width, m, m + w, y0, y1)
+        right = _average_region_rgb(pixels, width, width - m - w, width - m, y0, y1)
+        if left is None or right is None:
+            return self.color_l, self.color_r
+        smoothing_l = min(0.9, AMBILIGHT_SMOOTHING * speed_l)
+        smoothing_r = min(0.9, AMBILIGHT_SMOOTHING * speed_r)
+        self.color_l = tuple(c * (1 - smoothing_l) + t * smoothing_l for c, t in zip(self.color_l, left))
+        self.color_r = tuple(c * (1 - smoothing_r) + t * smoothing_r for c, t in zip(self.color_r, right))
+        return self.color_l, self.color_r
+
+
+def _default_side_state():
+    return {
+        "mode": DEFAULT_MODE,
+        "color": DEFAULT_COLOR,
+        "color_source": DEFAULT_COLOR_SOURCE,
+        "charging_indicator": DEFAULT_CHARGING_INDICATOR,
+        "settings": {},
+        "duotone_color_a": DEFAULT_DUOTONE_COLOR_A,
+        "duotone_color_b": DEFAULT_DUOTONE_COLOR_B,
+        "duotone_orientation": DEFAULT_DUOTONE_ORIENTATION,
+        # Toggles on a base mode rather than separate MODES entries - see
+        # MODES's own comment.
+        "chase": False,     # spin: soft trailing dot (apply_chase) instead of a hard single dot
+        "compass": False,   # reactive: point at push direction instead of lighting evenly
+        "seesaw": False,    # duotone: breathe the two color groups against each other
+        # Per-stick orientation offset (radians).  Measured once via
+        # `calibrate-orientation` so the LED ring matches the stick's physical
+        # orientation; 0 means the stick module is mounted normally.
+        "orientation_offset": DEFAULT_ORIENTATION_OFFSET,
+    }
+
+
+def load_state():
+    state = {
+        "l": _default_side_state(),
+        "r": _default_side_state(),
+        "screen_link": DEFAULT_SCREEN_LINK,
+        "enabled": DEFAULT_ENABLED,
+        "max_brightness": DEFAULT_MAX_BRIGHTNESS,
+        "flash_colors": {},
+    }
+    try:
+        lines = CONFIG.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return state
+    for line in lines:
+        key, sep, raw = line.partition("=")
+        if not sep:
+            continue
+        key, raw = key.strip(), raw.strip()
+        if key == "screen_link":
+            state["screen_link"] = raw == "1"
+            continue
+        if key == "enabled":
+            state["enabled"] = raw == "1"
+            continue
+        if key == "max_brightness":
+            try:
+                state["max_brightness"] = max(0.0, min(1.0, float(raw)))
+            except ValueError:
+                pass
+            continue
+        if key.startswith("flash_") and key[len("flash_"):] in FLASH_BUTTONS:
+            if re.fullmatch(r"[0-9A-Fa-f]{6}", raw or ""):
+                state["flash_colors"][key[len("flash_"):]] = raw.upper()
+            continue
+        if key.endswith("_l"):
+            side, base = "l", key[:-2]
+        elif key.endswith("_r"):
+            side, base = "r", key[:-2]
+        else:
+            continue
+        s = state[side]
+        if base == "mode":
+            if raw in MODES:
+                s["mode"] = raw
+            # Migrate configs saved before color_source existed - battery
+            # coloring used to be its own mode instead of a source any mode
+            # can use, and alternating had no direct replacement once modes
+            # became independent per side (see the docstring's Removed
+            # note), so it just falls back to the default (static).
+            elif raw == "battery":
+                s["mode"] = "static"
+                s["color_source"] = "battery"
+            elif raw == "battery-breathing":
+                s["mode"] = "breathing"
+                s["color_source"] = "battery"
+            # "chase" was its own mode before it became a toggle on "spin"
+            # (same ring position/speed, just apply_chase's falloff instead
+            # of apply_spin's hard edge) - carry old configs forward.
+            elif raw == "chase":
+                s["mode"] = "spin"
+                s["chase"] = True
+        elif base == "color" and re.fullmatch(r"[0-9A-Fa-f]{6}", raw or ""):
+            s["color"] = raw
+        elif base == "color_source" and raw in COLOR_SOURCES:
+            s["color_source"] = raw
+        elif base == "charging_indicator":
+            s["charging_indicator"] = raw == "1"
+        elif base == "chase":
+            s["chase"] = raw == "1"
+        elif base == "compass":
+            s["compass"] = raw == "1"
+        elif base == "seesaw":
+            s["seesaw"] = raw == "1"
+        elif base == "orientation_offset":
+            try:
+                s["orientation_offset"] = float(raw)
+            except ValueError:
+                pass
+        elif base == "flip":
+            # Legacy boolean flip: migrate to orientation offset (180°).
+            if raw == "1":
+                s["orientation_offset"] = math.pi
+        elif base == "duotone_color_a" and re.fullmatch(r"[0-9A-Fa-f]{6}", raw or ""):
+            s["duotone_color_a"] = raw.upper()
+        elif base == "duotone_color_b" and re.fullmatch(r"[0-9A-Fa-f]{6}", raw or ""):
+            s["duotone_color_b"] = raw.upper()
+        elif base == "duotone_orientation" and raw in DUOTONE_ORIENTATIONS:
+            s["duotone_orientation"] = raw
+        elif "_" in base and base.split("_", 1)[0] in PARAM_SPECS:
+            try:
+                s["settings"][base] = float(raw)
+            except ValueError:
+                pass
+    return state
+
+
+def save_state(state):
+    CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        f"screen_link={'1' if state['screen_link'] else '0'}",
+        f"enabled={'1' if state.get('enabled', True) else '0'}",
+        f"max_brightness={state.get('max_brightness', DEFAULT_MAX_BRIGHTNESS):.3f}",
+    ]
+    for side in SIDES:
+        s = state[side]
+        lines.append(f"mode_{side}={s['mode']}")
+        lines.append(f"color_{side}={s['color']}")
+        lines.append(f"color_source_{side}={s['color_source']}")
+        lines.append(f"charging_indicator_{side}={'1' if s['charging_indicator'] else '0'}")
+        lines.append(f"duotone_color_a_{side}={s['duotone_color_a']}")
+        lines.append(f"duotone_color_b_{side}={s['duotone_color_b']}")
+        lines.append(f"duotone_orientation_{side}={s['duotone_orientation']}")
+        lines.append(f"chase_{side}={'1' if s['chase'] else '0'}")
+        lines.append(f"compass_{side}={'1' if s['compass'] else '0'}")
+        lines.append(f"seesaw_{side}={'1' if s['seesaw'] else '0'}")
+        lines.append(f"orientation_offset_{side}={s.get('orientation_offset', DEFAULT_ORIENTATION_OFFSET):.6f}")
+        for key in sorted(s["settings"]):
+            lines.append(f"{key}_{side}={s['settings'][key]:.3f}")
+    for button in sorted(state["flash_colors"]):
+        lines.append(f"flash_{button}={state['flash_colors'][button]}")
+    tmp = CONFIG.with_name(f".{CONFIG.name}.tmp")
+    tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    tmp.chmod(0o644)
+    tmp.replace(CONFIG)
+
+
+def flash_color_rgb(flash_colors, button):
+    hex_color = flash_colors.get(button, FLASH_DEFAULT_COLOR)
+    return int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+
+
+def screen_scale():
+    try:
+        devices = sorted(BACKLIGHT_BASE.glob("*"))
+    except OSError:
+        return 1.0
+    for bl in devices:
+        try:
+            current = int((bl / "brightness").read_text().strip())
+            maximum = int((bl / "max_brightness").read_text().strip())
+        except (OSError, ValueError):
+            continue
+        if maximum > 0:
+            return max(0.0, min(1.0, current / maximum))
+    return 1.0
+
+
+def base_scale(state):
+    if state["screen_link"]:
+        raw = screen_scale()
+    else:
+        raw = state.get("max_brightness", DEFAULT_MAX_BRIGHTNESS)
+    # Pre-compensate for _gamma_correct()'s own curve: write_zone() gamma-
+    # corrects the final r*scale/g*scale/b*scale value, and gamma_correct is
+    # a pure power function, so a linear scale factored in *before* it comes
+    # out the other end raised to LED_GAMMA (confirmed live: screen at 35%
+    # produced ~10% actual PWM duty, not ~35%, matching 0.35**2.2 exactly -
+    # sticks read as visually off well before the screen did). Raising scale
+    # to 1/LED_GAMMA here cancels that out, so the final written brightness
+    # ends up linear in `raw` (screen % or Max Brightness %) like the UI
+    # implies, instead of crushed by an extra unintended gamma pass.
+    return raw ** (1.0 / LED_GAMMA)
+
+
+def _gamma_correct(value):
+    # HTR3212's brightness_set writes the raw value straight to the PWM
+    # duty-cycle register with zero correction of its own (confirmed in
+    # armada-packages' 0033_leds--Add-driver-for-HEROIC-HTR3212.patch), so a
+    # linear 0-255 value looks nothing like a linear perceived brightness -
+    # anything dimmed (screen_link's scale, a mode's intensity floor, a
+    # chase/multidot fade tail) comes out pale and hue-shifted instead of
+    # just dimmer, since 8-bit rounding distorts a small channel's value
+    # much more than a large one. Standard LED gamma fixes both: it lifts
+    # the dim end of the curve (so low values round more precisely) while
+    # leaving the endpoints fixed (0->0, 255->255), so full-brightness
+    # colors are completely unaffected.
+    v = max(0.0, min(255.0, value)) / 255.0
+    return (v ** LED_GAMMA) * 255.0
+
+
+def rotate_zone(zone, offset):
+    """Map a logical zone (position on the shell) to the physical LED zone
+    after applying the stick module's orientation offset."""
+    logical_pos = zone - 1
+    logical_angle = ZONE_BASE_ANGLE + logical_pos * ZONE_ANGLE_STEP
+    physical_angle = logical_angle - offset
+    physical_pos = angle_to_chase_pos(physical_angle)
+    return int(round(physical_pos)) % len(ZONES) + 1
+
+
+def rotate_vector(x, y, theta):
+    """Rotate a 2D stick deflection by theta radians."""
+    c = math.cos(theta)
+    s = math.sin(theta)
+    return x * c - y * s, x * s + y * c
+
+
+def _update_zone_rotation(state):
+    for side in SIDES:
+        _ZONE_ROTATION[side] = float(state.get(side, {}).get("orientation_offset", DEFAULT_ORIENTATION_OFFSET))
+
+
+def write_zone(side, zone, r, g, b):
+    zone = rotate_zone(zone, _ZONE_ROTATION.get(side, 0.0))
+    ok = False
+    for chan, val in (("r", r), ("g", g), ("b", b)):
+        led = LED_BASE / f"{side}:{chan}{zone}" / "brightness"
+        try:
+            led.write_text(str(max(0, min(255, int(round(_gamma_correct(val)))))))
+            ok = True
+        except OSError:
+            pass
+    return ok
+
+
+def apply_rgb(r, g, b):
+    ok = False
+    for side in SIDES:
+        for zone in ZONES:
+            if write_zone(side, zone, r, g, b):
+                ok = True
+    return ok
+
+
+def apply_side_rgb(side, r, g, b):
+    ok = False
+    for zone in ZONES:
+        if write_zone(side, zone, r, g, b):
+            ok = True
+    return ok
+
+
+def apply_chase(side, r, g, b, pos, scale, size, floor):
+    ok = False
+    for idx, zone in enumerate(ZONES):
+        dist = abs(idx - pos)
+        dist = min(dist, len(ZONES) - dist)
+        level = floor + (1 - floor) * max(0.0, 1.0 - dist / size)
+        level *= scale
+        if write_zone(side, zone, r * level, g * level, b * level):
+            ok = True
+    return ok
+
+
+def apply_spin(side, r, g, b, pos, scale, floor):
+    ok = False
+    lit_idx = int(round(pos)) % len(ZONES)
+    for idx, zone in enumerate(ZONES):
+        level = (1.0 if idx == lit_idx else floor) * scale
+        if write_zone(side, zone, r * level, g * level, b * level):
+            ok = True
+    return ok
+
+
+def apply_charging_dot(side, scale):
+    # Overlays ON TOP of whatever the side's normal render just wrote -
+    # only the one zone currently "lit" changes, the other three are left
+    # exactly as the base render (battery-color static/breathing/chase/
+    # spin/etc.) put them. Position derived straight from wall-clock time
+    # (not the daemon's own per-side anim state) so it stays a steady,
+    # predictable 1 rev/sec regardless of which mode is doing the base
+    # render or how fast that mode's own animation is going.
+    zone_idx = int(time.time() * CHARGING_DOT_ZONES_PER_SEC * len(ZONES)) % len(ZONES)
+    r, g, b = CHARGING_DOT_COLOR
+    write_zone(side, ZONES[zone_idx], r * scale, g * scale, b * scale)
+
+
+def apply_multidot(side, base_pos, scale, size, floor):
+    ok = False
+    spacing = len(ZONES) / len(MULTIDOT_COLORS)
+    totals = [[0.0, 0.0, 0.0] for _ in ZONES]
+    for i, (dr, dg, db) in enumerate(MULTIDOT_COLORS):
+        dot_pos = (base_pos + i * spacing) % len(ZONES)
+        for idx in range(len(ZONES)):
+            dist = abs(idx - dot_pos)
+            dist = min(dist, len(ZONES) - dist)
+            level = floor + (1 - floor) * max(0.0, 1.0 - dist / size)
+            totals[idx][0] += dr * level
+            totals[idx][1] += dg * level
+            totals[idx][2] += db * level
+    for idx, zone in enumerate(ZONES):
+        r, g, b = totals[idx]
+        if write_zone(side, zone, r * scale, g * scale, b * scale):
+            ok = True
+    return ok
+
+
+def apply_hex(side, hex_color, scale=1.0):
+    r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+    return apply_side_rgb(side, r * scale, g * scale, b * scale)
+
+
+def apply_duotone(side, color_a, color_b, orientation, scale=1.0):
+    ok = False
+    ar, ag, ab = int(color_a[0:2], 16), int(color_a[2:4], 16), int(color_a[4:6], 16)
+    br, bg, bb = int(color_b[0:2], 16), int(color_b[2:4], 16), int(color_b[4:6], 16)
+    zones_a, zones_b = DUOTONE_ZONE_GROUPS.get(orientation, DUOTONE_ZONE_GROUPS[DEFAULT_DUOTONE_ORIENTATION])
+    for zone in zones_a:
+        if write_zone(side, zone, ar * scale, ag * scale, ab * scale):
+            ok = True
+    for zone in zones_b:
+        if write_zone(side, zone, br * scale, bg * scale, bb * scale):
+            ok = True
+    return ok
+
+
+def battery_capacity_status():
+    for supply in POWER_SUPPLY_BASE.glob("*"):
+        try:
+            if (supply / "type").read_text().strip() != "Battery":
+                continue
+            capacity = int((supply / "capacity").read_text().strip())
+            status = (supply / "status").read_text().strip()
+        except (OSError, ValueError):
+            continue
+        return capacity, status
+    return None, None
+
+
+def battery_gradient_rgb(capacity):
+    if capacity is None:
+        return 0, 80, 255  # no battery info - fall back to the default blue
+    capacity = max(0, min(100, capacity))
+    # Quantized so ordinary capacity-reading jitter doesn't visibly flicker
+    # the color - see BATTERY_GRADIENT_STEP_PCT's own comment.
+    step = round(capacity / BATTERY_GRADIENT_STEP_PCT) * BATTERY_GRADIENT_STEP_PCT
+    if step <= BATTERY_RED_MAX_PCT:
+        return 255, 0, 0
+    if step <= BATTERY_YELLOW_PCT:
+        t = (step - BATTERY_RED_MAX_PCT) / (BATTERY_YELLOW_PCT - BATTERY_RED_MAX_PCT)
+        return 255, int(255 * t), 0
+    t = (step - BATTERY_YELLOW_PCT) / (100 - BATTERY_YELLOW_PCT)
+    return int(255 * (1 - t)), 255, 0
+
+
+def is_charging():
+    _, status = battery_capacity_status()
+    return status == "Charging"
+
+
+def base_rgb(color, color_source):
+    if color_source == "battery":
+        capacity, _ = battery_capacity_status()
+        return battery_gradient_rgb(capacity)
+    if color_source == "random":
+        # No anim/tick state available here (this is the one-shot snapshot
+        # path - apply_current(), render_side_static() with anim=None) - a
+        # fresh random hue each call is fine since "random" forces the
+        # daemon into its continuously-ticking path (see run_daemon), where
+        # random_step_rgb() below is used instead for a smooth shift.
+        return tuple(c * 255 for c in colorsys.hsv_to_rgb(random.random(), 1.0, 1.0))
+    return int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16)
+
+
+def random_step_rgb(anim):
+    state = anim.setdefault("random", {"hue": random.random(), "target": random.random(), "next_change": 0.0})
+    now = time.time()
+    if now >= state["next_change"]:
+        state["target"] = random.random()
+        state["next_change"] = now + RANDOM_COLOR_CHANGE_INTERVAL_S
+    # Shortest-path hue interpolation, wrapping around the hue circle.
+    diff = (state["target"] - state["hue"] + 0.5) % 1.0 - 0.5
+    state["hue"] = (state["hue"] + diff * RANDOM_COLOR_SMOOTHING) % 1.0
+    return tuple(c * 255 for c in colorsys.hsv_to_rgb(state["hue"], 1.0, 1.0))
+
+
+def shimmer_rgb(color, anim):
+    h, l, _s = colorsys.rgb_to_hls(int(color[0:2], 16) / 255, int(color[2:4], 16) / 255, int(color[4:6], 16) / 255)
+    phase = anim.get("shimmer_phase", 0.0)
+    t = 0.5 + 0.5 * math.sin(phase)  # 0 = pale/cold, 1 = saturated/warm
+    saturation = SHIMMER_COOL_SATURATION + (SHIMMER_WARM_SATURATION - SHIMMER_COOL_SATURATION) * t
+    hue = (h - SHIMMER_HUE_SWING * (t - 0.5) * 2) % 1.0
+    anim["shimmer_phase"] = (phase + SHIMMER_PHASE_STEP) % (2 * math.pi)
+    return tuple(c * 255 for c in colorsys.hls_to_rgb(hue, l, saturation))
+
+
+def resolve_base_rgb(color, color_source, anim=None):
+    if anim is not None:
+        if color_source == "random":
+            return random_step_rgb(anim)
+        if color_source == "shimmer":
+            return shimmer_rgb(color, anim)
+    return base_rgb(color, color_source)
+
+
+def rainbow_rgb(phase):
+    hue = (phase % (2 * math.pi)) / (2 * math.pi)
+    return tuple(c * 255 for c in colorsys.hsv_to_rgb(hue, 1.0, 1.0))
+
+
+def apply_current():
+    state = load_state()
+    _update_zone_rotation(state)
+    if not state.get("enabled", True):
+        return apply_rgb(0, 0, 0)
+    scale = base_scale(state)
+    charging = is_charging()
+    ok = False
+    for side in SIDES:
+        s = state[side]
+        mode, color, color_source = s["mode"], s["color"], s["color_source"]
+        if mode == "duotone":
+            if apply_duotone(side, s["duotone_color_a"], s["duotone_color_b"], s["duotone_orientation"], scale):
+                ok = True
+            continue
+        r, g, b = rainbow_rgb(0.0) if mode == "rainbow" else base_rgb(color, color_source)
+        if apply_side_rgb(side, r * scale, g * scale, b * scale):
+            ok = True
+        if color_source == "battery" and charging and s["charging_indicator"]:
+            apply_charging_dot(side, scale)
+    return ok
+
+
+def _new_anim():
+    return {"phase": 0.0, "chase_pos": 0.0, "multidot_pos": 0.0, "starlight": [0.0] * len(ZONES)}
+
+
+def _maybe_charging_dot(side, s, scale, charging):
+    if s["color_source"] == "battery" and charging and s["charging_indicator"]:
+        apply_charging_dot(side, scale)
+
+
+def render_side_static(side, s, scale, charging=None):
+    mode, color, color_source = s["mode"], s["color"], s["color_source"]
+    if mode == "duotone":
+        apply_duotone(side, s["duotone_color_a"], s["duotone_color_b"], s["duotone_orientation"], scale)
+        return
+    r, g, b = base_rgb(color, color_source)
+    apply_side_rgb(side, r * scale, g * scale, b * scale)
+    _maybe_charging_dot(side, s, scale, charging if charging is not None else is_charging())
+
+
+def render_side_animated(side, s, scale, anim, reactive, ambilight_colors, flash_colors, charging):
+    mode, color, color_source, settings = s["mode"], s["color"], s["color_source"], s["settings"]
+    if mode == "duotone" and s.get("seesaw"):
+        zones_a, zones_b = DUOTONE_ZONE_GROUPS.get(s["duotone_orientation"], DUOTONE_ZONE_GROUPS[DEFAULT_DUOTONE_ORIENTATION])
+        ar, ag, ab = int(s["duotone_color_a"][0:2], 16), int(s["duotone_color_a"][2:4], 16), int(s["duotone_color_a"][4:6], 16)
+        br, bg, bb = int(s["duotone_color_b"][0:2], 16), int(s["duotone_color_b"][2:4], 16), int(s["duotone_color_b"][4:6], 16)
+        floor = get_param(settings, "intensity", "duotone")
+        t = 0.5 + 0.5 * math.sin(anim["phase"])
+        level_a, level_b = floor + (1 - floor) * t, floor + (1 - floor) * (1 - t)
+        for zone in zones_a:
+            write_zone(side, zone, ar * level_a * scale, ag * level_a * scale, ab * level_a * scale)
+        for zone in zones_b:
+            write_zone(side, zone, br * level_b * scale, bg * level_b * scale, bb * level_b * scale)
+        anim["phase"] = (anim["phase"] + BASE_BREATH_STEP * get_param(settings, "speed", "duotone")) % (2 * math.pi)
+        _maybe_charging_dot(side, s, scale, charging)
+        return
+    if mode not in ANIMATED_MODES and color_source not in ("random", "shimmer"):
+        render_side_static(side, s, scale, charging)
+        return
+    # Charging dot rides on top of the base render's current brightness by
+    # default (only breathing actually varies it over time - everything
+    # else here is already at full brightness*scale on every tick) so it
+    # doesn't look like a static blue LED stuck mid-pulse while the rest of
+    # the stick visibly breathes around it.
+    dot_scale = scale
+    if mode == "rainbow":
+        r, g, b = rainbow_rgb(anim["phase"])
+        apply_side_rgb(side, r * scale, g * scale, b * scale)
+        anim["phase"] = (anim["phase"] + BASE_BREATH_STEP * get_param(settings, "speed", mode)) % (2 * math.pi)
+    elif mode == "wave":
+        for idx, zone in enumerate(ZONES):
+            r, g, b = rainbow_rgb(anim["phase"] + idx * WAVE_ZONE_HUE_STEP)
+            write_zone(side, zone, r * scale, g * scale, b * scale)
+        anim["phase"] = (anim["phase"] + BASE_BREATH_STEP * get_param(settings, "speed", mode)) % (2 * math.pi)
+    elif mode == "starlight":
+        r, g, b = resolve_base_rgb(color, color_source, anim)
+        floor = get_param(settings, "intensity", mode)
+        speed = get_param(settings, "speed", mode)
+        levels = anim["starlight"]
+        for idx, zone in enumerate(ZONES):
+            if levels[idx] <= floor + 0.01 and random.random() < STARLIGHT_TRIGGER_CHANCE * speed:
+                levels[idx] = 1.0
+            else:
+                levels[idx] = floor + (levels[idx] - floor) * STARLIGHT_DECAY
+            level = levels[idx] * scale
+            write_zone(side, zone, r * level, g * level, b * level)
+    elif mode == "spin":
+        r, g, b = resolve_base_rgb(color, color_source, anim)
+        floor = get_param(settings, "intensity", mode)
+        if s.get("chase"):
+            size = get_param(settings, "size", mode)
+            apply_chase(side, r, g, b, anim["chase_pos"], scale, size, floor)
+        else:
+            apply_spin(side, r, g, b, anim["chase_pos"], scale, floor)
+        anim["chase_pos"] = (anim["chase_pos"] + SPIN_ZONES_PER_SEC * get_param(settings, "speed", mode) * BREATH_INTERVAL) % len(ZONES)
+    elif mode == "multidot":
+        size = get_param(settings, "size", mode)
+        floor = get_param(settings, "intensity", mode)
+        apply_multidot(side, anim["multidot_pos"], scale, size, floor)
+        anim["multidot_pos"] = (anim["multidot_pos"] + MULTIDOT_ZONES_PER_SEC * get_param(settings, "speed", mode) * BREATH_INTERVAL) % len(ZONES)
+    elif mode == "reactive":
+        floor = get_param(settings, "intensity", mode)
+        x, y = (reactive.lx, -reactive.ly) if side == "l" else (reactive.rx, -reactive.ry)
+        offset = s.get("orientation_offset", DEFAULT_ORIENTATION_OFFSET)
+        if offset:
+            x, y = rotate_vector(x, y, offset)
+        cr, cg, cb = stick_reactive_rgb(x, y, floor)
+        flash = reactive.flash
+        fr, fg, fb = flash_color_rgb(flash_colors, reactive.flash_button)
+        blend = lambda c, f: c * (1 - flash) + f * flash  # noqa: E731
+        r, g, b = blend(cr, fr), blend(cg, fg), blend(cb, fb)
+        if s.get("compass"):
+            size = get_param(settings, "size", mode)
+            pos = angle_to_chase_pos(math.atan2(y, x))
+            apply_chase(side, r, g, b, pos, scale, size, floor)
+        else:
+            apply_side_rgb(side, r * scale, g * scale, b * scale)
+    elif mode == "ambilight":
+        color3 = ambilight_colors[0] if side == "l" else ambilight_colors[1]
+        apply_side_rgb(side, color3[0] * scale, color3[1] * scale, color3[2] * scale)
+    elif mode == "static":
+        # Only reached here at all when color_source is "random" or
+        # "shimmer" (static otherwise isn't in ANIMATED_MODES) - no
+        # breathing envelope, just the color_source's own animation at full
+        # brightness.
+        r, g, b = resolve_base_rgb(color, color_source, anim)
+        apply_side_rgb(side, r * scale, g * scale, b * scale)
+    else:
+        r, g, b = resolve_base_rgb(color, color_source, anim)
+        floor = get_param(settings, "intensity", mode)
+        level = scale * (floor + (1 - floor) * (0.5 + 0.5 * math.sin(anim["phase"])))
+        apply_side_rgb(side, r * level, g * level, b * level)
+        anim["phase"] = (anim["phase"] + BASE_BREATH_STEP * get_param(settings, "speed", mode)) % (2 * math.pi)
+        dot_scale = level
+    _maybe_charging_dot(side, s, dot_scale, charging)
+
+
+def run_daemon():
+    anim = {"l": _new_anim(), "r": _new_anim()}
+    reactive = ReactiveInput()
+    ambilight = AmbilightSampler()
+    while True:
+        if SUSPEND_FLAG.exists():
+            reactive.close()
+            ambilight.close()
+            apply_rgb(0, 0, 0)
+            anim = {"l": _new_anim(), "r": _new_anim()}
+            time.sleep(SUSPEND_POLL_INTERVAL)
+            continue
+        state = load_state()
+        _update_zone_rotation(state)
+        if not state.get("enabled", True):
+            reactive.close()
+            ambilight.close()
+            apply_rgb(0, 0, 0)
+            anim = {"l": _new_anim(), "r": _new_anim()}
+            time.sleep(IDLE_INTERVAL)
+            continue
+        scale = base_scale(state)
+        modes = {side: state[side]["mode"] for side in SIDES}
+        used_reactive = "reactive" in modes.values()
+        used_ambilight = "ambilight" in modes.values()
+        if not used_reactive:
+            reactive.close()
+        if not used_ambilight:
+            ambilight.close()
+        charging = is_charging()
+        # The charging indicator steps once a second - that needs the fast
+        # tick even for an otherwise-static mode, or it'd only update once
+        # per IDLE_INTERVAL and the "rotation" would just look like an
+        # occasional jump.
+        any_charging_dot = charging and any(
+            state[side]["color_source"] == "battery" and state[side]["charging_indicator"] for side in SIDES
+        )
+        any_animated = (
+            any_charging_dot
+            or any(m in ANIMATED_MODES for m in modes.values())
+            or any(state[side]["mode"] == "duotone" and state[side].get("seesaw") for side in SIDES)
+            or any(state[side]["color_source"] in ("random", "shimmer") for side in SIDES)
+        )
+        if any_animated:
+            if used_reactive:
+                reactive.poll()
+            ambilight_colors = None
+            if used_ambilight:
+                speed_l = get_param(state["l"]["settings"], "speed", "ambilight")
+                speed_r = get_param(state["r"]["settings"], "speed", "ambilight")
+                ambilight_colors = ambilight.sample(speed_l, speed_r)
+            for side in SIDES:
+                render_side_animated(side, state[side], scale, anim[side], reactive, ambilight_colors, state["flash_colors"], charging)
+            if used_reactive:
+                reactive.tick_decay()
+            time.sleep(BREATH_INTERVAL)
+        else:
+            for side in SIDES:
+                render_side_static(side, state[side], scale, charging)
+            anim = {"l": _new_anim(), "r": _new_anim()}
+            time.sleep(IDLE_INTERVAL if not state["screen_link"] else BREATH_INTERVAL * 4)
+
+
+def print_state():
+    state = load_state()
+    print(f"screen_link={'1' if state['screen_link'] else '0'}")
+    print(f"enabled={'1' if state.get('enabled', True) else '0'}")
+    print(f"max_brightness={state.get('max_brightness', DEFAULT_MAX_BRIGHTNESS):.3f}")
+    for side in SIDES:
+        s = state[side]
+        print(f"mode_{side}={s['mode']}")
+        print(f"color_{side}={s['color']}")
+        print(f"color_source_{side}={s['color_source']}")
+        print(f"charging_indicator_{side}={'1' if s['charging_indicator'] else '0'}")
+        print(f"duotone_color_a_{side}={s['duotone_color_a']}")
+        print(f"duotone_color_b_{side}={s['duotone_color_b']}")
+        print(f"duotone_orientation_{side}={s['duotone_orientation']}")
+        print(f"chase_{side}={'1' if s['chase'] else '0'}")
+        print(f"compass_{side}={'1' if s['compass'] else '0'}")
+        print(f"seesaw_{side}={'1' if s['seesaw'] else '0'}")
+        print(f"orientation_offset_{side}={s.get('orientation_offset', DEFAULT_ORIENTATION_OFFSET):.6f}")
+        for param in PARAM_SPECS:
+            for m in PARAM_SPECS[param]["modes"]:
+                print(f"{param}_{m}_{side}={get_param(s['settings'], param, m):.3f}")
+    for button in FLASH_BUTTONS:
+        print(f"flash_{button}={state['flash_colors'].get(button, FLASH_DEFAULT_COLOR)}")
+
+
+CALIBRATE_DEADZONE = 0.5     # how far the user must push the stick to register
+CALIBRATE_SETTLE_S = 0.75    # keep the push steady this long before capturing
+CALIBRATE_TIMEOUT_S = 10.0   # give up if the user never pushes far enough
+
+
+def cmd_calibrate_orientation(side):
+    """Ask the user to hold the stick up, then compute and save the orientation
+    offset that makes the LED ring treat that physical direction as up.
+
+    The stick reports its own deflection in (x, y) coordinates.  For a
+    normally-mounted module, pushing the stick up yields angle +pi/2; for a
+    module rotated 180° (the RP6 "nod" variant) the same physical push yields
+    -pi/2.  The difference becomes the orientation offset applied to every
+    LED mode.
+    """
+    codes = (ABS_X, ABS_Y) if side == "l" else (ABS_RX, ABS_RY)
+    reactive = ReactiveInput()
+    print(f"Push and hold the {side.upper()} stick straight up...", flush=True)
+    deadline = time.time() + CALIBRATE_TIMEOUT_S
+    settled_at = None
+    samples = []
+    while time.time() < deadline:
+        reactive.poll()
+        if side == "l":
+            x, y = reactive.lx, -reactive.ly
+        else:
+            x, y = reactive.rx, -reactive.ry
+        magnitude = math.hypot(x, y)
+        if magnitude < CALIBRATE_DEADZONE:
+            settled_at = None
+            samples = []
+            continue
+        if settled_at is None:
+            settled_at = time.time()
+            samples = []
+        samples.append((x, y))
+        if time.time() - settled_at >= CALIBRATE_SETTLE_S:
+            break
+    else:
+        print("Calibration timed out - stick was not pushed far enough.", file=sys.stderr)
+        return 1
+    avg_x = sum(p[0] for p in samples) / len(samples)
+    avg_y = sum(p[1] for p in samples) / len(samples)
+    measured = math.atan2(avg_y, avg_x)
+    # In our coordinate system +pi/2 is "up" on a standard stick module.
+    offset = measured - math.pi / 2
+    # Normalise to [-pi, pi].
+    offset = (offset + math.pi) % (2 * math.pi) - math.pi
+    state = load_state()
+    state[side]["orientation_offset"] = offset
+    save_state(state)
+    _update_zone_rotation(state)
+    apply_current()
+    print(f"orientation_offset_{side}={offset:.6f}")
+    return 0
+
+
+def main(argv):
+    command = argv[1] if len(argv) > 1 else "get"
+    if command == "get":
+        print_state()
+        return 0
+    if command == "set":
+        if len(argv) != 4 or argv[2] not in SIDES or not re.fullmatch(r"[0-9A-Fa-f]{6}", argv[3]):
+            print("usage: stick-led-color set <l|r> <RRGGBB hex>", file=sys.stderr)
+            return 2
+        side, value = argv[2], argv[3].upper()
+        state = load_state()
+        state[side]["mode"] = "static"
+        state[side]["color"] = value
+        # Picking an explicit color is a clear signal to stop tracking
+        # battery level - otherwise it'd save but have no visible effect.
+        state[side]["color_source"] = "static"
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "set-mode":
+        if len(argv) != 4 or argv[2] not in SIDES or argv[3] not in MODES:
+            print(f"usage: stick-led-color set-mode <l|r> <{'|'.join(MODES)}>", file=sys.stderr)
+            return 2
+        side, mode = argv[2], argv[3]
+        state = load_state()
+        state[side]["mode"] = mode
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "set-enabled":
+        if len(argv) != 3 or argv[2] not in ("on", "off"):
+            print("usage: stick-led-color set-enabled <on|off>", file=sys.stderr)
+            return 2
+        state = load_state()
+        state["enabled"] = argv[2] == "on"
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "set-max-brightness":
+        try:
+            value = max(0.0, min(1.0, float(argv[2])))
+        except (IndexError, ValueError):
+            print("usage: stick-led-color set-max-brightness <0.0-1.0>", file=sys.stderr)
+            return 2
+        state = load_state()
+        state["max_brightness"] = value
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "set-screen-link":
+        if len(argv) != 3 or argv[2] not in ("on", "off"):
+            print("usage: stick-led-color set-screen-link <on|off>", file=sys.stderr)
+            return 2
+        state = load_state()
+        state["screen_link"] = argv[2] == "on"
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "set-param":
+        if len(argv) != 6 or argv[2] not in SIDES or argv[3] not in PARAM_SPECS:
+            print(f"usage: stick-led-color set-param <l|r> <{'|'.join(PARAM_SPECS)}> <mode> <value>", file=sys.stderr)
+            return 2
+        side, param, target_mode = argv[2], argv[3], argv[4]
+        key = param_key(param, target_mode)
+        if key is None:
+            print(f"{param} does not apply to mode {target_mode}", file=sys.stderr)
+            return 2
+        try:
+            value = clamp_param(param, float(argv[5]))
+        except ValueError:
+            print("invalid value", file=sys.stderr)
+            return 2
+        state = load_state()
+        state[side]["settings"][f"{param}_{key}"] = value
+        save_state(state)
+        return 0
+    if command == "set-color-source":
+        if len(argv) != 4 or argv[2] not in SIDES or argv[3] not in COLOR_SOURCES:
+            print(f"usage: stick-led-color set-color-source <l|r> <{'|'.join(COLOR_SOURCES)}>", file=sys.stderr)
+            return 2
+        side, source = argv[2], argv[3]
+        state = load_state()
+        state[side]["color_source"] = source
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "set-charging-indicator":
+        if len(argv) != 4 or argv[2] not in SIDES or argv[3] not in ("on", "off"):
+            print("usage: stick-led-color set-charging-indicator <l|r> <on|off>", file=sys.stderr)
+            return 2
+        side = argv[2]
+        state = load_state()
+        state[side]["charging_indicator"] = argv[3] == "on"
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command in ("set-chase", "set-compass", "set-seesaw"):
+        key = command[len("set-"):]
+        if len(argv) != 4 or argv[2] not in SIDES or argv[3] not in ("on", "off"):
+            print(f"usage: stick-led-color {command} <l|r> <on|off>", file=sys.stderr)
+            return 2
+        side = argv[2]
+        state = load_state()
+        state[side][key] = argv[3] == "on"
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "set-flip":
+        if len(argv) != 4 or argv[2] not in SIDES or argv[3] not in ("on", "off"):
+            print("usage: stick-led-color set-flip <l|r> <on|off>", file=sys.stderr)
+            return 2
+        side = argv[2]
+        state = load_state()
+        state[side]["orientation_offset"] = math.pi if argv[3] == "on" else 0.0
+        save_state(state)
+        _update_zone_rotation(state)
+        return 0 if apply_current() else 1
+    if command == "set-orientation-offset":
+        if len(argv) != 4 or argv[2] not in SIDES:
+            print("usage: stick-led-color set-orientation-offset <l|r> <radians>", file=sys.stderr)
+            return 2
+        side = argv[2]
+        try:
+            offset = float(argv[3])
+        except ValueError:
+            print("invalid offset", file=sys.stderr)
+            return 2
+        state = load_state()
+        state[side]["orientation_offset"] = offset
+        save_state(state)
+        _update_zone_rotation(state)
+        return 0 if apply_current() else 1
+    if command == "calibrate-orientation":
+        if len(argv) != 3 or argv[2] not in SIDES:
+            print("usage: stick-led-color calibrate-orientation <l|r>", file=sys.stderr)
+            return 2
+        return cmd_calibrate_orientation(argv[2])
+    if command == "set-flash-color":
+        if len(argv) != 4 or argv[2] not in FLASH_BUTTONS or not re.fullmatch(r"[0-9A-Fa-f]{6}", argv[3]):
+            print(f"usage: stick-led-color set-flash-color <{'|'.join(FLASH_BUTTONS)}> <RRGGBB hex>", file=sys.stderr)
+            return 2
+        state = load_state()
+        state["flash_colors"][argv[2]] = argv[3].upper()
+        save_state(state)
+        return 0
+    if command == "set-duotone-color":
+        if len(argv) != 5 or argv[2] not in SIDES or argv[3] not in ("a", "b") or not re.fullmatch(r"[0-9A-Fa-f]{6}", argv[4]):
+            print("usage: stick-led-color set-duotone-color <l|r> <a|b> <RRGGBB hex>", file=sys.stderr)
+            return 2
+        side, slot, value = argv[2], argv[3], argv[4].upper()
+        state = load_state()
+        state[side]["duotone_color_a" if slot == "a" else "duotone_color_b"] = value
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "set-duotone-orientation":
+        if len(argv) != 4 or argv[2] not in SIDES or argv[3] not in DUOTONE_ORIENTATIONS:
+            print(f"usage: stick-led-color set-duotone-orientation <l|r> <{'|'.join(DUOTONE_ORIENTATIONS)}>", file=sys.stderr)
+            return 2
+        side, orientation = argv[2], argv[3]
+        state = load_state()
+        state[side]["duotone_orientation"] = orientation
+        save_state(state)
+        return 0 if apply_current() else 1
+    if command == "apply":
+        return 0 if apply_current() else 1
+    if command == "daemon":
+        run_daemon()
+        return 0
+    if command == "test-zones":
+        return cmd_test_zones()
+    if command == "test-ambilight":
+        if len(argv) > 2 and not argv[2].isdigit():
+            print("usage: stick-led-color test-ambilight [seconds]", file=sys.stderr)
+            return 2
+        return cmd_test_ambilight(int(argv[2]) if len(argv) > 2 else 20)
+    print(
+        "usage: stick-led-color get|set <l|r> <RRGGBB>|set-mode <l|r> <mode>|set-enabled <on|off>"
+        "|set-max-brightness <0.0-1.0>|set-screen-link <on|off>"
+        "|set-param <l|r> <param> <mode> <value>|set-color-source <l|r> <static|battery|random|shimmer>"
+        "|set-charging-indicator <l|r> <on|off>|set-flash-color <button> <RRGGBB>"
+        "|set-duotone-color <l|r> <a|b> <RRGGBB>|set-duotone-orientation <l|r> <horizontal|vertical|diagonal>"
+        "|set-chase <l|r> <on|off>|set-compass <l|r> <on|off>|set-seesaw <l|r> <on|off>|set-flip <l|r> <on|off>"
+        "|set-orientation-offset <l|r> <radians>|calibrate-orientation <l|r>"
+        "|apply|daemon|test-zones|test-ambilight [seconds]",
+        file=sys.stderr,
+    )
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

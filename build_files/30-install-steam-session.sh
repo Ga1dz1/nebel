@@ -34,7 +34,7 @@ dnf5 -y install --setopt=install_weak_deps=False --enable-repo=terra \
     steam-notif-daemon
 
 # Upstream dropped the USE_ROTATION_SHADER hook (gamescope-session-plus git
-# 20260820) in favour of --force-composition-rotation; armada's own
+# 20260820) in favour of --force-composition-rotation; nebel's own
 # sessions.d/steam builds the gamescope command itself and passes
 # --use-rotation-shader directly, so the main script needs no rotation patch.
 
@@ -88,7 +88,7 @@ cat > /usr/share/fex-emu/Config.json <<'EOF'
 }
 EOF
 
-# Bypass Terra's i686-only steam dependency; armada launches native ARM Steam.
+# Bypass Terra's i686-only steam dependency; nebel launches native ARM Steam.
 mkdir -p /tmp/gss-rpm
 dnf5 download --enable-repo=terra --destdir=/tmp/gss-rpm gamescope-session-steam
 rpm -ivh --nodeps /tmp/gss-rpm/gamescope-session-steam-*.rpm
@@ -102,7 +102,7 @@ rm -f /etc/steamos-oobe-image
 
 PROTON_VER="11.0-20260703-slr"
 PROTON_ARCHIVE_NAME="proton-cachyos-${PROTON_VER}-arm64"
-# Keep this in sync with armada-fixups when changing Proton major/minor lines.
+# Keep this in sync with nebel-fixups when changing Proton major/minor lines.
 PROTON_TOOL_NAME="proton-cachyos-11.0-arm64"
 PROTON_TAR="${PROTON_ARCHIVE_NAME}.tar.xz"
 PROTON_URL="https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-${PROTON_VER}/${PROTON_TAR}"
@@ -139,7 +139,7 @@ python3 -c 'import os,sys; os.setxattr(sys.argv[1],"user.component",b"fex-rootfs
 # Official Valve ARM64 Proton (app 4628740, "Proton 11.0 (ARM64)") - a genuine
 # native-aarch64 build (confirmed via `file` on every wine/wine64 binary: ELF
 # ARM aarch64, not x86_64-under-FEX like the regular "Proton 11.0" app
-# 4628710 Steam also lists). armada's launch-steam already auto-detects and
+# 4628710 Steam also lists). nebel's launch-steam already auto-detects and
 # registers this exact app as a per-game compat tool option the moment its
 # StateFlags shows fully-installed (bit 4) - it only needs the depot content
 # pre-staged here so a fresh install has it from first boot, same as the

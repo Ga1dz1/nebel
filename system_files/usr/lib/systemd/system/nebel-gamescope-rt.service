@@ -1,0 +1,13 @@
+[Unit]
+Description=Promote gamescope's compositor threads to SCHED_RR
+Documentation=man:chrt(1)
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/nebel/nebel-gamescope-rt
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

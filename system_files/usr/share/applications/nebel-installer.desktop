@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Nebel Installer
+Comment=Install Nebel alongside Android on the device's internal storage, or remove an existing install
+Exec=/usr/libexec/nebel/nebel-installer gui
+TryExec=/run/nebel/installable
+Icon=drive-harddisk
+Terminal=false
+Categories=System;Settings;
+Keywords=install;internal;nebel;

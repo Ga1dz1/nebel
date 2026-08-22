@@ -1,0 +1,56 @@
+#!/bin/bash
+set -euo pipefail
+
+device_dir=${NEBEL_DEVICE_DIR:-/usr/lib/nebel/devices}
+
+source "$device_dir/defaults.conf"
+
+model=${NEBEL_MODEL:-}
+if [[ -z "$model" ]]; then
+    model=$(tr -d '\0' </sys/firmware/devicetree/base/model 2>/dev/null || true)
+fi
+case "$model" in
+    "AYANEO Pocket EVO") profile=ayaneo-pocket-evo ;;
+    "AYN Odin 2") profile=ayn-odin-2 ;;
+    "AYN Odin 2 Mini") profile=ayn-odin-2-mini ;;
+    "AYN Odin 2 Portal") profile=ayn-odin-2-portal ;;
+    "AYN Thor") profile=ayn-thor ;;
+    "AYANEO Pocket ACE") profile=ayaneo-pocket-ace ;;
+    "AYANEO Pocket DMG") profile=ayaneo-pocket-dmg ;;
+    "AYANEO Pocket DS") profile=ayaneo-pocket-ds ;;
+    "AYANEO Pocket S 2K") profile=ayaneo-pocket-s2k ;;
+    "AYANEO Pocket S2") profile=ayaneo-pocket-s2 ;;
+    "KONKR Pocket FIT") profile=konkr-pocket-fit ;;
+    "AYN Odin 3") profile=ayn-odin-3 ;;
+    "Retroid Pocket 6") profile=retroid-pocket-6 ;;
+    "Retroid Pocket 6 TOP-DPAD") profile=retroid-pocket-6 ;;
+    "Retroid Pocket Mini V2") profile=retroid-pocket-mini-v2 ;;
+    "Retroid Pocket 5") profile=retroid-pocket-5 ;;
+    "Retroid Pocket Flip2") profile=retroid-pocket-flip2 ;;
+    *) profile= ;;
+esac
+
+if [[ -n "$profile" && -r "$device_dir/$profile.conf" ]]; then
+    source "$device_dir/$profile.conf"
+fi
+
+vars=(
+    NEBEL_DEVICE_ID
+    NEBEL_DEVICE_NAME
+    NEBEL_SOC_CLASS
+    NEBEL_SUSPEND_MODE
+    NEBEL_SUSPEND_WATCHDOG_MINUTES
+    NEBEL_PRIMARY_CONNECTOR
+    NEBEL_PANEL_TYPE
+    NEBEL_PANEL_ORIENTATION
+    NEBEL_PANEL_NATIVE_WIDTH
+    NEBEL_PANEL_NATIVE_HEIGHT
+    NEBEL_PANEL_REFRESH_RATES
+    NEBEL_GAMESCOPE_USE_ROTATION_SHADER
+    NEBEL_GAMESCOPE_FAKE_OUTPUT_MM
+    NEBEL_GAMEPAD_QUIRK
+)
+
+for var in "${vars[@]}"; do
+    printf '%s=%q\n' "$var" "${!var:-}"
+done

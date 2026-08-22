@@ -43,12 +43,12 @@ source_devices:
       handler: event*
     capability_map_id: retroid_mcu
     # Without this, InputPlumber grabs/hides the raw device exclusively, so
-    # armada-stick-led's "reactive" LED mode (a second, separate reader of
+    # nebel-stick-led's "reactive" LED mode (a second, separate reader of
     # this same node) never sees any events. Passthrough leaves the source
     # visible/ungrabbed while InputPlumber still reads and translates it
     # normally for gameplay. This alone made Steam/SDL see the now-visible raw
     # node as a second ("ghost") controller; fixed by dropping the
-    # ID_INPUT_JOYSTICK udev tag on it in 70-armada-retroid-gamepad.rules
+    # ID_INPUT_JOYSTICK udev tag on it in 70-nebel-retroid-gamepad.rules
     # instead of reverting passthrough (InputPlumber doesn't need that tag -
     # see the rule file's comment).
     passthrough: true
@@ -61,10 +61,10 @@ options:
   auto_manage: true
 
 # The target input device(s) to emulate by default. deck-uhid matches
-# armada's own convention for every other device (best native Steam/Proton
+# nebel's own convention for every other device (best native Steam/Proton
 # compatibility); users can switch to ds5/xb360 anytime via Settings >
 # Controller > Emulation, now that "Retroid Layout" is in controller-type's
-# ARMADA_PROFILE_NAMES.
+# NEBEL_PROFILE_NAMES.
 target_devices:
   - deck-uhid
   - keyboard

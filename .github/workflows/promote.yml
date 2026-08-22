@@ -60,7 +60,7 @@ jobs:
           # even if a concurrent build re-points the source tag in between.
           DIGEST=$(skopeo inspect --format '{{.Digest}}' "docker://${REPO}:${{ inputs.source }}")
           # Fail closed: never promote an unsigned build into beta/stable.
-          cosign verify --key system_files/etc/pki/containers/armada.pub "${REPO}@${DIGEST}"
+          cosign verify --key system_files/etc/pki/containers/nebel.pub "${REPO}@${DIGEST}"
           echo "digest=${DIGEST}" >> "${GITHUB_OUTPUT}"
 
       - name: Promote (retag by digest — preserves digest, so the cosign signature carries)

@@ -1,0 +1,15 @@
+[Unit]
+Description=nebel ROCKNIX ABL self-update
+# Must run before anything can reboot us into a new /KERNEL; the ABL is what
+# loads it. Idempotent (sha256 compare), no-op on unsupported SoCs and when
+# the flashed ABL already matches the bundled one.
+After=local-fs.target
+ConditionPathExists=/usr/share/nebel/abl/VERSION
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nebel/nebel-abl-update
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

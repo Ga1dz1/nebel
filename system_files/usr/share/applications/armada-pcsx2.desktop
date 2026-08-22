@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=PCSX2
-Comment=PlayStation 2 emulator (yaps2, an ARM64-native PCSX2 fork)
-Exec=/usr/bin/armada-pcsx2
-Icon=applications-games
-Terminal=false
-Categories=Game;Emulator;

@@ -1,7 +1,0 @@
-[Unit]
-Description=Save kernel devcoredump %i before auto-delete
-
-[Service]
-Type=oneshot
-TimeoutStartSec=120
-ExecStart=/usr/libexec/armada/save-devcoredump %i

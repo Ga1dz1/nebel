@@ -1,0 +1,3 @@
+docker:
+  ghcr.io/ga1dz1/nebel:
+    use-sigstore-attachments: false
