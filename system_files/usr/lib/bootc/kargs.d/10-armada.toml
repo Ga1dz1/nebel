@@ -3,6 +3,10 @@ match-architectures = ["aarch64"]
 kargs = [
     "rootwait",
     "rootflags=noatime,compress=zstd:1",
+    # Retroid's recovery/Android tooling can leave the primary GPT header
+    # invalid (seen live on Mini V2's duo layout); "gpt" makes the kernel
+    # fall back to the backup GPT instead of giving up on the disk.
+    "gpt",
     "console=tty0",
     "rhgb",
     "quiet",
