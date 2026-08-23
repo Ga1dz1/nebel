@@ -1,4 +1,4 @@
-import { Field, ButtonItem, PanelSection } from "@decky/ui";
+import { ButtonItem, PanelSection } from "@decky/ui";
 import type { Dispatch, SetStateAction } from "react";
 import { setControllerType as applyControllerType, setSharedStorageEnabled as applySharedStorageEnabled, setSshEnabled as applySshEnabled } from "../backend";
 import { openCalibration } from "../components/Calibration";
@@ -6,7 +6,7 @@ import { SelectEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { Config } from "../types";
 
-export function Settings({ config, setConfig }: {
+export function System({ config, setConfig }: {
   config: Config;
   setConfig: Dispatch<SetStateAction<Config | null>>;
 }) {
@@ -63,7 +63,6 @@ export function Settings({ config, setConfig }: {
           value={!!config.sharedStorageEnabled}
           onChange={setSharedStorageEnabled}
         />
-        <Field label={t("OS Version")} description={config.osVersion || t("unknown")} />
       </PanelSection>
     </>
   );

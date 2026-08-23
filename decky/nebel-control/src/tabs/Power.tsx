@@ -1,11 +1,10 @@
-import { ButtonItem, Field, PanelSection } from "@decky/ui";
-import { useEffect, useState } from "react";
+import { ButtonItem, PanelSection } from "@decky/ui";
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { getSystemMonitor, setOverlayEnabled } from "../backend";
-import { SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
+import { SelectEdit, SliderEdit } from "../components/widgets";
 import { t } from "../i18n";
 import { clone, titleCase, update } from "../lib/util";
-import type { Config, PowerProfile, SystemMonitor } from "../types";
+import type { Config, PowerProfile } from "../types";
 
 const underclocks = [
   { data: "none", label: t("None") },
@@ -50,40 +49,6 @@ export function Power({ config, setConfig }: { config: Config; setConfig: Dispat
   };
   const underclockLevel = p.cpu_underclock || "";
   const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
-  const [mon, setMon] = useState<SystemMonitor | null>(null);
-  useEffect(() => {
-    let alive = true;
-    const tick = async () => {
-      try {
-        const next = await getSystemMonitor();
-        if (alive) setMon(next);
-      } catch {}
-    };
-    tick();
-    const timer = window.setInterval(tick, 2000);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-    };
-  }, []);
-  const setOverlay = async (enabled: boolean) => {
-    setMon((current) => (current ? { ...current, overlayEnabled: enabled } : current));
-    try {
-      const applied = await setOverlayEnabled(enabled);
-      setMon((current) => (current ? { ...current, overlayEnabled: applied } : current));
-    } catch {
-      setMon((current) => (current ? { ...current, overlayEnabled: !enabled } : current));
-    }
-  };
-  const fmtTemp = (v: number | null | undefined) => (v == null ? "—" : `${v.toFixed(1)} °C`);
-  const batteryLine = (m: SystemMonitor) =>
-    [
-      m.batteryPct != null ? `${m.batteryPct}%` : "—",
-      t(m.batteryStatus || "Unknown"),
-      m.batteryWatts != null ? `${m.batteryWatts} W` : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
   return (
     <>
       <PanelSection title={t("EDIT POWER PROFILE")}>
@@ -101,21 +66,6 @@ export function Power({ config, setConfig }: { config: Config; setConfig: Dispat
         <div className="nebel-reset-row">
           <ButtonItem layout="below" onClick={resetProfile}>{t("Reset to Default")}</ButtonItem>
         </div>
-      </PanelSection>
-      <PanelSection title={t("Monitor")}>
-        {mon && (
-          <>
-            <Field label="CPU / GPU" description={`${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}`} />
-            <Field label={t("Fan")} description={mon.fanPct != null ? `${mon.fanPct}%` : "—"} />
-            <Field label={t("Battery")} description={batteryLine(mon)} />
-          </>
-        )}
-        <ToggleRow
-          label={t("FPS overlay (all games)")}
-          description={t("Shows FPS in every game, incl. non-Steam. Applies after reboot.")}
-          value={!!mon?.overlayEnabled}
-          onChange={setOverlay}
-        />
       </PanelSection>
     </>
   );

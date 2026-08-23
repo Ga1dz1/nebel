@@ -15,14 +15,12 @@ import {
   setStickLedScreenLink as applyStickLedScreenLink,
   setStickLedEnabled as applyStickLedEnabled,
   setStickLedMaxBrightness as applyStickLedMaxBrightness,
-  setStickLedNotify as applyStickLedNotify,
-  setStickLedNotifyColor as applyStickLedNotifyColor,
   setStickLedSeesaw as applyStickLedSeesaw,
   setStickLedFlip as applyStickLedFlip,
 } from "../backend";
 import { ColorPicker } from "../components/ColorPicker";
 import { ModePreview } from "../components/ModePreview";
-import { PresetSwatchGrid, SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
+import { Collapsible, PresetSwatchGrid, SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { Config, StickLedSideState, StickLedState } from "../types";
 
@@ -131,9 +129,7 @@ export function Lighting({ config, setConfig }: {
   config: Config;
   setConfig: Dispatch<SetStateAction<Config | null>>;
 }) {
-  const [colorsExpanded, setColorsExpanded] = useState(false);
   const [customColorExpanded, setCustomColorExpanded] = useState(false);
-  const [flashExpanded, setFlashExpanded] = useState(false);
   const [flashButton, setFlashButton] = useState("south");
   const [selectedSide, setSelectedSide] = useState<"l" | "r">("l");
   const [separate, setSeparate] = useState(false);
@@ -202,28 +198,6 @@ export function Lighting({ config, setConfig }: {
       setConfig((current) => (current ? { ...current, stickLed: applied } : current));
     } catch (error) {
       setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, maxBrightness: previous } } : current));
-    }
-  };
-  const setStickLedNotify = async (value: boolean) => {
-    if (!stickLed) return;
-    const previous = stickLed.notifyEnabled;
-    setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: value } } : current));
-    try {
-      const applied = await applyStickLedNotify(value);
-      setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-    } catch (error) {
-      setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: previous } } : current));
-    }
-  };
-  const setStickLedNotifyColor = async (hex: string) => {
-    if (!stickLed) return;
-    const previous = stickLed.notifyColor;
-    setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: hex } } : current));
-    try {
-      const applied = await applyStickLedNotifyColor(hex);
-      setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-    } catch (error) {
-      setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: previous } } : current));
     }
   };
   const setStickLedColor = async (hex: string) => {
@@ -452,24 +426,6 @@ export function Lighting({ config, setConfig }: {
           onChange={(value) => setStickLedMaxBrightness(value / 100)}
         />
       )}
-      <ToggleRow
-        label={t("Notification flash")}
-        description={t("Stick LEDs flash on notifications")}
-        value={!!stickLed.notifyEnabled}
-        onChange={setStickLedNotify}
-      />
-      {stickLed.notifyEnabled && (
-        <ColorPicker hex={stickLed.notifyColor || "33AAFF"} onChange={setStickLedNotifyColor} />
-      )}
-      <ToggleRow
-        label={t("Configure each stick separately")}
-        description={t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.")}
-        value={separate}
-        onChange={setSeparate}
-      />
-      {separate && (
-        <SelectEdit label={t("Stick")} value={selectedSide} options={SIDE_OPTIONS} onChange={(value) => setSelectedSide(value as "l" | "r")} />
-      )}
       <SelectEdit label={t("Mode")} value={mode} options={MODE_OPTIONS} onChange={setStickLedMode} />
       <ModePreview
         mode={mode}
@@ -519,12 +475,9 @@ export function Lighting({ config, setConfig }: {
             />
           );
         })}
-      {COLOR_VISIBLE_MODES.has(mode) && (
-        <>
-          <ButtonItem layout="below" onClick={() => setColorsExpanded((expanded) => !expanded)}>
-            {colorsExpanded ? t("Hide colors") + " ▲" : t("Colors") + " ▼"}
-          </ButtonItem>
-          {colorsExpanded && (
+      {(COLOR_VISIBLE_MODES.has(mode) || mode === "duotone") && (
+        <Collapsible label={t("Colors")}>
+          {COLOR_VISIBLE_MODES.has(mode) && (
             <>
               <SelectEdit
                 label={t("Color Source")}
@@ -553,55 +506,61 @@ export function Lighting({ config, setConfig }: {
               )}
             </>
           )}
-        </>
-      )}
-      {mode === "reactive" && (
-        <>
-          <ButtonItem layout="below" onClick={() => setFlashExpanded((expanded) => !expanded)}>
-            {flashExpanded ? t("Hide flash colors") + " ▲" : t("Show flash colors") + " ▼"}
-          </ButtonItem>
-          {flashExpanded && (
+          {mode === "duotone" && (
             <>
-              <SelectEdit label={t("Button")} value={flashButton} options={FLASH_BUTTON_OPTIONS} onChange={setFlashButton} />
-              <PresetSwatchGrid
-                colors={PRESET_COLORS}
-                selected={stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR}
-                onSelect={setStickLedFlashColor}
+              <SelectEdit
+                label={t("Split")}
+                value={sideState.duotoneOrientation || "horizontal"}
+                options={DUOTONE_ORIENTATION_OPTIONS}
+                onChange={setStickLedDuotoneOrientation}
               />
               <ColorPicker
-                hex={stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR}
-                onChange={setStickLedFlashColor}
+                label={t("Color A")}
+                hex={sideState.duotoneColorA}
+                onChange={(hex) => setStickLedDuotoneColor("a", hex)}
+              />
+              <ColorPicker
+                label={t("Color B")}
+                hex={sideState.duotoneColorB}
+                onChange={(hex) => setStickLedDuotoneColor("b", hex)}
               />
             </>
           )}
-        </>
+        </Collapsible>
       )}
-      {mode === "duotone" && (
-        <>
-          <SelectEdit
-            label={t("Split")}
-            value={sideState.duotoneOrientation || "horizontal"}
-            options={DUOTONE_ORIENTATION_OPTIONS}
-            onChange={setStickLedDuotoneOrientation}
-          />
-          <ColorPicker
-            label={t("Color A")}
-            hex={sideState.duotoneColorA}
-            onChange={(hex) => setStickLedDuotoneColor("a", hex)}
-          />
-          <ColorPicker
-            label={t("Color B")}
-            hex={sideState.duotoneColorB}
-            onChange={(hex) => setStickLedDuotoneColor("b", hex)}
-          />
-        </>
-      )}
-      <ToggleRow
-        label={t("Flip stick ring")}
-        description={t("Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)")}
-        value={!!sideState.flip}
-        onChange={setStickLedFlip}
-      />
+      <Collapsible label={t("Configure each stick separately")}>
+        <ToggleRow
+          label={t("Configure each stick separately")}
+          description={t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.")}
+          value={separate}
+          onChange={setSeparate}
+        />
+        {separate && (
+          <SelectEdit label={t("Stick")} value={selectedSide} options={SIDE_OPTIONS} onChange={(value) => setSelectedSide(value as "l" | "r")} />
+        )}
+      </Collapsible>
+      <Collapsible label={t("ADVANCED")}>
+        {mode === "reactive" && (
+          <>
+            <SelectEdit label={t("Button")} value={flashButton} options={FLASH_BUTTON_OPTIONS} onChange={setFlashButton} />
+            <PresetSwatchGrid
+              colors={PRESET_COLORS}
+              selected={stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR}
+              onSelect={setStickLedFlashColor}
+            />
+            <ColorPicker
+              hex={stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR}
+              onChange={setStickLedFlashColor}
+            />
+          </>
+        )}
+        <ToggleRow
+          label={t("Flip stick ring")}
+          description={t("Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)")}
+          value={!!sideState.flip}
+          onChange={setStickLedFlip}
+        />
+      </Collapsible>
         </>
       )}
     </PanelSection>

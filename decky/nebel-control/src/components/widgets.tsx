@@ -1,4 +1,5 @@
-import { Dropdown, DropdownItemInternal, Field, Focusable, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { ButtonItem, Dropdown, DropdownItemInternal, Field, Focusable, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import type { DropdownChoice } from "../types";
 
@@ -25,6 +26,23 @@ export function SelectEdit({ label, value, options, onChange, labelBelow, disabl
         <DropdownItemInternal disabled={disabled} childrenContainerWidth="max" label={label} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
       )}
     </PanelSectionRow>
+  );
+}
+
+// Progressive disclosure: a ButtonItem header with a chevron that shows/hides
+// its children. Closed by default so rarely-needed options stay out of the way.
+export function Collapsible({ label, children }: {
+  label: ReactNode;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <ButtonItem layout="below" onClick={() => setOpen((value) => !value)}>
+        {open ? "▾ " : "▸ "}{label}
+      </ButtonItem>
+      {open ? children : null}
+    </>
   );
 }
 

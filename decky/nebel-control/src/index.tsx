@@ -1,6 +1,6 @@
-import { definePlugin } from "@decky/api";
+import { definePlugin, routerHook } from "@decky/api";
 import { getCompatApplied, getConfig, getInstalledGames, saveCompatApplied } from "./backend";
-import { Content } from "./Content";
+import { Content, FullPage } from "./Content";
 import {
   configureCompatPolicy,
   handledGameAppids,
@@ -61,12 +61,14 @@ export default definePlugin(() => {
     }, 3000);
   };
   bootstrap();
+  routerHook.addRoute("/nebel-control", FullPage);
   return {
     name: "Nebel Control",
     content: <Content />,
     onDismount() {
       cancelled = true;
       unregisterDownloadWatcher();
+      routerHook.removeRoute("/nebel-control");
     },
     icon: (
       <svg

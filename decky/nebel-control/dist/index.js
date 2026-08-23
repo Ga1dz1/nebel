@@ -16,6 +16,7 @@ if (api._version != API_VERSION) {
     console.warn(`[@decky/api] Requested API version ${API_VERSION} but the running loader only supports version ${api._version}. Some features may not work.`);
 }
 const call = api.call;
+const routerHook = api.routerHook;
 const definePlugin = (fn) => {
     return (...args) => {
         return fn(...args);
@@ -204,7 +205,6 @@ const uk = {
     "Seesaw": "Гойдалка",
     "Breathe the two color groups against each other instead of a static split": "Дві групи кольорів «дихають» назустріч одна одній замість статичного поділу",
     "Colors": "Кольори",
-    "Hide colors": "Сховати кольори",
     "Color Source": "Джерело кольору",
     "Custom color": "Власний колір",
     "Battery level": "Рівень заряду",
@@ -214,8 +214,6 @@ const uk = {
     "Spin a blue dot around the stick while charging": "Обертати синю точку навколо стіка під час заряджання",
     "Custom color (advanced)": "Власний колір (розширено)",
     "Hide custom color": "Сховати власний колір",
-    "Show flash colors": "Показати кольори спалаху",
-    "Hide flash colors": "Сховати кольори спалаху",
     "Button": "Кнопка",
     "Split": "Поділ",
     "Horizontal": "Горизонтальний",
@@ -282,13 +280,15 @@ const uk = {
     "Save Calibration": "Зберегти калібрування",
     "Start Calibration": "Почати калібрування",
     "Reset to Defaults": "Скинути до типових",
-    "Library": "Бібліотека",
-    "TabGame": "Гра",
+    "TabHome": "Головна",
+    "TabGames": "Ігри",
     "TabPower": "Живлення",
     "TabDisplay": "Екран",
     "TabLighting": "Світло",
     "TabSync": "Синк",
-    "TabMore": "Ще",
+    "TabSystem": "Система",
+    "Quick toggles": "Швидкі перемикачі",
+    "Open full screen": "Відкрити на весь екран",
     "Add non-Steam game": "Додати сторонню гру",
     "Select the game's executable": "Виберіть виконуваний файл гри",
     "Added to Steam library": "Додано до бібліотеки Steam",
@@ -405,7 +405,6 @@ const ru = {
     "Seesaw": "Качели",
     "Breathe the two color groups against each other instead of a static split": "Две группы цветов «дышат» навстречу друг другу вместо статичного разделения",
     "Colors": "Цвета",
-    "Hide colors": "Скрыть цвета",
     "Color Source": "Источник цвета",
     "Custom color": "Свой цвет",
     "Battery level": "Уровень заряда",
@@ -415,8 +414,6 @@ const ru = {
     "Spin a blue dot around the stick while charging": "Вращать синюю точку вокруг стика во время зарядки",
     "Custom color (advanced)": "Свой цвет (расширенно)",
     "Hide custom color": "Скрыть свой цвет",
-    "Show flash colors": "Показать цвета вспышки",
-    "Hide flash colors": "Скрыть цвета вспышки",
     "Button": "Кнопка",
     "Split": "Разделение",
     "Horizontal": "Горизонтально",
@@ -483,13 +480,15 @@ const ru = {
     "Save Calibration": "Сохранить калибровку",
     "Start Calibration": "Начать калибровку",
     "Reset to Defaults": "Сбросить к настройкам по умолчанию",
-    "Library": "Библиотека",
-    "TabGame": "Игра",
+    "TabHome": "Главная",
+    "TabGames": "Игры",
     "TabPower": "Питание",
     "TabDisplay": "Экран",
     "TabLighting": "Свет",
     "TabSync": "Синк",
-    "TabMore": "Ещё",
+    "TabSystem": "Система",
+    "Quick toggles": "Быстрые переключатели",
+    "Open full screen": "Открыть на весь экран",
     "Add non-Steam game": "Добавить стороннюю игру",
     "Select the game's executable": "Выберите исполняемый файл игры",
     "Added to Steam library": "Добавлено в библиотеку Steam",
@@ -606,7 +605,6 @@ const es = {
     "Seesaw": "Subibaja",
     "Breathe the two color groups against each other instead of a static split": "Los dos grupos de color «respiran» uno contra otro en lugar de una división estática",
     "Colors": "Colores",
-    "Hide colors": "Ocultar colores",
     "Color Source": "Fuente de color",
     "Custom color": "Color personalizado",
     "Battery level": "Nivel de batería",
@@ -616,8 +614,6 @@ const es = {
     "Spin a blue dot around the stick while charging": "Girar un punto azul alrededor del stick durante la carga",
     "Custom color (advanced)": "Color personalizado (avanzado)",
     "Hide custom color": "Ocultar color personalizado",
-    "Show flash colors": "Mostrar colores de destello",
-    "Hide flash colors": "Ocultar colores de destello",
     "Button": "Botón",
     "Split": "División",
     "Horizontal": "Horizontal",
@@ -684,13 +680,15 @@ const es = {
     "Save Calibration": "Guardar calibración",
     "Start Calibration": "Iniciar calibración",
     "Reset to Defaults": "Restablecer valores predeterminados",
-    "Library": "Biblioteca",
-    "TabGame": "Juego",
+    "TabHome": "Inicio",
+    "TabGames": "Juegos",
     "TabPower": "Energía",
     "TabDisplay": "Pantalla",
     "TabLighting": "Luces",
     "TabSync": "Sync",
-    "TabMore": "Más",
+    "TabSystem": "Sistema",
+    "Quick toggles": "Interruptores rápidos",
+    "Open full screen": "Abrir a pantalla completa",
     "Add non-Steam game": "Añadir juego externo",
     "Select the game's executable": "Selecciona el ejecutable del juego",
     "Added to Steam library": "Añadido a la biblioteca de Steam",
@@ -807,7 +805,6 @@ const fr = {
     "Seesaw": "Bascule",
     "Breathe the two color groups against each other instead of a static split": "Les deux groupes de couleurs « respirent » l'un contre l'autre au lieu d'une répartition statique",
     "Colors": "Couleurs",
-    "Hide colors": "Masquer les couleurs",
     "Color Source": "Source de couleur",
     "Custom color": "Couleur personnalisée",
     "Battery level": "Niveau de batterie",
@@ -817,8 +814,6 @@ const fr = {
     "Spin a blue dot around the stick while charging": "Faire tourner un point bleu autour du stick pendant la charge",
     "Custom color (advanced)": "Couleur personnalisée (avancé)",
     "Hide custom color": "Masquer la couleur personnalisée",
-    "Show flash colors": "Afficher les couleurs de flash",
-    "Hide flash colors": "Masquer les couleurs de flash",
     "Button": "Bouton",
     "Split": "Répartition",
     "Horizontal": "Horizontal",
@@ -885,13 +880,15 @@ const fr = {
     "Save Calibration": "Enregistrer l'étalonnage",
     "Start Calibration": "Démarrer l'étalonnage",
     "Reset to Defaults": "Réinitialiser par défaut",
-    "Library": "Bibliothèque",
-    "TabGame": "Jeu",
+    "TabHome": "Accueil",
+    "TabGames": "Jeux",
     "TabPower": "Énergie",
     "TabDisplay": "Écran",
     "TabLighting": "Lumière",
     "TabSync": "Sync",
-    "TabMore": "Plus",
+    "TabSystem": "Système",
+    "Quick toggles": "Raccourcis rapides",
+    "Open full screen": "Ouvrir en plein écran",
     "Add non-Steam game": "Ajouter un jeu externe",
     "Select the game's executable": "Sélectionnez l'exécutable du jeu",
     "Added to Steam library": "Ajouté à la bibliothèque Steam",
@@ -937,13 +934,13 @@ function Icon({ path }) {
     return (SP_JSX.jsx("svg", { style: { display: "block" }, width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: path }));
 }
 const tabIcons = {
-    Compatibility: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("line", { x1: "6", x2: "10", y1: "11", y2: "11" }), SP_JSX.jsx("line", { x1: "8", x2: "8", y1: "9", y2: "13" }), SP_JSX.jsx("line", { x1: "15", x2: "15.01", y1: "12", y2: "12" }), SP_JSX.jsx("line", { x1: "18", x2: "18.01", y1: "10", y2: "10" }), SP_JSX.jsx("path", { d: "M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" })] }) })),
+    Home: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" }), SP_JSX.jsx("polyline", { points: "9 22 9 12 15 12 15 22" })] }) })),
+    Games: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("line", { x1: "6", x2: "10", y1: "11", y2: "11" }), SP_JSX.jsx("line", { x1: "8", x2: "8", y1: "9", y2: "13" }), SP_JSX.jsx("line", { x1: "15", x2: "15.01", y1: "12", y2: "12" }), SP_JSX.jsx("line", { x1: "18", x2: "18.01", y1: "10", y2: "10" }), SP_JSX.jsx("path", { d: "M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" })] }) })),
     Power: (SP_JSX.jsx(Icon, { path: SP_JSX.jsx(SP_JSX.Fragment, { children: SP_JSX.jsx("path", { d: "M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" }) }) })),
     Display: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("rect", { width: "20", height: "14", x: "2", y: "3", rx: "2" }), SP_JSX.jsx("line", { x1: "8", x2: "16", y1: "21", y2: "21" }), SP_JSX.jsx("line", { x1: "12", x2: "12", y1: "17", y2: "21" })] }) })),
     Lighting: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5" }), SP_JSX.jsx("path", { d: "M9 18h6" }), SP_JSX.jsx("path", { d: "M10 22h4" })] }) })),
     Sync: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M21 12a9 9 0 0 1-15.5 6.2L3 16" }), SP_JSX.jsx("path", { d: "M3 12a9 9 0 0 1 15.5-6.2L21 8" }), SP_JSX.jsx("path", { d: "M3 11v5h5" }), SP_JSX.jsx("path", { d: "M21 13V8h-5" })] }) })),
-    Library: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" }), SP_JSX.jsx("path", { d: "M12 7v6" }), SP_JSX.jsx("path", { d: "M9 10h6" })] }) })),
-    Advanced: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" }), SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "3" })] }) })),
+    System: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" }), SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "3" })] }) })),
 };
 
 const apps = () => window.SteamClient?.Apps;
@@ -1515,30 +1512,30 @@ const styles = `
       .nebel-control-tabs .nebel-control-tab-content {
         padding-bottom: 24px;
       }
-      .nebel-control-tabs .nebel-slider-field {
+      .nebel-control-root .nebel-slider-field {
         width: 100%;
         max-width: none;
         overflow: hidden;
       }
-      .nebel-control-tabs .nebel-slider-field * {
+      .nebel-control-root .nebel-slider-field * {
         min-width: 0 !important;
         max-width: 100% !important;
       }
-      .nebel-control-tabs .nebel-reset-row {
+      .nebel-control-root .nebel-reset-row {
         padding: 0 14px 8px;
       }
-      .nebel-control-tabs .nebel-color-preview-row {
+      .nebel-control-root .nebel-color-preview-row {
         display: flex;
         align-items: center;
         gap: 10px;
         width: 100%;
         padding: 4px 0;
       }
-      .nebel-control-tabs .nebel-color-preview-label {
+      .nebel-control-root .nebel-color-preview-label {
         flex: 1 1 auto;
         opacity: 0.87;
       }
-      .nebel-control-tabs .nebel-color-swatch {
+      .nebel-control-root .nebel-color-swatch {
         flex: 0 0 auto;
         width: 32px;
         height: 32px;
@@ -1546,23 +1543,23 @@ const styles = `
         border: 1px solid rgba(255, 255, 255, 0.25);
         box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
       }
-      .nebel-control-tabs .nebel-color-preview-hex {
+      .nebel-control-root .nebel-color-preview-hex {
         flex: 0 0 auto;
         font-variant-numeric: tabular-nums;
         opacity: 0.62;
         font-size: 12px;
       }
-      .nebel-control-tabs .nebel-mode-preview-wrap {
+      .nebel-control-root .nebel-mode-preview-wrap {
         display: flex;
         justify-content: center;
         width: 100%;
         padding: 4px 0 8px;
       }
-      .nebel-control-tabs .nebel-mode-preview-canvas {
+      .nebel-control-root .nebel-mode-preview-canvas {
         background: rgba(0, 0, 0, 0.25);
         border-radius: 8px;
       }
-      .nebel-control-tabs .nebel-preset-swatch {
+      .nebel-control-root .nebel-preset-swatch {
         width: 34px;
         height: 34px;
         border-radius: 6px;
@@ -1570,30 +1567,30 @@ const styles = `
         box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
         cursor: pointer;
       }
-      .nebel-control-tabs .nebel-color-picker {
+      .nebel-control-root .nebel-color-picker {
         display: flex;
         flex-direction: column;
         gap: 8px;
         align-items: center;
         width: 100%;
       }
-      .nebel-control-tabs .nebel-color-sv-wrap,
-      .nebel-control-tabs .nebel-color-hue-wrap {
+      .nebel-control-root .nebel-color-sv-wrap,
+      .nebel-control-root .nebel-color-hue-wrap {
         position: relative;
       }
-      .nebel-control-tabs .nebel-color-sv-canvas {
+      .nebel-control-root .nebel-color-sv-canvas {
         display: block;
         border-radius: 6px;
         touch-action: none;
         cursor: crosshair;
       }
-      .nebel-control-tabs .nebel-color-hue-canvas {
+      .nebel-control-root .nebel-color-hue-canvas {
         display: block;
         border-radius: 4px;
         touch-action: none;
         cursor: ew-resize;
       }
-      .nebel-control-tabs .nebel-color-cursor {
+      .nebel-control-root .nebel-color-cursor {
         position: absolute;
         width: 12px;
         height: 12px;
@@ -1604,7 +1601,7 @@ const styles = `
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.5);
         pointer-events: none;
       }
-      .nebel-control-tabs .nebel-color-hue-cursor {
+      .nebel-control-root .nebel-color-hue-cursor {
         position: absolute;
         top: -2px;
         width: 4px;
@@ -1615,7 +1612,7 @@ const styles = `
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
         pointer-events: none;
       }
-      .nebel-control-tabs .nebel-compat-note {
+      .nebel-control-root .nebel-compat-note {
         box-sizing: border-box;
         width: 100%;
         padding: 8px 16px 8px;
@@ -1626,11 +1623,63 @@ const styles = `
         justify-content: flex-start;
         align-self: stretch;
       }
+      .nebel-control-page {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        background: #0D141C;
+        color: #dbe2e6;
+        overflow: hidden;
+      }
+      .nc-page-sidebar {
+        flex: 0 0 216px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 32px 12px;
+        overflow-y: auto;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .nc-page-tab {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 14px;
+        opacity: 0.7;
+        cursor: pointer;
+      }
+      .nc-page-tab svg {
+        flex: 0 0 auto;
+        width: 20px;
+        height: 20px;
+      }
+      .nc-page-tab.nc-active {
+        background: rgba(255, 255, 255, 0.12);
+        opacity: 1;
+      }
+      .nc-page-content {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 24px 32px 48px;
+      }
+      .nc-page-content-inner {
+        width: 100%;
+        max-width: 680px;
+        margin: 0 auto;
+      }
     `;
 
 function SelectEdit({ label, value, options, onChange, labelBelow, disabled }) {
     const rgOptions = options.map((option) => (typeof option === "string" ? { data: option, label: option } : option));
     return (SP_JSX.jsx(DFL.PanelSectionRow, { children: label === undefined ? (SP_JSX.jsx(DFL.Dropdown, { disabled: disabled, selectedOption: value, rgOptions: rgOptions, onChange: (option) => onChange(option.data) })) : labelBelow ? (SP_JSX.jsx(DFL.Field, { label: label, childrenLayout: "below", childrenContainerWidth: "max", disabled: disabled, children: SP_JSX.jsx(DFL.Dropdown, { disabled: disabled, selectedOption: value, rgOptions: rgOptions, onChange: (option) => onChange(option.data) }) })) : (SP_JSX.jsx(DFL.DropdownItemInternal, { disabled: disabled, childrenContainerWidth: "max", label: label, selectedOption: value, rgOptions: rgOptions, onChange: (option) => onChange(option.data) })) }));
+}
+// Progressive disclosure: a ButtonItem header with a chevron that shows/hides
+// its children. Closed by default so rarely-needed options stay out of the way.
+function Collapsible({ label, children }) {
+    const [open, setOpen] = SP_REACT.useState(false);
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => setOpen((value) => !value), children: [open ? "▾ " : "▸ ", label] }), open ? children : null] }));
 }
 function ToggleRow({ label, value, onChange, disabled, description }) {
     return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: !!value, disabled: disabled, onChange: onChange }) }));
@@ -1649,6 +1698,90 @@ function PresetSwatchGrid({ colors, selected, onSelect }) {
 function SliderEdit({ label, value, min, max, step, onChange, format }) {
     const numeric = Number(value);
     return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "nebel-slider-field", children: SP_JSX.jsx(DFL.SliderField, { label: label, value: Number.isFinite(numeric) ? numeric : min, min: min, max: max, step: step, showValue: true, onChange: (next) => onChange(format ? format(next) : next) }) }) }));
+}
+
+// gamescope only ever drives one embedded output at a time (--prefer-output
+// picks the first available from a priority list at startup, there's no
+// live multi-monitor/hotplug re-pick) - so "primary display" here means
+// which single connector the whole game-mode session targets, not an
+// extend/mirror choice.
+const INTERNAL = "__internal__";
+function Display() {
+    const [state, setState] = SP_REACT.useState(null);
+    const [loadMessage, setLoadMessage] = SP_REACT.useState(t("Loading"));
+    const [errorMessage, setErrorMessage] = SP_REACT.useState("");
+    const [saving, setSaving] = SP_REACT.useState(false);
+    const [restarting, setRestarting] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        getDisplayState()
+            .then(setState)
+            .catch((error) => setLoadMessage(String(error)));
+    }, []);
+    if (!state) {
+        return (SP_JSX.jsx(DFL.PanelSection, { title: t("DISPLAY"), children: SP_JSX.jsx(DFL.Field, { label: loadMessage }) }));
+    }
+    const externals = state.connectors.filter((c) => !c.internal);
+    const selectedConnector = state.useExternal ? state.connector : INTERNAL;
+    const primaryOptions = [
+        { data: INTERNAL, label: t("Internal Screen") },
+        ...externals.map((c) => ({
+            data: c.connector,
+            label: !c.connected ? t("{connector} (disconnected)", { connector: c.connector }) : c.connector,
+        })),
+    ];
+    const activeExternal = externals.find((c) => c.connector === state.connector);
+    // A disconnected display has nothing meaningful to configure right now -
+    // its remembered settings come back when it's plugged in again.
+    const activeDisconnected = state.useExternal && (!activeExternal || !activeExternal.connected);
+    const currentMode = `${state.width}x${state.height}`;
+    const modeChoices = activeExternal?.modes.length ? activeExternal.modes : [currentMode];
+    const modeOptions = modeChoices.map((mode) => ({ data: mode, label: mode }));
+    const persist = (next) => {
+        const merged = { ...state, ...next };
+        setSaving(true);
+        setErrorMessage("");
+        setDisplayConfig(merged.useExternal, merged.connector, merged.width, merged.height, merged.orientation)
+            .then(setState)
+            .catch((error) => setErrorMessage(String(error)))
+            .finally(() => setSaving(false));
+    };
+    const selectPrimary = (connector) => {
+        if (connector === INTERNAL) {
+            persist({ useExternal: false });
+            return;
+        }
+        const target = externals.find((c) => c.connector === connector);
+        const previous = state.remembered[connector];
+        const [w, h] = (target?.modes[0] || "1920x1080").split("x").map(Number);
+        persist({
+            useExternal: true,
+            connector,
+            width: previous?.width || w || 1920,
+            height: previous?.height || h || 1080,
+            // gamescope has no way to rotate a non-internal output (there's no
+            // Rotation control here for that reason) - orientation is meaningless
+            // for an external display, always "normal".
+            orientation: "normal",
+        });
+    };
+    const selectMode = (mode) => {
+        const [w, h] = mode.split("x").map(Number);
+        if (!w || !h)
+            return;
+        persist({ width: w, height: h });
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("EXTERNAL DISPLAY"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(DFL.Field, { label: t("Rotation isn't available for an external display (gamescope only rotates the internal screen).") })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
+                        setRestarting(true);
+                        setErrorMessage("");
+                        // A successful restart tears down this very session (and Decky
+                        // with it), so there's nothing to update on success - only a
+                        // failure ever reaches this component again, and the button
+                        // must re-enable then or a failed restart looks identical to a
+                        // silently-still-in-progress one with no way to retry.
+                        restartGamescopeSession()
+                            .catch((error) => setErrorMessage(String(error)))
+                            .finally(() => setRestarting(false));
+                    }, children: t("Apply & Restart Game Mode") }) })] }));
 }
 
 const GLOBAL_RESOLUTION_KEY = "gamescope_game_resolution_global";
@@ -1720,7 +1853,7 @@ function ConfirmResetAllModal({ closeModal, onConfirm }) {
     };
     return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: closeModal, children: [SP_JSX.jsx(DFL.DialogBody, { children: t("This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.") }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx(DFL.DialogButton, { onClick: confirm, children: t("Reset All Games") }), SP_JSX.jsx(DFL.DialogButton, { onClick: closeModal, children: t("Cancel") })] })] }));
 }
-function Compatibility({ config, setConfig }) {
+function Games({ config, setConfig }) {
     const [resolution, setResolution] = SP_REACT.useState("Default");
     const [defaultResolution, setDefaultResolution] = SP_REACT.useState(getGlobalResolution());
     const [resolutionMessage, setResolutionMessage] = SP_REACT.useState("");
@@ -2037,100 +2170,15 @@ function Compatibility({ config, setConfig }) {
                                     patchSettings({ autoApplyCompat: enabled });
                                 } }), SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) })] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                         ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
-                        : null] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
-                        ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
-                        : null] }), !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] }));
+                        : null] }), SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
+                            ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
+                            : null] }) }), !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) })), SP_JSX.jsx(AddGameSection, {})] }));
 }
-
-// gamescope only ever drives one embedded output at a time (--prefer-output
-// picks the first available from a priority list at startup, there's no
-// live multi-monitor/hotplug re-pick) - so "primary display" here means
-// which single connector the whole game-mode session targets, not an
-// extend/mirror choice.
-const INTERNAL = "__internal__";
-function Display() {
-    const [state, setState] = SP_REACT.useState(null);
-    const [loadMessage, setLoadMessage] = SP_REACT.useState(t("Loading"));
-    const [errorMessage, setErrorMessage] = SP_REACT.useState("");
-    const [saving, setSaving] = SP_REACT.useState(false);
-    const [restarting, setRestarting] = SP_REACT.useState(false);
-    SP_REACT.useEffect(() => {
-        getDisplayState()
-            .then(setState)
-            .catch((error) => setLoadMessage(String(error)));
-    }, []);
-    if (!state) {
-        return (SP_JSX.jsx(DFL.PanelSection, { title: t("DISPLAY"), children: SP_JSX.jsx(DFL.Field, { label: loadMessage }) }));
-    }
-    const externals = state.connectors.filter((c) => !c.internal);
-    const selectedConnector = state.useExternal ? state.connector : INTERNAL;
-    const primaryOptions = [
-        { data: INTERNAL, label: t("Internal Screen") },
-        ...externals.map((c) => ({
-            data: c.connector,
-            label: !c.connected ? t("{connector} (disconnected)", { connector: c.connector }) : c.connector,
-        })),
-    ];
-    const activeExternal = externals.find((c) => c.connector === state.connector);
-    // A disconnected display has nothing meaningful to configure right now -
-    // its remembered settings come back when it's plugged in again.
-    const activeDisconnected = state.useExternal && (!activeExternal || !activeExternal.connected);
-    const currentMode = `${state.width}x${state.height}`;
-    const modeChoices = activeExternal?.modes.length ? activeExternal.modes : [currentMode];
-    const modeOptions = modeChoices.map((mode) => ({ data: mode, label: mode }));
-    const persist = (next) => {
-        const merged = { ...state, ...next };
-        setSaving(true);
-        setErrorMessage("");
-        setDisplayConfig(merged.useExternal, merged.connector, merged.width, merged.height, merged.orientation)
-            .then(setState)
-            .catch((error) => setErrorMessage(String(error)))
-            .finally(() => setSaving(false));
-    };
-    const selectPrimary = (connector) => {
-        if (connector === INTERNAL) {
-            persist({ useExternal: false });
-            return;
-        }
-        const target = externals.find((c) => c.connector === connector);
-        const previous = state.remembered[connector];
-        const [w, h] = (target?.modes[0] || "1920x1080").split("x").map(Number);
-        persist({
-            useExternal: true,
-            connector,
-            width: previous?.width || w || 1920,
-            height: previous?.height || h || 1080,
-            // gamescope has no way to rotate a non-internal output (there's no
-            // Rotation control here for that reason) - orientation is meaningless
-            // for an external display, always "normal".
-            orientation: "normal",
-        });
-    };
-    const selectMode = (mode) => {
-        const [w, h] = mode.split("x").map(Number);
-        if (!w || !h)
-            return;
-        persist({ width: w, height: h });
-    };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("EXTERNAL DISPLAY"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(DFL.Field, { label: t("Rotation isn't available for an external display (gamescope only rotates the internal screen).") })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
-                        setRestarting(true);
-                        setErrorMessage("");
-                        // A successful restart tears down this very session (and Decky
-                        // with it), so there's nothing to update on success - only a
-                        // failure ever reaches this component again, and the button
-                        // must re-enable then or a failed restart looks identical to a
-                        // silently-still-in-progress one with no way to retry.
-                        restartGamescopeSession()
-                            .catch((error) => setErrorMessage(String(error)))
-                            .finally(() => setRestarting(false));
-                    }, children: t("Apply & Restart Game Mode") }) })] }));
-}
-
 // The stock "Browse..." button in Steam's Add Non-Steam Game dialog is broken
 // in the ARM64 client (OpenFileDialog fails before reaching the portal), and
 // native dialogs never appear in the gamescope session — so the picker lives
 // right here and the pick is registered through Steam's AddShortcut API.
-function AddGame() {
+function AddGameSection() {
     const [picker, setPicker] = SP_REACT.useState(null);
     const [addResult, setAddResult] = SP_REACT.useState("");
     const navigate = async (path) => {
@@ -2159,7 +2207,7 @@ function AddGame() {
     if (picker) {
         return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Select the game's executable"), children: [SP_JSX.jsx(DFL.Field, { label: picker.path }), (picker.shortcuts || []).map((s) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(s.path), children: [shortcutLabel(s), "/"] }, `s:${s.path}`))), picker.parent !== null && (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(picker.parent || "/"), children: ".." })), picker.dirs.map((dir) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(`${picker.path}/${dir}`), children: [dir, "/"] }, `d:${dir}`))), picker.files.map((file) => (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => pick(`${picker.path}/${file}`), children: file }, `f:${file}`))), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setPicker(null), children: t("Cancel") })] }));
     }
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Library"), children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(""), children: t("Add non-Steam game") }), addResult && SP_JSX.jsx(DFL.Field, { label: addResult })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Add non-Steam game"), children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(""), children: t("Select the game's executable") }), addResult && SP_JSX.jsx(DFL.Field, { label: addResult })] }));
 }
 
 // RRGGBB hex <-> RGB <-> HSB conversions shared by every color picker in
@@ -2311,6 +2359,76 @@ function ColorPicker({ label, hex, onChange }) {
     const svCursorY = clamp((1 - v / 100) * SV_HEIGHT, CURSOR_RADIUS, SV_HEIGHT - CURSOR_RADIUS);
     const hueCursorX = clamp((h / 360) * SV_WIDTH, 0, SV_WIDTH);
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-preview-row", children: [label !== undefined && SP_JSX.jsx("span", { className: "nebel-color-preview-label", children: label }), SP_JSX.jsx("div", { className: "nebel-color-swatch", style: { backgroundColor: `#${hex}` } }), SP_JSX.jsxs("span", { className: "nebel-color-preview-hex", children: ["#", hex] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-picker", children: [SP_JSX.jsxs("div", { className: "nebel-color-sv-wrap", style: { width: SV_WIDTH, height: SV_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: svCanvasRef, width: SV_WIDTH, height: SV_HEIGHT, className: "nebel-color-sv-canvas", onPointerDown: handleSvPointer, onPointerMove: (event) => event.buttons === 1 && handleSvPointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-cursor", style: { left: svCursorX, top: svCursorY, backgroundColor: `#${hex}` } })] }), SP_JSX.jsxs("div", { className: "nebel-color-hue-wrap", style: { width: SV_WIDTH, height: HUE_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: hueCanvasRef, width: SV_WIDTH, height: HUE_HEIGHT, className: "nebel-color-hue-canvas", onPointerDown: handleHuePointer, onPointerMove: (event) => event.buttons === 1 && handleHuePointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-hue-cursor", style: { left: hueCursorX } })] })] }) })] }));
+}
+
+function Home({ config, setConfig, qam }) {
+    const [mon, setMon] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        let alive = true;
+        const tick = async () => {
+            try {
+                const next = await getSystemMonitor();
+                if (alive)
+                    setMon(next);
+            }
+            catch { }
+        };
+        tick();
+        const timer = window.setInterval(tick, 2000);
+        return () => {
+            alive = false;
+            window.clearInterval(timer);
+        };
+    }, []);
+    const setOverlay = async (enabled) => {
+        setMon((current) => (current ? { ...current, overlayEnabled: enabled } : current));
+        try {
+            const applied = await setOverlayEnabled(enabled);
+            setMon((current) => (current ? { ...current, overlayEnabled: applied } : current));
+        }
+        catch {
+            setMon((current) => (current ? { ...current, overlayEnabled: !enabled } : current));
+        }
+    };
+    const stickLed = config.stickLed;
+    const setStickLedNotify$1 = async (value) => {
+        if (!stickLed)
+            return;
+        const previous = stickLed.notifyEnabled;
+        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: value } } : current));
+        try {
+            const applied = await setStickLedNotify(value);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: previous } } : current));
+        }
+    };
+    const setStickLedNotifyColor$1 = async (hex) => {
+        if (!stickLed)
+            return;
+        const previous = stickLed.notifyColor;
+        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: hex } } : current));
+        try {
+            const applied = await setStickLedNotifyColor(hex);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: previous } } : current));
+        }
+    };
+    const fmtTemp = (v) => (v == null ? "—" : `${v.toFixed(1)} °C`);
+    const batteryLine = (m) => [
+        m.batteryPct != null ? `${m.batteryPct}%` : "—",
+        t(m.batteryStatus || "Unknown"),
+        m.batteryWatts != null ? `${m.batteryWatts} W` : "",
+    ]
+        .filter(Boolean)
+        .join(" · ");
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [qam && (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => {
+                        DFL.Navigation.Navigate("/nebel-control");
+                        DFL.Navigation.CloseSideMenus();
+                    }, children: t("Open full screen") }) })), SP_JSX.jsx(DFL.PanelSection, { title: t("Monitor"), children: mon && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: "CPU / GPU", description: `${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}` }), SP_JSX.jsx(DFL.Field, { label: t("Fan"), description: mon.fanPct != null ? `${mon.fanPct}%` : "—" }), SP_JSX.jsx(DFL.Field, { label: t("Battery"), description: batteryLine(mon) })] })) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Quick toggles"), children: [SP_JSX.jsx(ToggleRow, { label: t("FPS overlay (all games)"), description: t("Shows FPS in every game, incl. non-Steam. Applies after reboot."), value: !!mon?.overlayEnabled, onChange: setOverlay }), stickLed?.supported && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Notification flash"), description: t("Stick LEDs flash on notifications"), value: !!stickLed.notifyEnabled, onChange: setStickLedNotify$1 }), stickLed.notifyEnabled && (SP_JSX.jsx(ColorPicker, { label: t("Flash color"), hex: stickLed.notifyColor || "33AAFF", onChange: setStickLedNotifyColor$1 }))] }))] }), SP_JSX.jsx(DFL.PanelSection, { title: t("System"), children: SP_JSX.jsx(DFL.Field, { label: t("OS Version"), description: config.osVersion || t("unknown") }) })] }));
 }
 
 // Small animated preview of the selected stick-lighting mode: four dots
@@ -2544,9 +2662,7 @@ const PARAM_UI = {
 };
 const PARAM_DEFAULTS = { speed: 1.0, intensity: 0.15, size: 2 };
 function Lighting({ config, setConfig }) {
-    const [colorsExpanded, setColorsExpanded] = SP_REACT.useState(false);
     const [customColorExpanded, setCustomColorExpanded] = SP_REACT.useState(false);
-    const [flashExpanded, setFlashExpanded] = SP_REACT.useState(false);
     const [flashButton, setFlashButton] = SP_REACT.useState("south");
     const [selectedSide, setSelectedSide] = SP_REACT.useState("l");
     const [separate, setSeparate] = SP_REACT.useState(false);
@@ -2626,32 +2742,6 @@ function Lighting({ config, setConfig }) {
         }
         catch (error) {
             setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, maxBrightness: previous } } : current));
-        }
-    };
-    const setStickLedNotify$1 = async (value) => {
-        if (!stickLed)
-            return;
-        const previous = stickLed.notifyEnabled;
-        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: value } } : current));
-        try {
-            const applied = await setStickLedNotify(value);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-        }
-        catch (error) {
-            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyEnabled: previous } } : current));
-        }
-    };
-    const setStickLedNotifyColor$1 = async (hex) => {
-        if (!stickLed)
-            return;
-        const previous = stickLed.notifyColor;
-        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: hex } } : current));
-        try {
-            const applied = await setStickLedNotifyColor(hex);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-        }
-        catch (error) {
-            setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: previous } } : current));
         }
     };
     const setStickLedColor$1 = async (hex) => {
@@ -2884,13 +2974,13 @@ function Lighting({ config, setConfig }) {
     if (!stickLed?.supported || !sideState) {
         return (SP_JSX.jsx(DFL.PanelSection, { title: t("Stick Lighting"), children: SP_JSX.jsx(DFL.Field, { label: t("No addressable stick lighting hardware detected on this device.") }) }));
     }
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Stick Lighting"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable"), description: t("Turn both sticks off entirely, without losing the mode/color settings below"), value: stickLed.enabled, onChange: setStickLedEnabled$1 }), !stickLed.enabled && SP_JSX.jsx(DFL.Field, { label: t("Sticks are off - settings below are kept, not applied.") }), stickLed.enabled && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Follow screen brightness"), description: t("Dim both sticks along with the display backlight"), value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => setStickLedMaxBrightness$1(value / 100) })), SP_JSX.jsx(ToggleRow, { label: t("Notification flash"), description: t("Stick LEDs flash on notifications"), value: !!stickLed.notifyEnabled, onChange: setStickLedNotify$1 }), stickLed.notifyEnabled && (SP_JSX.jsx(ColorPicker, { hex: stickLed.notifyColor || "33AAFF", onChange: setStickLedNotifyColor$1 })), SP_JSX.jsx(ToggleRow, { label: t("Configure each stick separately"), description: t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one."), value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: t("Stick"), value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) })), SP_JSX.jsx(SelectEdit, { label: t("Mode"), value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), SP_JSX.jsx(ModePreview, { mode: mode, color: sideState.color, duotoneColorA: sideState.duotoneColorA, duotoneColorB: sideState.duotoneColorB, duotoneOrientation: sideState.duotoneOrientation }), mode === "spin" && (SP_JSX.jsx(ToggleRow, { label: t("Soft trail"), description: t("Trailing fade (uses Size below) instead of a single hard-edged dot"), value: !!sideState.chase, onChange: setStickLedChase$1 })), mode === "reactive" && (SP_JSX.jsx(ToggleRow, { label: t("Compass"), description: t("Point the lit zone(s) at the stick's push direction instead of lighting evenly"), value: !!sideState.compass, onChange: setStickLedCompass$1 })), mode === "duotone" && (SP_JSX.jsx(ToggleRow, { label: t("Seesaw"), description: t("Breathe the two color groups against each other instead of a static split"), value: !!sideState.seesaw, onChange: setStickLedSeesaw$1 })), Object.entries(PARAM_UI)
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Stick Lighting"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable"), description: t("Turn both sticks off entirely, without losing the mode/color settings below"), value: stickLed.enabled, onChange: setStickLedEnabled$1 }), !stickLed.enabled && SP_JSX.jsx(DFL.Field, { label: t("Sticks are off - settings below are kept, not applied.") }), stickLed.enabled && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Follow screen brightness"), description: t("Dim both sticks along with the display backlight"), value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => setStickLedMaxBrightness$1(value / 100) })), SP_JSX.jsx(SelectEdit, { label: t("Mode"), value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), SP_JSX.jsx(ModePreview, { mode: mode, color: sideState.color, duotoneColorA: sideState.duotoneColorA, duotoneColorB: sideState.duotoneColorB, duotoneOrientation: sideState.duotoneOrientation }), mode === "spin" && (SP_JSX.jsx(ToggleRow, { label: t("Soft trail"), description: t("Trailing fade (uses Size below) instead of a single hard-edged dot"), value: !!sideState.chase, onChange: setStickLedChase$1 })), mode === "reactive" && (SP_JSX.jsx(ToggleRow, { label: t("Compass"), description: t("Point the lit zone(s) at the stick's push direction instead of lighting evenly"), value: !!sideState.compass, onChange: setStickLedCompass$1 })), mode === "duotone" && (SP_JSX.jsx(ToggleRow, { label: t("Seesaw"), description: t("Breathe the two color groups against each other instead of a static split"), value: !!sideState.seesaw, onChange: setStickLedSeesaw$1 })), Object.entries(PARAM_UI)
                         .filter(([, spec]) => spec.modes.has(mode))
                         .map(([param, spec]) => {
                         const key = `${param}_${mode}`;
                         const raw = sideState.params[key] ?? PARAM_DEFAULTS[param];
                         return (SP_JSX.jsx(SliderEdit, { label: spec.label, value: spec.fromBackend(raw), min: spec.min, max: spec.max, step: spec.step, onChange: (value) => setStickLedParam$1(param, spec.toBackend(value)) }, param));
-                    }), COLOR_VISIBLE_MODES.has(mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setColorsExpanded((expanded) => !expanded), children: colorsExpanded ? t("Hide colors") + " ▲" : t("Colors") + " ▼" }), colorsExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Color Source"), value: sideState.colorSource || "static", options: COLOR_SOURCE_OPTIONS, onChange: setStickLedColorSource$1 }), sideState.colorSource === "battery" && (SP_JSX.jsx(ToggleRow, { label: t("Charging indicator"), description: t("Spin a blue dot around the stick while charging"), value: sideState.chargingIndicator, onChange: setStickLedChargingIndicator$1 })), sideState.colorSource !== "battery" && sideState.colorSource !== "random" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: sideState.color, onSelect: setStickLedColor$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setCustomColorExpanded((expanded) => !expanded), children: customColorExpanded ? t("Hide custom color") + " ▲" : t("Custom color (advanced)") + " ▼" }), customColorExpanded && (SP_JSX.jsx(ColorPicker, { hex: sideState.color, onChange: setStickLedColor$1 }))] }))] }))] })), mode === "reactive" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setFlashExpanded((expanded) => !expanded), children: flashExpanded ? t("Hide flash colors") + " ▲" : t("Show flash colors") + " ▼" }), flashExpanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Button"), value: flashButton, options: FLASH_BUTTON_OPTIONS, onChange: setFlashButton }), SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onSelect: setStickLedFlashColor$1 }), SP_JSX.jsx(ColorPicker, { hex: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onChange: setStickLedFlashColor$1 })] }))] })), mode === "duotone" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Split"), value: sideState.duotoneOrientation || "horizontal", options: DUOTONE_ORIENTATION_OPTIONS, onChange: setStickLedDuotoneOrientation$1 }), SP_JSX.jsx(ColorPicker, { label: t("Color A"), hex: sideState.duotoneColorA, onChange: (hex) => setStickLedDuotoneColor$1("a", hex) }), SP_JSX.jsx(ColorPicker, { label: t("Color B"), hex: sideState.duotoneColorB, onChange: (hex) => setStickLedDuotoneColor$1("b", hex) })] })), SP_JSX.jsx(ToggleRow, { label: t("Flip stick ring"), description: t("Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)"), value: !!sideState.flip, onChange: setStickLedFlip$1 })] }))] }));
+                    }), (COLOR_VISIBLE_MODES.has(mode) || mode === "duotone") && (SP_JSX.jsxs(Collapsible, { label: t("Colors"), children: [COLOR_VISIBLE_MODES.has(mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Color Source"), value: sideState.colorSource || "static", options: COLOR_SOURCE_OPTIONS, onChange: setStickLedColorSource$1 }), sideState.colorSource === "battery" && (SP_JSX.jsx(ToggleRow, { label: t("Charging indicator"), description: t("Spin a blue dot around the stick while charging"), value: sideState.chargingIndicator, onChange: setStickLedChargingIndicator$1 })), sideState.colorSource !== "battery" && sideState.colorSource !== "random" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: sideState.color, onSelect: setStickLedColor$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setCustomColorExpanded((expanded) => !expanded), children: customColorExpanded ? t("Hide custom color") + " ▲" : t("Custom color (advanced)") + " ▼" }), customColorExpanded && (SP_JSX.jsx(ColorPicker, { hex: sideState.color, onChange: setStickLedColor$1 }))] }))] })), mode === "duotone" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Split"), value: sideState.duotoneOrientation || "horizontal", options: DUOTONE_ORIENTATION_OPTIONS, onChange: setStickLedDuotoneOrientation$1 }), SP_JSX.jsx(ColorPicker, { label: t("Color A"), hex: sideState.duotoneColorA, onChange: (hex) => setStickLedDuotoneColor$1("a", hex) }), SP_JSX.jsx(ColorPicker, { label: t("Color B"), hex: sideState.duotoneColorB, onChange: (hex) => setStickLedDuotoneColor$1("b", hex) })] }))] })), SP_JSX.jsxs(Collapsible, { label: t("Configure each stick separately"), children: [SP_JSX.jsx(ToggleRow, { label: t("Configure each stick separately"), description: t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one."), value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: t("Stick"), value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) }))] }), SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [mode === "reactive" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Button"), value: flashButton, options: FLASH_BUTTON_OPTIONS, onChange: setFlashButton }), SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onSelect: setStickLedFlashColor$1 }), SP_JSX.jsx(ColorPicker, { hex: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onChange: setStickLedFlashColor$1 })] })), SP_JSX.jsx(ToggleRow, { label: t("Flip stick ring"), description: t("Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)"), value: !!sideState.flip, onChange: setStickLedFlip$1 })] })] }))] }));
 }
 
 const underclocks = [
@@ -2937,43 +3027,116 @@ function Power({ config, setConfig }) {
     };
     const underclockLevel = p.cpu_underclock || "";
     const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
-    const [mon, setMon] = SP_REACT.useState(null);
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("EDIT POWER PROFILE"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] })] }));
+}
+
+function AddDeviceModal({ closeModal, onAdd }) {
+    const [deviceId, setDeviceId] = SP_REACT.useState("");
+    const [name, setName] = SP_REACT.useState("");
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const inputStyle = {
+        width: "100%",
+        padding: "10px",
+        marginBottom: "12px",
+        background: "rgba(255,255,255,0.08)",
+        border: "1px solid rgba(255,255,255,0.2)",
+        borderRadius: "4px",
+        color: "inherit",
+        fontSize: "14px",
+    };
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: t("Device ID of the other console (shown on its Sync tab)") }), SP_JSX.jsx("input", { type: "text", placeholder: "XXXXXXX-XXXXXXX-...", value: deviceId, onChange: (e) => setDeviceId(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: t("Name (e.g. Mini V2)"), value: name, onChange: (e) => setName(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || deviceId.trim().length < 20, onClick: () => {
+                            setBusy(true);
+                            void onAdd(deviceId, name).finally(() => {
+                                setBusy(false);
+                                closeModal?.();
+                            });
+                        }, children: t("Add device") }) })] }) }));
+}
+function AddFolderModal({ closeModal, onAdd }) {
+    const [path, setPath] = SP_REACT.useState("");
+    const [label, setLabel] = SP_REACT.useState("");
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const inputStyle = {
+        width: "100%",
+        padding: "10px",
+        marginBottom: "12px",
+        background: "rgba(255,255,255,0.08)",
+        border: "1px solid rgba(255,255,255,0.2)",
+        borderRadius: "4px",
+        color: "inherit",
+        fontSize: "14px",
+    };
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: t("Folder to sync (under ~ or /run/media)") }), SP_JSX.jsx("input", { type: "text", placeholder: "~/Games/Heroic", value: path, onChange: (e) => setPath(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: t("Label (optional)"), value: label, onChange: (e) => setLabel(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || path.trim().length < 2, onClick: () => {
+                            setBusy(true);
+                            void onAdd(path, label).finally(() => {
+                                setBusy(false);
+                                closeModal?.();
+                            });
+                        }, children: t("Add folder") }) })] }) }));
+}
+function Sync() {
+    const [state, setState] = SP_REACT.useState(null);
+    const [error, setError] = SP_REACT.useState("");
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(true);
     SP_REACT.useEffect(() => {
-        let alive = true;
-        const tick = async () => {
-            try {
-                const next = await getSystemMonitor();
-                if (alive)
-                    setMon(next);
-            }
-            catch { }
-        };
-        tick();
-        const timer = window.setInterval(tick, 2000);
+        mounted.current = true;
         return () => {
-            alive = false;
-            window.clearInterval(timer);
+            mounted.current = false;
         };
     }, []);
-    const setOverlay = async (enabled) => {
-        setMon((current) => (current ? { ...current, overlayEnabled: enabled } : current));
+    const refresh = SP_REACT.useCallback(async () => {
         try {
-            const applied = await setOverlayEnabled(enabled);
-            setMon((current) => (current ? { ...current, overlayEnabled: applied } : current));
+            const next = await getSyncState();
+            if (mounted.current) {
+                setState(next);
+                setError(next.error || "");
+            }
         }
-        catch {
-            setMon((current) => (current ? { ...current, overlayEnabled: !enabled } : current));
+        catch (e) {
+            if (mounted.current)
+                setError(String(e));
         }
-    };
-    const fmtTemp = (v) => (v == null ? "—" : `${v.toFixed(1)} °C`);
-    const batteryLine = (m) => [
-        m.batteryPct != null ? `${m.batteryPct}%` : "—",
-        t(m.batteryStatus || "Unknown"),
-        m.batteryWatts != null ? `${m.batteryWatts} W` : "",
-    ]
-        .filter(Boolean)
-        .join(" · ");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("EDIT POWER PROFILE"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Monitor"), children: [mon && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: "CPU / GPU", description: `${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}` }), SP_JSX.jsx(DFL.Field, { label: t("Fan"), description: mon.fanPct != null ? `${mon.fanPct}%` : "—" }), SP_JSX.jsx(DFL.Field, { label: t("Battery"), description: batteryLine(mon) })] })), SP_JSX.jsx(ToggleRow, { label: t("FPS overlay (all games)"), description: t("Shows FPS in every game, incl. non-Steam. Applies after reboot."), value: !!mon?.overlayEnabled, onChange: setOverlay })] })] }));
+    }, []);
+    SP_REACT.useEffect(() => {
+        void refresh();
+        const timer = window.setInterval(() => void refresh(), 5000);
+        return () => window.clearInterval(timer);
+    }, [refresh]);
+    const run = SP_REACT.useCallback(async (action) => {
+        setBusy(true);
+        try {
+            const next = await action();
+            if (next && mounted.current)
+                setState(next);
+        }
+        catch (e) {
+            if (mounted.current)
+                setError(String(e));
+        }
+        finally {
+            if (mounted.current)
+                setBusy(false);
+        }
+    }, []);
+    if (!state)
+        return SP_JSX.jsx(DFL.PanelSection, { title: t("Sync"), children: SP_JSX.jsx(DFL.Field, { label: t("Loading") }) });
+    const connectedCount = state.devices.filter((d) => d.connected).length;
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Syncthing", children: [!state.installed && SP_JSX.jsx(DFL.Field, { label: t("Syncthing is not installed in this OS image") }), SP_JSX.jsx(ToggleRow, { label: t("Sync service"), description: state.serviceActive ? t("Running") : t("Stopped"), value: state.serviceEnabled && state.serviceActive, disabled: busy || !state.installed, onChange: (enabled) => void run(async () => { await setSyncServiceEnabled(enabled); await refresh(); }) }), state.myId && (SP_JSX.jsx(DFL.Field, { label: t("This device ID"), description: state.myId })), state.devices.length > 0 && (SP_JSX.jsx(DFL.Field, { label: t("Status"), description: t("{connected} of {total} device(s) connected", { connected: connectedCount, total: state.devices.length }) })), !!error && SP_JSX.jsx(DFL.Field, { label: t("Error"), description: error })] }), state.serviceActive && (state.pendingDevices.length > 0 || state.pendingFolders.length > 0) && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Requests"), children: [state.pendingDevices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Device \"{name}\" wants to pair", { name: device.name }), description: device.id.slice(0, 13) + "...", children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAddDevice(device.id, device.name)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissDevice(device.id)), children: t("Dismiss") })] }) }) }, device.id))), state.pendingFolders.map((folder) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Folder \"{name}\" was shared with you", { name: folder.label }), description: folder.id, children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAcceptFolder(folder.id)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissFolder(folder.id, folder.offeredBy[0] || "")), children: t("Dismiss") })] }) }) }, folder.id)))] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Devices"), children: [state.devices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `${device.name}${device.connected ? " " + t("(connected)") : ""}`, description: device.id.slice(0, 13) + "...", children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveDevice(device.id)), children: t("Remove") }) }) }, device.id))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddDeviceModal, { onAdd: async (deviceId, name) => {
+                                    await run(() => syncAddDevice(deviceId, name));
+                                } })), children: t("Add device") }) })] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Folders"), children: [state.devices.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("Add a device first - folders sync only to paired devices") })), state.folders.map((folder) => {
+                        const statusSuffix = folder.enabled
+                            ? folder.syncState === "syncing"
+                                ? " • " + t("syncing…")
+                                : folder.syncState === "idle"
+                                    ? " • " + t("in sync")
+                                    : ""
+                            : "";
+                        const description = folder.path.replace("/var/home/nebel", "~") + statusSuffix;
+                        return folder.custom ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: folder.label, description: description, children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveCustomFolder(folder.id)), children: t("Remove") }) }) }, folder.id)) : (SP_JSX.jsx(ToggleRow, { label: folder.label, description: description, value: folder.enabled, disabled: busy, onChange: (enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled)) }, folder.id));
+                    }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddFolderModal, { onAdd: async (path, label) => {
+                                    await run(() => syncAddCustomFolder(path, label));
+                                } })), children: t("Add custom folder") }) })] }))] }));
 }
 
 const CAPTURE_CONTROLS = ["left_x", "left_y", "right_x", "right_y", "left_trigger", "right_trigger"];
@@ -3159,7 +3322,7 @@ function openCalibration() {
     DFL.showModal(SP_JSX.jsx(CalibrationModal, {}));
 }
 
-function Settings({ config, setConfig }) {
+function System({ config, setConfig }) {
     const setSshEnabled$1 = async (enabled) => {
         if (enabled === !!config.sshEnabled) {
             return;
@@ -3197,120 +3360,10 @@ function Settings({ config, setConfig }) {
             setConfig((current) => (current ? { ...current, sharedStorageEnabled: !enabled } : current));
         }
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("Controller"), children: [SP_JSX.jsx(SelectEdit, { label: t("Emulation"), value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: t("Launch Calibration") })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("System"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable SSH"), value: !!config.sshEnabled, onChange: setSshEnabled$1 }), SP_JSX.jsx(ToggleRow, { label: t("Mount shared storage"), description: t("Mount NEBEL_SHARED partition at ~/Shared"), value: !!config.sharedStorageEnabled, onChange: setSharedStorageEnabled$1 }), SP_JSX.jsx(DFL.Field, { label: t("OS Version"), description: config.osVersion || t("unknown") })] })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("Controller"), children: [SP_JSX.jsx(SelectEdit, { label: t("Emulation"), value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: t("Launch Calibration") })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("System"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable SSH"), value: !!config.sshEnabled, onChange: setSshEnabled$1 }), SP_JSX.jsx(ToggleRow, { label: t("Mount shared storage"), description: t("Mount NEBEL_SHARED partition at ~/Shared"), value: !!config.sharedStorageEnabled, onChange: setSharedStorageEnabled$1 })] })] }));
 }
 
-function AddDeviceModal({ closeModal, onAdd }) {
-    const [deviceId, setDeviceId] = SP_REACT.useState("");
-    const [name, setName] = SP_REACT.useState("");
-    const [busy, setBusy] = SP_REACT.useState(false);
-    const inputStyle = {
-        width: "100%",
-        padding: "10px",
-        marginBottom: "12px",
-        background: "rgba(255,255,255,0.08)",
-        border: "1px solid rgba(255,255,255,0.2)",
-        borderRadius: "4px",
-        color: "inherit",
-        fontSize: "14px",
-    };
-    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: t("Device ID of the other console (shown on its Sync tab)") }), SP_JSX.jsx("input", { type: "text", placeholder: "XXXXXXX-XXXXXXX-...", value: deviceId, onChange: (e) => setDeviceId(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: t("Name (e.g. Mini V2)"), value: name, onChange: (e) => setName(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || deviceId.trim().length < 20, onClick: () => {
-                            setBusy(true);
-                            void onAdd(deviceId, name).finally(() => {
-                                setBusy(false);
-                                closeModal?.();
-                            });
-                        }, children: t("Add device") }) })] }) }));
-}
-function AddFolderModal({ closeModal, onAdd }) {
-    const [path, setPath] = SP_REACT.useState("");
-    const [label, setLabel] = SP_REACT.useState("");
-    const [busy, setBusy] = SP_REACT.useState(false);
-    const inputStyle = {
-        width: "100%",
-        padding: "10px",
-        marginBottom: "12px",
-        background: "rgba(255,255,255,0.08)",
-        border: "1px solid rgba(255,255,255,0.2)",
-        borderRadius: "4px",
-        color: "inherit",
-        fontSize: "14px",
-    };
-    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: t("Folder to sync (under ~ or /run/media)") }), SP_JSX.jsx("input", { type: "text", placeholder: "~/Games/Heroic", value: path, onChange: (e) => setPath(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: t("Label (optional)"), value: label, onChange: (e) => setLabel(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || path.trim().length < 2, onClick: () => {
-                            setBusy(true);
-                            void onAdd(path, label).finally(() => {
-                                setBusy(false);
-                                closeModal?.();
-                            });
-                        }, children: t("Add folder") }) })] }) }));
-}
-function Sync() {
-    const [state, setState] = SP_REACT.useState(null);
-    const [error, setError] = SP_REACT.useState("");
-    const [busy, setBusy] = SP_REACT.useState(false);
-    const mounted = SP_REACT.useRef(true);
-    SP_REACT.useEffect(() => {
-        mounted.current = true;
-        return () => {
-            mounted.current = false;
-        };
-    }, []);
-    const refresh = SP_REACT.useCallback(async () => {
-        try {
-            const next = await getSyncState();
-            if (mounted.current) {
-                setState(next);
-                setError(next.error || "");
-            }
-        }
-        catch (e) {
-            if (mounted.current)
-                setError(String(e));
-        }
-    }, []);
-    SP_REACT.useEffect(() => {
-        void refresh();
-        const timer = window.setInterval(() => void refresh(), 5000);
-        return () => window.clearInterval(timer);
-    }, [refresh]);
-    const run = SP_REACT.useCallback(async (action) => {
-        setBusy(true);
-        try {
-            const next = await action();
-            if (next && mounted.current)
-                setState(next);
-        }
-        catch (e) {
-            if (mounted.current)
-                setError(String(e));
-        }
-        finally {
-            if (mounted.current)
-                setBusy(false);
-        }
-    }, []);
-    if (!state)
-        return SP_JSX.jsx(DFL.PanelSection, { title: t("Sync"), children: SP_JSX.jsx(DFL.Field, { label: t("Loading") }) });
-    const connectedCount = state.devices.filter((d) => d.connected).length;
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Syncthing", children: [!state.installed && SP_JSX.jsx(DFL.Field, { label: t("Syncthing is not installed in this OS image") }), SP_JSX.jsx(ToggleRow, { label: t("Sync service"), description: state.serviceActive ? t("Running") : t("Stopped"), value: state.serviceEnabled && state.serviceActive, disabled: busy || !state.installed, onChange: (enabled) => void run(async () => { await setSyncServiceEnabled(enabled); await refresh(); }) }), state.myId && (SP_JSX.jsx(DFL.Field, { label: t("This device ID"), description: state.myId })), state.devices.length > 0 && (SP_JSX.jsx(DFL.Field, { label: t("Status"), description: t("{connected} of {total} device(s) connected", { connected: connectedCount, total: state.devices.length }) })), !!error && SP_JSX.jsx(DFL.Field, { label: t("Error"), description: error })] }), state.serviceActive && (state.pendingDevices.length > 0 || state.pendingFolders.length > 0) && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Requests"), children: [state.pendingDevices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Device \"{name}\" wants to pair", { name: device.name }), description: device.id.slice(0, 13) + "...", children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAddDevice(device.id, device.name)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissDevice(device.id)), children: t("Dismiss") })] }) }) }, device.id))), state.pendingFolders.map((folder) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Folder \"{name}\" was shared with you", { name: folder.label }), description: folder.id, children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAcceptFolder(folder.id)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissFolder(folder.id, folder.offeredBy[0] || "")), children: t("Dismiss") })] }) }) }, folder.id)))] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Devices"), children: [state.devices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `${device.name}${device.connected ? " " + t("(connected)") : ""}`, description: device.id.slice(0, 13) + "...", children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveDevice(device.id)), children: t("Remove") }) }) }, device.id))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddDeviceModal, { onAdd: async (deviceId, name) => {
-                                    await run(() => syncAddDevice(deviceId, name));
-                                } })), children: t("Add device") }) })] })), state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Folders"), children: [state.devices.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("Add a device first - folders sync only to paired devices") })), state.folders.map((folder) => {
-                        const statusSuffix = folder.enabled
-                            ? folder.syncState === "syncing"
-                                ? " • " + t("syncing…")
-                                : folder.syncState === "idle"
-                                    ? " • " + t("in sync")
-                                    : ""
-                            : "";
-                        const description = folder.path.replace("/var/home/nebel", "~") + statusSuffix;
-                        return folder.custom ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: folder.label, description: description, children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveCustomFolder(folder.id)), children: t("Remove") }) }) }, folder.id)) : (SP_JSX.jsx(ToggleRow, { label: folder.label, description: description, value: folder.enabled, disabled: busy, onChange: (enabled) => void run(() => syncSetFolderEnabled(folder.id, enabled)) }, folder.id));
-                    }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddFolderModal, { onAdd: async (path, label) => {
-                                    await run(() => syncAddCustomFolder(path, label));
-                                } })), children: t("Add custom folder") }) })] }))] }));
-}
-
-function Content() {
-    const [tab, setTab] = SP_REACT.useState("Compatibility");
+function usePluginConfig() {
     const [config, setConfig] = SP_REACT.useState(null);
     const [message, setMessage] = SP_REACT.useState(t("Loading"));
     const savedPowerSnapshot = SP_REACT.useRef("");
@@ -3381,19 +3434,47 @@ function Content() {
     }, [!!config]);
     useDebouncedSave({ config, field: "power", snapshot: savedPowerSnapshot, save: savePowerConfig, setConfig, onError: load });
     useDebouncedSave({ config, field: "tweaks", snapshot: savedTweaksSnapshot, save: saveTweaks, setConfig, onError: load });
+    return { config, setConfig, message };
+}
+// One tab model feeds both surfaces: the QAM Tabs bar and the fullscreen
+// page sidebar. `qam` only toggles QAM-only affordances (e.g. Home's
+// "Open full screen" button); the tabs themselves are identical.
+function buildTabs(config, setConfig, qam) {
+    return [
+        { id: "Home", icon: tabIcons.Home, label: t("TabHome"), content: SP_JSX.jsx(Home, { config: config, setConfig: setConfig, qam: qam }) },
+        { id: "Games", icon: tabIcons.Games, label: t("TabGames"), content: SP_JSX.jsx(Games, { config: config, setConfig: setConfig }) },
+        { id: "Display", icon: tabIcons.Display, label: t("TabDisplay"), content: SP_JSX.jsx(Display, {}) },
+        { id: "Power", icon: tabIcons.Power, label: t("TabPower"), content: SP_JSX.jsx(Power, { config: config, setConfig: setConfig }) },
+        { id: "Lighting", icon: tabIcons.Lighting, label: t("TabLighting"), content: SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig }) },
+        { id: "Sync", icon: tabIcons.Sync, label: t("TabSync"), content: SP_JSX.jsx(Sync, {}) },
+        { id: "System", icon: tabIcons.System, label: t("TabSystem"), content: SP_JSX.jsx(System, { config: config, setConfig: setConfig }) },
+    ];
+}
+const tabTitle = (icon, label) => (SP_JSX.jsxs("div", { className: "nc-tab-title", children: [icon, SP_JSX.jsx("span", { children: label })] }));
+function Content() {
+    const { config, setConfig, message } = usePluginConfig();
+    const [tab, setTab] = SP_REACT.useState("Home");
     if (!config)
         return SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) });
-    const tabContent = (content) => (SP_JSX.jsx("div", { className: "nebel-control-tab-content", children: content }));
-    const tabTitle = (icon, label) => (SP_JSX.jsxs("div", { className: "nc-tab-title", children: [icon, SP_JSX.jsx("span", { children: label })] }));
-    return (SP_JSX.jsxs("div", { className: "nebel-control-tabs", children: [SP_JSX.jsx("style", { children: styles }), SP_JSX.jsx(DFL.Tabs, { activeTab: tab, onShowTab: setTab, tabs: [
-                    { id: "Compatibility", title: tabTitle(tabIcons.Compatibility, t("TabGame")), content: tabContent(SP_JSX.jsx(Compatibility, { config: config, setConfig: setConfig })) },
-                    { id: "Power", title: tabTitle(tabIcons.Power, t("TabPower")), content: tabContent(SP_JSX.jsx(Power, { config: config, setConfig: setConfig })) },
-                    { id: "Display", title: tabTitle(tabIcons.Display, t("TabDisplay")), content: tabContent(SP_JSX.jsx(Display, {})) },
-                    { id: "Lighting", title: tabTitle(tabIcons.Lighting, t("TabLighting")), content: tabContent(SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig })) },
-                    { id: "Library", title: tabTitle(tabIcons.Library, t("Library")), content: tabContent(SP_JSX.jsx(AddGame, {})) },
-                    { id: "Sync", title: tabTitle(tabIcons.Sync, t("TabSync")), content: tabContent(SP_JSX.jsx(Sync, {})) },
-                    { id: "Advanced", title: tabTitle(tabIcons.Advanced, t("TabMore")), content: tabContent(SP_JSX.jsx(Settings, { config: config, setConfig: setConfig })) },
-                ] })] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-control-tabs nebel-control-root", children: [SP_JSX.jsx("style", { children: styles }), SP_JSX.jsx(DFL.Tabs, { activeTab: tab, onShowTab: setTab, tabs: buildTabs(config, setConfig, true).map((pluginTab) => ({
+                    id: pluginTab.id,
+                    title: tabTitle(pluginTab.icon, pluginTab.label),
+                    content: SP_JSX.jsx("div", { className: "nebel-control-tab-content", children: pluginTab.content }),
+                })) })] }));
+}
+// Fullscreen variant registered as the /nebel-control route: Steam-settings-
+// style layout with a vertical tab list on the left and content on the right.
+// Steam's global back (B button) pops the route, so no back affordance here.
+function FullPage() {
+    const { config, setConfig, message } = usePluginConfig();
+    const [tab, setTab] = SP_REACT.useState("Home");
+    const pageShell = (content) => (SP_JSX.jsxs("div", { className: "nebel-control-page nebel-control-root", children: [SP_JSX.jsx("style", { children: styles }), content] }));
+    if (!config) {
+        return pageShell(SP_JSX.jsx("div", { className: "nc-page-content", children: SP_JSX.jsx("div", { className: "nc-page-content-inner", children: SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) }) }) }));
+    }
+    const tabs = buildTabs(config, setConfig, false);
+    const active = tabs.find((candidate) => candidate.id === tab) || tabs[0];
+    return pageShell(SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "nc-page-sidebar", children: tabs.map((candidate) => (SP_JSX.jsxs(DFL.Focusable, { className: `nc-page-tab${candidate.id === active.id ? " nc-active" : ""}`, onActivate: () => setTab(candidate.id), onClick: () => setTab(candidate.id), children: [candidate.icon, SP_JSX.jsx("span", { children: candidate.label })] }, candidate.id))) }), SP_JSX.jsx("div", { className: "nc-page-content", children: SP_JSX.jsx("div", { className: "nc-page-content-inner", children: active.content }) })] }));
 }
 
 var index = definePlugin(() => {
@@ -3450,12 +3531,14 @@ var index = definePlugin(() => {
         }, 3000);
     };
     bootstrap();
+    routerHook.addRoute("/nebel-control", FullPage);
     return {
         name: "Nebel Control",
         content: SP_JSX.jsx(Content, {}),
         onDismount() {
             cancelled = true;
             unregisterDownloadWatcher();
+            routerHook.removeRoute("/nebel-control");
         },
         icon: (SP_JSX.jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [SP_JSX.jsx("path", { d: "M14 17H5" }), SP_JSX.jsx("path", { d: "M19 7h-9" }), SP_JSX.jsx("circle", { cx: "17", cy: "17", r: "3" }), SP_JSX.jsx("circle", { cx: "7", cy: "7", r: "3" })] })),
         alwaysRender: true,

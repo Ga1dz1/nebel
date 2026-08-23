@@ -41,30 +41,30 @@ export const styles = `
       .nebel-control-tabs .nebel-control-tab-content {
         padding-bottom: 24px;
       }
-      .nebel-control-tabs .nebel-slider-field {
+      .nebel-control-root .nebel-slider-field {
         width: 100%;
         max-width: none;
         overflow: hidden;
       }
-      .nebel-control-tabs .nebel-slider-field * {
+      .nebel-control-root .nebel-slider-field * {
         min-width: 0 !important;
         max-width: 100% !important;
       }
-      .nebel-control-tabs .nebel-reset-row {
+      .nebel-control-root .nebel-reset-row {
         padding: 0 14px 8px;
       }
-      .nebel-control-tabs .nebel-color-preview-row {
+      .nebel-control-root .nebel-color-preview-row {
         display: flex;
         align-items: center;
         gap: 10px;
         width: 100%;
         padding: 4px 0;
       }
-      .nebel-control-tabs .nebel-color-preview-label {
+      .nebel-control-root .nebel-color-preview-label {
         flex: 1 1 auto;
         opacity: 0.87;
       }
-      .nebel-control-tabs .nebel-color-swatch {
+      .nebel-control-root .nebel-color-swatch {
         flex: 0 0 auto;
         width: 32px;
         height: 32px;
@@ -72,23 +72,23 @@ export const styles = `
         border: 1px solid rgba(255, 255, 255, 0.25);
         box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
       }
-      .nebel-control-tabs .nebel-color-preview-hex {
+      .nebel-control-root .nebel-color-preview-hex {
         flex: 0 0 auto;
         font-variant-numeric: tabular-nums;
         opacity: 0.62;
         font-size: 12px;
       }
-      .nebel-control-tabs .nebel-mode-preview-wrap {
+      .nebel-control-root .nebel-mode-preview-wrap {
         display: flex;
         justify-content: center;
         width: 100%;
         padding: 4px 0 8px;
       }
-      .nebel-control-tabs .nebel-mode-preview-canvas {
+      .nebel-control-root .nebel-mode-preview-canvas {
         background: rgba(0, 0, 0, 0.25);
         border-radius: 8px;
       }
-      .nebel-control-tabs .nebel-preset-swatch {
+      .nebel-control-root .nebel-preset-swatch {
         width: 34px;
         height: 34px;
         border-radius: 6px;
@@ -96,30 +96,30 @@ export const styles = `
         box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
         cursor: pointer;
       }
-      .nebel-control-tabs .nebel-color-picker {
+      .nebel-control-root .nebel-color-picker {
         display: flex;
         flex-direction: column;
         gap: 8px;
         align-items: center;
         width: 100%;
       }
-      .nebel-control-tabs .nebel-color-sv-wrap,
-      .nebel-control-tabs .nebel-color-hue-wrap {
+      .nebel-control-root .nebel-color-sv-wrap,
+      .nebel-control-root .nebel-color-hue-wrap {
         position: relative;
       }
-      .nebel-control-tabs .nebel-color-sv-canvas {
+      .nebel-control-root .nebel-color-sv-canvas {
         display: block;
         border-radius: 6px;
         touch-action: none;
         cursor: crosshair;
       }
-      .nebel-control-tabs .nebel-color-hue-canvas {
+      .nebel-control-root .nebel-color-hue-canvas {
         display: block;
         border-radius: 4px;
         touch-action: none;
         cursor: ew-resize;
       }
-      .nebel-control-tabs .nebel-color-cursor {
+      .nebel-control-root .nebel-color-cursor {
         position: absolute;
         width: 12px;
         height: 12px;
@@ -130,7 +130,7 @@ export const styles = `
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.5);
         pointer-events: none;
       }
-      .nebel-control-tabs .nebel-color-hue-cursor {
+      .nebel-control-root .nebel-color-hue-cursor {
         position: absolute;
         top: -2px;
         width: 4px;
@@ -141,7 +141,7 @@ export const styles = `
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
         pointer-events: none;
       }
-      .nebel-control-tabs .nebel-compat-note {
+      .nebel-control-root .nebel-compat-note {
         box-sizing: border-box;
         width: 100%;
         padding: 8px 16px 8px;
@@ -151,5 +151,51 @@ export const styles = `
         text-align: left;
         justify-content: flex-start;
         align-self: stretch;
+      }
+      .nebel-control-page {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        background: #0D141C;
+        color: #dbe2e6;
+        overflow: hidden;
+      }
+      .nc-page-sidebar {
+        flex: 0 0 216px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 32px 12px;
+        overflow-y: auto;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .nc-page-tab {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 14px;
+        opacity: 0.7;
+        cursor: pointer;
+      }
+      .nc-page-tab svg {
+        flex: 0 0 auto;
+        width: 20px;
+        height: 20px;
+      }
+      .nc-page-tab.nc-active {
+        background: rgba(255, 255, 255, 0.12);
+        opacity: 1;
+      }
+      .nc-page-content {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 24px 32px 48px;
+      }
+      .nc-page-content-inner {
+        width: 100%;
+        max-width: 680px;
+        margin: 0 auto;
       }
     `;
