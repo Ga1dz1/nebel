@@ -131,6 +131,34 @@ def device_env():
     return env
 
 
+def edid_display_name(card_dir):
+    # Human name from the EDID monitor-name descriptor, so the UI can say
+    # "Retroid Dual Screen (DP-1)" instead of a bare connector name. Best
+    # effort: any parse trouble just falls back to None and the caller shows
+    # the connector name.
+    try:
+        edid = (card_dir / "edid").read_bytes()
+    except OSError:
+        return None
+    if len(edid) < 128:
+        return None
+    mfg_bits = (edid[8] << 8) | edid[9]
+    mfg = "".join(chr(64 + ((mfg_bits >> shift) & 0x1F)) for shift in (10, 5, 0))
+    product = edid[10] | (edid[11] << 8)
+    name = ""
+    for off in range(54, 126, 18):
+        desc = edid[off:off + 18]
+        if desc[0:3] == b"\x00\x00\x00" and desc[3] == 0xFC:
+            name = desc[5:].split(b"\x0a")[0].decode("ascii", "replace").strip()
+            break
+    # The Retroid Dual Screen addon reports only its Lontium bridge identity
+    # (CVT 0x3132, a single 1080x1920 mode) - name it for what it physically
+    # is, or the UI has to show the meaningless bridge string.
+    if (mfg, product) == ("CVT", 0x3132):
+        return "Retroid Dual Screen"
+    return name or f"{mfg} 0x{product:04X}"
+
+
 def drm_connectors():
     # gamescope-session-plus/sessions.d/steam picks its output by connector
     # name (--prefer-output), so that's the unit both listing and applying a
@@ -141,6 +169,12 @@ def drm_connectors():
     if not drm.is_dir():
         return connectors
     for card_dir in sorted(drm.glob("card*-*")):
+        name = card_dir.name.split("-", 1)[1]
+        # Kernel writeback connectors are virtual capture endpoints, never a
+        # display - one showed up in the UI as "Writeback-1" and was mistaken
+        # for the actual external screen.
+        if name.startswith("Writeback"):
+            continue
         status_path = card_dir / "status"
         if not status_path.is_file():
             continue
@@ -148,7 +182,6 @@ def drm_connectors():
             status = status_path.read_text(encoding="utf-8").strip()
         except OSError:
             continue
-        name = card_dir.name.split("-", 1)[1]
         modes = []
         modes_path = card_dir / "modes"
         if modes_path.is_file():
@@ -161,7 +194,11 @@ def drm_connectors():
                         modes.append(line)
             except OSError:
                 pass
-        connectors.append({"connector": name, "connected": status == "connected", "modes": modes})
+        entry = {"connector": name, "connected": status == "connected", "modes": modes}
+        display_name = edid_display_name(card_dir)
+        if display_name:
+            entry["name"] = display_name
+        connectors.append(entry)
     return connectors
 
 
@@ -178,7 +215,12 @@ def _display_remembered():
         data = json.loads(DISPLAY_REMEMBERED_PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    return data if isinstance(data, dict) else {}
+    if not isinstance(data, dict):
+        return {}
+    # Writeback entries are junk from before those virtual connectors were
+    # filtered out of the listing - drop them here too (and this dict is what
+    # gets rewritten on the next set_display_config, so it self-cleans).
+    return {k: v for k, v in data.items() if not k.startswith("Writeback")}
 
 
 def action_get_display_config(request):
@@ -226,6 +268,12 @@ def action_set_display_config(request):
         raise ValueError("invalid resolution")
     if not (0 < width <= 16384 and 0 < height <= 16384):
         raise ValueError("invalid resolution")
+    # Portrait is valid only together with a rotation (the Retroid Dual
+    # Screen case - 1080x1920 panel mounted landscape, rotated by gamescope's
+    # --force-external-orientation); portrait without one can only be a
+    # mistake, and sessions.d/steam would ignore the override anyway.
+    if width < height and orientation == "normal":
+        raise ValueError("a portrait mode requires a rotation")
 
     text = (
         f"NEBEL_DISPLAY_CONNECTOR={connector}\n"

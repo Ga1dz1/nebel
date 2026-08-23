@@ -57,4 +57,22 @@ case "${panel_orientation}" in
         ;;
 esac
 
+# The Decky display override (game mode's external choice) also records how
+# that panel is physically mounted: a portrait external with a configured
+# rotation (e.g. the Retroid Dual Screen addon, 1080x1920 mounted landscape)
+# needs the same transform on the desktop - kscreen can't know the mounting
+# on its own, and its own remembered config only exists after a manual fix.
+if [[ -f /etc/nebel/display-override.conf ]]; then
+    # shellcheck source=/dev/null
+    source /etc/nebel/display-override.conf
+    ext_rotation=""
+    case "${NEBEL_DISPLAY_ORIENTATION:-normal}" in
+        left|right) ext_rotation="${NEBEL_DISPLAY_ORIENTATION}" ;;
+        upsidedown) ext_rotation="inverted" ;;
+    esac
+    if [[ -n "${ext_rotation}" && -n "${NEBEL_DISPLAY_CONNECTOR:-}" ]]; then
+        kscreen-doctor "output.${NEBEL_DISPLAY_CONNECTOR}.rotation.${ext_rotation}" >/dev/null 2>&1 || true
+    fi
+fi
+
 kscreen-doctor "output.${display_connector}.scale.1.5" >/dev/null 2>&1 || true

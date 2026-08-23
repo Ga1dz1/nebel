@@ -48,16 +48,19 @@ if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
             [[ -f "$status_file" ]] || continue
             [[ "$(cat "$status_file" 2>/dev/null)" == "connected" ]] && display_connected=1
         done
-        # A portrait (width < height) choice can only come from a stale/
-        # hand-edited override - the Decky UI itself refuses to save one,
-        # since gamescope can't rotate an external output to compensate
-        # (confirmed live on the official Retroid Screen Add-on: its only
-        # EDID mode is 1080x1920). Trusting it here would silently strand
-        # game mode sideways with no way to fix it except SSH, so it's
-        # treated the same as "not connected" - fall back to internal.
+        # A portrait (width < height) choice is only valid together with a
+        # rotation: gamescope can rotate an external output since the armada
+        # 0014 patch (--force-external-orientation), with the frame turned by
+        # the rotation shader (patch 0005) - this is how the Retroid Dual
+        # Screen addon (EDID 1080x1920 only, mounted landscape) is driven.
+        # Portrait WITHOUT a rotation can still only come from a stale/
+        # hand-edited override; trusting it would silently strand game mode
+        # sideways with no way to fix it except SSH, so it's treated the same
+        # as "not connected" - fall back to internal.
         if (( display_connected )) \
             && [[ -n "${NEBEL_DISPLAY_WIDTH:-}" && -n "${NEBEL_DISPLAY_HEIGHT:-}" ]] \
-            && (( NEBEL_DISPLAY_WIDTH < NEBEL_DISPLAY_HEIGHT )); then
+            && (( NEBEL_DISPLAY_WIDTH < NEBEL_DISPLAY_HEIGHT )) \
+            && [[ "${NEBEL_DISPLAY_ORIENTATION:-normal}" == "normal" ]]; then
             display_connected=0
         fi
         if (( display_connected )); then
@@ -69,19 +72,26 @@ if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
             OUTPUT_CONNECTOR="${NEBEL_DISPLAY_CONNECTOR},${OUTPUT_CONNECTOR}"
             [[ -n "${NEBEL_DISPLAY_WIDTH:-}" ]] && SCREEN_WIDTH="$NEBEL_DISPLAY_WIDTH"
             [[ -n "${NEBEL_DISPLAY_HEIGHT:-}" ]] && SCREEN_HEIGHT="$NEBEL_DISPLAY_HEIGHT"
-            # NOT settable per-output: confirmed live (not just from
-            # gamescope's own --help, which says --force-orientation
-            # "rotate[s] the internal display") - made an external output
-            # the genuinely active one (internal disabled) and the flag
-            # still had zero visible effect on it in either direction. It
-            # only ever affects the internal panel regardless of what
-            # gamescope is actually driving, so force it (and the shader
-            # variant of the same thing) back to the internal panel's own
-            # unrotated state whenever an external display is primary -
+            # --force-orientation only ever affects the INTERNAL panel
+            # (confirmed live, not just gamescope's own --help text), so for
+            # an external primary it's forced back to the panel's unrotated
+            # state. External rotation goes through the armada gamescope
+            # patches instead: --force-external-orientation (0014) sets the
+            # external connector's orientation and --use-rotation-shader
+            # (0005) turns the frame in the composite - which also makes
+            # wlserver's touch transform follow the same orientation.
+            # Skipped entirely for a normal-orientation external so a
+            # landscape monitor/TV keeps direct scanout exactly as before.
             # CUSTOM_REFRESH_RATES is still internal-panel-specific and
             # dropped for the same reason as before.
             ORIENTATION=normal
-            USE_ROTATION_SHADER=0
+            if [[ "${NEBEL_DISPLAY_ORIENTATION:-normal}" != "normal" ]]; then
+                EXTERNAL_ORIENTATION="$NEBEL_DISPLAY_ORIENTATION"
+                USE_ROTATION_SHADER=1
+            else
+                EXTERNAL_ORIENTATION=""
+                USE_ROTATION_SHADER=0
+            fi
             unset CUSTOM_REFRESH_RATES STEAM_DISPLAY_REFRESH_LIMITS
         fi
     fi
@@ -138,6 +148,9 @@ DRM_MODE_OPTION=""
 ORIENTATION_OPTION=""
 [[ -n "${ORIENTATION:-}" ]] && ORIENTATION_OPTION="--force-orientation $ORIENTATION"
 
+EXTERNAL_ORIENTATION_OPTION=""
+[[ -n "${EXTERNAL_ORIENTATION:-}" ]] && gamescope_has_option "--force-external-orientation" && EXTERNAL_ORIENTATION_OPTION="--force-external-orientation $EXTERNAL_ORIENTATION"
+
 ADAPTIVE_SYNC_OPTION=""
 [[ -n "${ADAPTIVE_SYNC:-}" ]] && ADAPTIVE_SYNC_OPTION="--adaptive-sync"
 
@@ -183,6 +196,7 @@ GAMESCOPECMD="$(get_gamescope_binary) \
     $RESOLUTION \
     $INTERNAL_RESOLUTION \
     $ORIENTATION_OPTION \
+    $EXTERNAL_ORIENTATION_OPTION \
     $DRM_MODE_OPTION \
     $ADAPTIVE_SYNC_OPTION \
     $PANEL_TYPE_OPTION \
