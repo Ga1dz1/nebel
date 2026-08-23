@@ -130,6 +130,7 @@ export interface DisplayConnector {
   connected: boolean;
   internal: boolean;
   modes: string[];
+  name?: string;
 }
 
 export interface RememberedDisplay {

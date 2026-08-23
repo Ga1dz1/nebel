@@ -166,7 +166,12 @@ const uk = {
     "{connector} (disconnected)": "{connector} (від’єднано)",
     "Primary Display": "Основний дисплей",
     "Resolution": "Роздільна здатність",
-    "Rotation isn't available for an external display (gamescope only rotates the internal screen).": "Поворот недоступний для зовнішнього дисплея (gamescope повертає лише вбудований екран).",
+    "Rotation": "Поворот",
+    "Normal": "Нормальна",
+    "90°": "90°",
+    "180°": "180°",
+    "270°": "270°",
+    "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "Це портретна панель — оберіть поворот, за якого зображення стає рівним. Застосовується після перезапуску ігрового режиму.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Зовнішній дисплей не виявлено. Під’єднайте його (док/USB-C/HDMI), щоб обрати тут.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Цей дисплей зараз не під’єднано — ігровий режим працює на вбудованому екрані, доки його не буде під’єднано знову. Налаштування збережено.",
     "Error: {message}": "Помилка: {message}",
@@ -366,7 +371,12 @@ const ru = {
     "{connector} (disconnected)": "{connector} (отключён)",
     "Primary Display": "Основной дисплей",
     "Resolution": "Разрешение",
-    "Rotation isn't available for an external display (gamescope only rotates the internal screen).": "Поворот недоступен для внешнего дисплея (gamescope поворачивает только встроенный экран).",
+    "Rotation": "Поворот",
+    "Normal": "Обычная",
+    "90°": "90°",
+    "180°": "180°",
+    "270°": "270°",
+    "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "Это портретная панель — выберите поворот, при котором изображение будет ровным. Применяется после перезапуска игрового режима.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Внешний дисплей не обнаружен. Подключите его (док/USB-C/HDMI), чтобы выбрать здесь.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Этот дисплей сейчас не подключён — игровой режим работает на встроенном экране, пока его не подключат снова. Настройки сохранены.",
     "Error: {message}": "Ошибка: {message}",
@@ -566,7 +576,12 @@ const es = {
     "{connector} (disconnected)": "{connector} (desconectado)",
     "Primary Display": "Pantalla principal",
     "Resolution": "Resolución",
-    "Rotation isn't available for an external display (gamescope only rotates the internal screen).": "La rotación no está disponible para pantallas externas (gamescope solo rota la pantalla interna).",
+    "Rotation": "Rotación",
+    "Normal": "Normal",
+    "90°": "90°",
+    "180°": "180°",
+    "270°": "270°",
+    "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "Es un panel vertical: elige la rotación que deje la imagen derecha. Se aplica al reiniciar el modo de juego.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "No se detectó ninguna pantalla externa. Conecta una (dock/USB-C/HDMI) para elegirla aquí.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Esta pantalla no está conectada ahora mismo: el modo de juego funciona en la pantalla interna hasta que se vuelva a conectar. Sus ajustes se conservan.",
     "Error: {message}": "Error: {message}",
@@ -766,7 +781,12 @@ const fr = {
     "{connector} (disconnected)": "{connector} (déconnecté)",
     "Primary Display": "Écran principal",
     "Resolution": "Résolution",
-    "Rotation isn't available for an external display (gamescope only rotates the internal screen).": "La rotation n'est pas disponible pour un écran externe (gamescope ne pivote que l'écran interne).",
+    "Rotation": "Rotation",
+    "Normal": "Normale",
+    "90°": "90°",
+    "180°": "180°",
+    "270°": "270°",
+    "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "C'est un panneau portrait - choisissez la rotation qui redresse l'image. Appliqué au redémarrage du mode jeu.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Aucun écran externe détecté. Connectez-en un (dock/USB-C/HDMI) pour le choisir ici.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Cet écran n'est pas connecté pour le moment : le mode jeu tourne sur l'écran interne jusqu'à ce qu'il soit rebranché. Ses paramètres sont conservés.",
     "Error: {message}": "Erreur : {message}",
@@ -1717,8 +1737,25 @@ function SliderEdit({ label, value, min, max, step, onChange, format }) {
 // picks the first available from a priority list at startup, there's no
 // live multi-monitor/hotplug re-pick) - so "primary display" here means
 // which single connector the whole game-mode session targets, not an
-// extend/mirror choice.
+// extend/mirror choice. Mirroring/extending is desktop-mode-only (Plasma's
+// display settings); game mode stays single-screen by design.
 const INTERNAL = "__internal__";
+// An external panel can be physically portrait (the Retroid Dual Screen
+// addon exposes only 1080x1920 but mounts landscape). gamescope rotates it
+// via --force-external-orientation + the rotation shader (armada patches
+// 0014/0005); portrait WITHOUT a rotation is rejected by the backend and by
+// the session script, so pre-select one the user can flip if it's wrong.
+const ORIENTATION_OPTIONS = [
+    { data: "normal", label: t("Normal") },
+    { data: "left", label: t("90°") },
+    { data: "right", label: t("270°") },
+    { data: "upsidedown", label: t("180°") },
+];
+const isPortrait = (width, height) => width > 0 && height > 0 && width < height;
+const connectorLabel = (c) => {
+    const base = c.name ? `${c.name} (${c.connector})` : c.connector;
+    return c.connected ? base : t("{connector} (disconnected)", { connector: base });
+};
 function Display(_props) {
     const [state, setState] = SP_REACT.useState(null);
     const [loadMessage, setLoadMessage] = SP_REACT.useState(t("Loading"));
@@ -1737,10 +1774,7 @@ function Display(_props) {
     const selectedConnector = state.useExternal ? state.connector : INTERNAL;
     const primaryOptions = [
         { data: INTERNAL, label: t("Internal Screen") },
-        ...externals.map((c) => ({
-            data: c.connector,
-            label: !c.connected ? t("{connector} (disconnected)", { connector: c.connector }) : c.connector,
-        })),
+        ...externals.map((c) => ({ data: c.connector, label: connectorLabel(c) })),
     ];
     const activeExternal = externals.find((c) => c.connector === state.connector);
     // A disconnected display has nothing meaningful to configure right now -
@@ -1766,24 +1800,31 @@ function Display(_props) {
         const target = externals.find((c) => c.connector === connector);
         const previous = state.remembered[connector];
         const [w, h] = (target?.modes[0] || "1920x1080").split("x").map(Number);
-        persist({
-            useExternal: true,
-            connector,
-            width: previous?.width || w || 1920,
-            height: previous?.height || h || 1080,
-            // gamescope has no way to rotate a non-internal output (there's no
-            // Rotation control here for that reason) - orientation is meaningless
-            // for an external display, always "normal".
-            orientation: "normal",
-        });
+        const width = previous?.width || w || 1920;
+        const height = previous?.height || h || 1080;
+        let orientation = previous?.orientation || "normal";
+        if (isPortrait(width, height) && orientation === "normal") {
+            // Portrait panel + no rotation would be rejected by the backend (and
+            // ignored by the session) - pre-select one; the user flips it below
+            // if the image comes up the wrong way round.
+            orientation = "left";
+        }
+        persist({ useExternal: true, connector, width, height, orientation });
     };
     const selectMode = (mode) => {
         const [w, h] = mode.split("x").map(Number);
         if (!w || !h)
             return;
-        persist({ width: w, height: h });
+        persist({
+            width: w,
+            height: h,
+            orientation: isPortrait(w, h) && state.orientation === "normal" ? "left" : state.orientation,
+        });
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("EXTERNAL DISPLAY"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(DFL.Field, { label: t("Rotation isn't available for an external display (gamescope only rotates the internal screen).") })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
+    const selectOrientation = (orientation) => {
+        persist({ orientation });
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("EXTERNAL DISPLAY"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") }))] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
                         setRestarting(true);
                         setErrorMessage("");
                         // A successful restart tears down this very session (and Decky
