@@ -2,14 +2,33 @@
 # One-time rename of the legacy "armada" user to "nebel" after an OTA from an
 # armada-era image. Runs very early (before sddm), when the user has no
 # processes and no active session.
+#
+# Two cases, because systemd-sysusers runs before us and creates the "nebel"
+# user (plus a root-owned /var/home/nebel) right from the new image config:
+#   1. only "armada" exists          -> full usermod rename (home moved by -m)
+#   2. "nebel" already exists, but the legacy /var/home/armada survived
+#      -> adopt the legacy home into /var/home/nebel instead of the fresh one
 set -u
 
-id -u nebel &>/dev/null && exit 0
-id -u armada &>/dev/null || exit 0
+new_home=/var/home/nebel
+legacy_home=/var/home/armada
 
-loginctl kill-user armada 2>/dev/null || true
-groupmod -n nebel armada 2>/dev/null || true
-usermod -l nebel -d /var/home/nebel -m armada || exit 1
+if ! id -u nebel &>/dev/null; then
+    id -u armada &>/dev/null || exit 0
+    loginctl kill-user armada 2>/dev/null || true
+    groupmod -n nebel armada 2>/dev/null || true
+    usermod -l nebel -d "$new_home" -m armada || exit 1
+elif [ -d "$legacy_home" ]; then
+    loginctl kill-user nebel 2>/dev/null || true
+    # Merge legacy home over the fresh one (old data wins), then drop it.
+    cp -a "$legacy_home"/. "$new_home"/ || exit 1
+    rm -rf "$legacy_home"
+else
+    exit 0
+fi
+
+chown -R nebel:nebel "$new_home"
+restorecon -R "$new_home" 2>/dev/null || true
 echo 'nebel:nebel' | chpasswd
 rm -f /etc/sudoers.d/armada-user
 # Re-apply sysusers so group memberships from the new config are in place.
