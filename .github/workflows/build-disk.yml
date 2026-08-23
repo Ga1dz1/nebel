@@ -48,8 +48,15 @@ jobs:
             curl \
             jq \
             pigz \
-            podman \
             python3
+          # Install podman/skopeo only if missing: apt's podman on
+          # ubuntu-24.04-arm breaks rootful with "/libpod_lock: numerical
+          # result out of range"; the runner's preinstalled one works.
+          need=""
+          for t in podman skopeo; do
+            command -v "$t" >/dev/null || need="$need $t"
+          done
+          [ -z "$need" ] || sudo apt-get install -y $need
 
       - name: Check build recipes
         uses: ublue-os/just-action@30ab4659369934b65b655bf8d2fa4ddd6547d384 # v3
