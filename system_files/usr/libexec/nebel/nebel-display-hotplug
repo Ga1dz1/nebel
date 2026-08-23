@@ -31,8 +31,12 @@ for status_file in /sys/class/drm/card*-"${connector}"/status; do
 done
 
 # Marker present but gamescope gone = stale leftover (session ended some
-# other way); clean up but don't touch sddm from here.
-if ! pgrep -x gamescope >/dev/null 2>&1; then
+# other way); clean up but don't touch sddm from here. NOTE: gamescope
+# renames its main process comm to "gamescope-wl" at startup - checking for
+# "gamescope" here never matches a live session and used to send every
+# real disconnect down this no-restart path (live-observed: RDS unplug left
+# game mode on the internal panel with the external's flags, sideways).
+if ! pgrep -x gamescope-wl >/dev/null 2>&1 && ! pgrep -x gamescope >/dev/null 2>&1; then
     rm -f "$MARKER"
     exit 0
 fi
@@ -44,4 +48,5 @@ rm -f "$MARKER"
 # that restarting sddm.service (what that goes through when there's no
 # Plasma session to gracefully hand off from) never tears down an already-
 # running autologin session at all - see restart-gamescope-session for why.
+logger -t nebel-display-hotplug "primary connector $connector disconnected - restarting game mode onto the internal panel"
 systemd-run --no-block /usr/libexec/nebel/restart-gamescope-session
