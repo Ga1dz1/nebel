@@ -171,6 +171,14 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
         EXTRA_MOUNTS+=("-v" "/tmp/nebel-runc/runc-arm64:/usr/bin/runc:ro")
     fi
 
+    # Rootful podman pull is broken on ubuntu-24.04-arm GHA runners
+    # ("/libpod_lock: numerical result out of range"), so load BIB via skopeo
+    # and run with --pull=never. skopeo inspect on containers-storage doubles
+    # as the presence check.
+    if ! sudo skopeo inspect "containers-storage:${bib_image}" >/dev/null 2>&1; then
+        sudo skopeo copy --retry-times 3 "docker://${bib_image}" "containers-storage:${bib_image}"
+    fi
+
     # Ubuntu 24.04 AppArmor blocks mknod in nested crun.
     tty_args=()
     if [[ -t 0 ]]; then
@@ -181,7 +189,7 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
       --rm \
       "${tty_args[@]}" \
       --privileged \
-      --pull=newer \
+      --pull=never \
       --net=host \
       --platform linux/arm64 \
       --security-opt label=type:unconfined_t \
