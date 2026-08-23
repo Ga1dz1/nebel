@@ -1,7 +1,6 @@
 # Nebel OS
 
-A SteamOS-like Linux distribution for ARM handhelds built on Fedora bootc using
-device support from ROCKNIX.
+A SteamOS-like Linux distribution for ARM handhelds built on Fedora bootc.
 
 Includes:
 * ARM64 Steam
@@ -208,7 +207,7 @@ occasional game that needs it.
 
 ### Quick Access Menu and Nebel Control
 
-Press the **Steam** button to open the Quick Access Menu (on AYANEO devices the
+Press the **Back** button to open the Quick Access Menu (on AYANEO devices the
 QAM is unmapped, so use **Home + A**), then open **Nebel Control**. Every
 section has a simplified view in the QAM; the full set of controls lives on
 the fullscreen page (open it via **Open full screen** at the top):
@@ -303,7 +302,7 @@ Choose an update channel and trigger the update from Steam's system settings:
 ---
 
 **Nebel OS** — операційна система для ARM-портативок у дусі SteamOS, збудована
-на Fedora bootc із залізною підтримкою від ROCKNIX.
+на Fedora bootc.
 
 До складу входять:
 * Повноцінний ARM64 Steam
@@ -322,7 +321,6 @@ Choose an update channel and trigger the update from Steam's system settings:
 * Студія RGB-підсвітки стіків із каскадом сповіщень
 * Синхронізація збережень і налаштувань між пристроями (Syncthing)
 * Вбудований засіб додавання сторонніх ігор
-* Українська, іспанська та французька локалізації інтерфейсу
 
 > [!WARNING]
 > **Прототип. Використовуйте на власний ризик.** Nebel перебуває в активній
@@ -517,7 +515,7 @@ FEX (трансляція x86) і CachyOS Proton 11 налаштовані з к
 
 ### Меню швидкого доступу й Nebel Control
 
-Натисніть кнопку **Steam**, щоб відкрити меню швидкого доступу (на пристроях
+Натисніть кнопку **Назад**, щоб відкрити меню швидкого доступу (на пристроях
 AYANEO QAM не призначене, тож використовуйте **Home + A**), тоді відкрийте
 **Nebel Control**. Кожен розділ має спрощений вигляд у QAM; повний набір
 регуляторів живе на повноекранній сторінці (відкрийте її через **Open full
@@ -624,7 +622,7 @@ Nebel вміє оновлюватися на місці — без перепр�
 - **[armada](https://github.com/virtudude/armada):** кодова база, з якої виріс
   Nebel; чимала частина підтримки пристроїв і структури образу почалася там.
 - **[ROCKNIX](https://github.com/ROCKNIX):** завантажувач, підтримка
-  пристроїв, розкладки вводу, звукові профілі й багато іншого.
+  пристроїв, звукові профілі й багато іншого.
 - **[Bazzite](https://github.com/ublue-os/bazzite)** та екосистема
   **[Universal Blue](https://github.com/ublue-os)**: структура збірки
   bootc-образу, [image-template](https://github.com/ublue-os/image-template),
@@ -649,7 +647,7 @@ Questions and bug reports:
   out of; large parts of the device enablement and image structure started
   there.
 - **[ROCKNIX](https://github.com/ROCKNIX):** bootloader, device support,
-  input mappings, audio profiles, and more.
+  audio profiles, and more.
 - **[Bazzite](https://github.com/ublue-os/bazzite)** and the
   **[Universal Blue](https://github.com/ublue-os)** ecosystem: the bootc/image
   build structure, the [image-template](https://github.com/ublue-os/image-template)
