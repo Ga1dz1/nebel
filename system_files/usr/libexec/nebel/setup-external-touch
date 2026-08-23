@@ -1,0 +1,93 @@
+#!/usr/bin/bash
+# Pin each touchscreen to its own output in desktop mode.
+#
+# KWin maps every touchscreen to the primary output by default, so with an
+# external panel attached taps on either screen steer the same one. The fix
+# has two halves: a persisted kcminputrc entry (KWin applies it when the
+# device is added, covering later hotplug) and a live org.kde.KWin
+# InputDevice outputName set for the device that is already present.
+#
+# Runs from desktop-bootstrap after the kscreen layout is applied; a no-op
+# when no external touchscreen/display pair is known.
+set -uo pipefail
+
+# May run outside the session env (ssh, hotplug hooks); kscreen-doctor and
+# gdbus need the Wayland session coordinates.
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+
+if command -v /usr/libexec/nebel/device-env >/dev/null 2>&1; then
+    eval "$(/usr/libexec/nebel/device-env)"
+fi
+
+internal_touch="${NEBEL_INTERNAL_TOUCHSCREEN:-}"
+primary_connector="${NEBEL_PRIMARY_CONNECTOR:-}"
+
+external_connector=""
+external_touch=""
+if [[ -f /etc/nebel/display-override.conf ]]; then
+    # shellcheck source=/dev/null
+    source /etc/nebel/display-override.conf
+    external_connector="${NEBEL_DISPLAY_CONNECTOR:-}"
+fi
+# Known external touch devices are a device-level list (prefix-matched, the
+# kernel appends unstable instance suffixes to some).
+external_touch="${NEBEL_EXTERNAL_TOUCHSCREENS:-}"
+
+# Only pin while the external output is actually connected.
+if [[ -n "${external_connector}" ]]; then
+    if ! kscreen-doctor -j 2>/dev/null | grep -q "\"${external_connector}\""; then
+        external_connector=""
+    fi
+fi
+[[ -n "${external_connector}" && -n "${external_touch}" ]] || exit 0
+
+find_event() {
+    # $1 = device name prefix; prints "<vendor-dec> <product-dec> <eventN> <exact name>"
+    local prefix="$1" sysdir name event
+    for sysdir in /sys/class/input/input*; do
+        name="$(cat "${sysdir}/name" 2>/dev/null)" || continue
+        case "${name}" in
+            "${prefix}"*)
+                event="$(basename "$(compgen -G "${sysdir}/event*" | head -n1)")"
+                [[ -n "${event}" && -e "/dev/input/${event}" ]] || continue
+                printf '%d %d %s %s\n' \
+                    "0x$(cat "${sysdir}/id/vendor")" \
+                    "0x$(cat "${sysdir}/id/product")" \
+                    "${event}" "${name}"
+                return 0
+                ;;
+        esac
+    done
+    return 1
+}
+
+pin() {
+    # $1 = name prefix, $2 = connector
+    local prefix="$1" connector="$2" info vendor product event exact
+    info="$(find_event "${prefix}")" || return 0
+    vendor="${info%% *}"; info="${info#* }"
+    product="${info%% *}"; info="${info#* }"
+    event="${info%% *}"; exact="${info#* }"
+    kwriteconfig6 --file kcminputrc --group Libinput --group "${vendor}" \
+        --group "${product}" --group "${exact}" \
+        --key OutputName "${connector}" 2>/dev/null || true
+    gdbus call --session --dest org.kde.KWin \
+        --object-path "/org/kde/KWin/InputDevice/${event}" \
+        --method org.freedesktop.DBus.Properties.Set \
+        org.kde.KWin.InputDevice outputName "<'${connector}'>" \
+        >/dev/null 2>&1 || true
+}
+
+# The external touchscreen list is |-separated (device names contain spaces).
+local_ifs="${IFS}"
+IFS='|'
+for touch in ${external_touch}; do
+    IFS="${local_ifs}"
+    pin "${touch}" "${external_connector}"
+    IFS='|'
+done
+IFS="${local_ifs}"
+[[ -n "${internal_touch}" && -n "${primary_connector}" ]] && \
+    pin "${internal_touch}" "${primary_connector}"
+exit 0

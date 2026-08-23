@@ -81,3 +81,7 @@ if [[ -f /etc/nebel/display-override.conf ]]; then
 fi
 
 kscreen-doctor "output.${display_connector}.scale.1.5" >/dev/null 2>&1 || true
+
+# With an external panel up, pin each touchscreen to its own output - KWin
+# otherwise maps every touchscreen to the primary one.
+/usr/libexec/nebel/setup-external-touch 2>/dev/null || true
