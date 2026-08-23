@@ -17,6 +17,7 @@ def display_state():
         "height": config.get("height", 0),
         "orientation": config.get("orientation") or "normal",
         "remembered": remembered if isinstance(remembered, dict) else {},
+        "internalTouchpad": bool(call("get_internal_touchpad").get("enabled")),
     }
 
 
@@ -40,3 +41,8 @@ def set_display_config(use_external, connector, width, height, orientation):
 def restart_gamescope_session():
     call("restart_gamescope_session")
     return {"ok": True}
+
+
+def set_internal_touchpad(enabled):
+    result = call("set_internal_touchpad", enabled=bool(enabled))
+    return bool(result.get("enabled"))

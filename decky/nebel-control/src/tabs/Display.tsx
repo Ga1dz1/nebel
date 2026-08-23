@@ -1,7 +1,7 @@
 import { ButtonItem, Field, PanelSection } from "@decky/ui";
 import { useEffect, useState } from "react";
-import { getDisplayState, restartGamescopeSession, setDisplayConfig } from "../backend";
-import { SelectEdit } from "../components/widgets";
+import { getDisplayState, restartGamescopeSession, setDisplayConfig, setInternalTouchpad } from "../backend";
+import { SelectEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { DisplayConnector, DisplayState } from "../types";
 
@@ -111,6 +111,16 @@ export function Display(_props: { qam?: boolean }) {
     persist({ orientation });
   };
 
+  const toggleTouchpad = (enabled: boolean) => {
+    setErrorMessage("");
+    // Applies live when game mode is already on an external display (the
+    // daemon starts/stops the trackpad service itself), otherwise at the
+    // next session start - no restart needed either way.
+    setInternalTouchpad(enabled)
+      .then((value) => setState({ ...state, internalTouchpad: value }))
+      .catch((error) => setErrorMessage(String(error)));
+  };
+
   return (
     <PanelSection title={t("EXTERNAL DISPLAY")}>
       <SelectEdit label={t("Primary Display")} value={selectedConnector} options={primaryOptions} onChange={selectPrimary} disabled={saving} />
@@ -121,6 +131,13 @@ export function Display(_props: { qam?: boolean }) {
           {isPortrait(state.width, state.height) && (
             <Field label={t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.")} />
           )}
+          <ToggleRow
+            label={t("Internal screen as touchpad")}
+            description={t("While an external display is primary, the dark internal touchscreen works as a trackpad (correct orientation, tap = click). Off: it is disabled entirely.")}
+            value={state.internalTouchpad}
+            onChange={toggleTouchpad}
+            disabled={saving}
+          />
         </>
       )}
       {externals.length === 0 && (

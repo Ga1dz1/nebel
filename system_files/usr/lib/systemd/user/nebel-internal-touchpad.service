@@ -1,0 +1,11 @@
+[Unit]
+Description=Nebel internal touchscreen as trackpad (game mode on an external display)
+# Started on demand by sessions.d/steam / nebel-control when an external
+# display owns game mode and the user has the touchpad toggle on (default);
+# stopped by desktop-bootstrap and by the next internal-primary session.
+# No [Install] on purpose - never enabled, explicit start/stop only.
+
+[Service]
+ExecStart=/usr/libexec/nebel/internal-touchpad
+Restart=on-failure
+RestartSec=1

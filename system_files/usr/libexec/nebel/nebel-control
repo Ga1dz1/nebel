@@ -299,6 +299,46 @@ def action_restart_gamescope_session(request):
     return {"ok": True}
 
 
+INTERNAL_TOUCHPAD_CONF = Path("/etc/nebel/internal-touchpad.conf")
+INTERNAL_TOUCHPAD_SERVICE = "nebel-internal-touchpad.service"
+
+
+def _internal_touchpad_enabled():
+    # Default ON: a missing/unreadable conf means enabled (sessions.d/steam
+    # reads the same file with the same default).
+    try:
+        for line in INTERNAL_TOUCHPAD_CONF.read_text(encoding="utf-8").splitlines():
+            if line.startswith("ENABLED="):
+                return line.split("=", 1)[1].strip() != "0"
+    except OSError:
+        pass
+    return True
+
+
+def action_get_internal_touchpad(request):
+    return {"enabled": _internal_touchpad_enabled()}
+
+
+def action_set_internal_touchpad(request):
+    enabled = bool(request.get("enabled"))
+    atomic_write(INTERNAL_TOUCHPAD_CONF, f"ENABLED={1 if enabled else 0}\n")
+    # Live-apply only makes sense while a game session is running on an
+    # external display (the marker sessions.d/steam writes); on the desktop
+    # or an internal-primary session the new value applies at next start.
+    if Path("/run/user/1000/nebel-display-connector").exists():
+        name = device_env().get("NEBEL_INTERNAL_TOUCHSCREEN", "")
+        if enabled:
+            # The rotator grabs the device - useless while it's inhibited.
+            if name:
+                run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
+            run(USER_SYSTEMCTL + ["start", INTERNAL_TOUCHPAD_SERVICE])
+        else:
+            run(USER_SYSTEMCTL + ["stop", INTERNAL_TOUCHPAD_SERVICE])
+            if name:
+                run(["/usr/libexec/nebel/touchscreen-inhibit", name, "1"])
+    return {"enabled": enabled}
+
+
 def action_set_controller_type(request):
     value = str(request.get("value", ""))
     if value not in CONTROLLER_TYPES:
@@ -678,6 +718,8 @@ ACTIONS = {
     "get_display_config": action_get_display_config,
     "set_display_config": action_set_display_config,
     "restart_gamescope_session": action_restart_gamescope_session,
+    "get_internal_touchpad": action_get_internal_touchpad,
+    "set_internal_touchpad": action_set_internal_touchpad,
 }
 
 

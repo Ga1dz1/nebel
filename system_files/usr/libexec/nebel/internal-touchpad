@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+# Turns the internal touchscreen into a relative trackpad (Steam Deck style)
+# for the game-mode-on-external-display case: gamescope drives only the
+# external screen, so the internal panel is dark - but its digitizer still
+# works, and gamescope would map its ABSOLUTE coordinates onto the external
+# output with the wrong orientation (the internal panel orientation only
+# applies while the internal panel is the active connector). Grabbing the
+# device here and re-emitting rotated REL deltas through a virtual uinput
+# mouse gives a usable, correctly oriented trackpad instead. A quick tap is
+# a left click, a quick two-finger tap a right click.
+#
+# Started/stopped by sessions.d/steam (external primary + the Decky toggle
+# on), nebel-control's set_internal_touchpad (live toggle), and stopped by
+# desktop-bootstrap / the next internal-primary session. Pure stdlib on
+# purpose: no python-evdev dependency in the image.
+#
+# Delta rotation mirrors gamescope's own touchscreen transform
+# (apply_touchscreen_orientation, panel native -> logical) so the trackpad
+# agrees with what the user sees on the external screen:
+#   normal:      ( dx,  dy)    left (90):  (-dy,  dx)
+#   right (270): ( dy, -dx)    upsidedown: (-dx, -dy)
+import fcntl
+import os
+import struct
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+# A full swipe across the panel moves the cursor roughly twice that far -
+# comfortable for reaching the whole external screen without lifting.
+SENSITIVITY = float(os.environ.get("NEBEL_INTERNAL_TOUCHPAD_SENSITIVITY", "2.0"))
+TAP_MAX_SECONDS = 0.25
+TAP_MAX_MOVE_FRACTION = 0.03  # of the native axis range
+
+EV_SYN, EV_KEY, EV_REL, EV_ABS = 0x00, 0x01, 0x02, 0x03
+SYN_REPORT = 0
+BTN_LEFT, BTN_RIGHT = 0x110, 0x111
+REL_X, REL_Y = 0x00, 0x01
+ABS_MT_SLOT = 0x2F
+ABS_MT_TRACKING_ID = 0x39
+ABS_MT_POSITION_X = 0x35
+ABS_MT_POSITION_Y = 0x36
+
+INPUT_EVENT = struct.Struct("llHHi")  # timeval sec/usec, type, code, value
+EVIOCGRAB = 0x40044590
+EVIOCGABS = 0x80184540  # + axis, 6 ints
+UI_SET_EVBIT = 0x40045564
+UI_SET_RELBIT = 0x40045566
+UI_SET_KEYBIT = 0x40045565
+UI_DEV_SETUP = 0x405C5503
+UI_DEV_CREATE = 0x5501
+UI_DEV_DESTROY = 0x5502
+
+ROTATIONS = {
+    "normal": lambda dx, dy: (dx, dy),
+    "left": lambda dx, dy: (-dy, dx),
+    "right": lambda dx, dy: (dy, -dx),
+    "upsidedown": lambda dx, dy: (-dx, -dy),
+}
+
+
+def device_env():
+    result = subprocess.check_output(["/usr/libexec/nebel/device-env"], text=True, timeout=5)
+    env = {}
+    for line in result.splitlines():
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        env[key] = value.strip().strip("'").strip('"')
+    return env
+
+
+def find_touch_event(name_prefix):
+    for input_dir in sorted(Path("/sys/class/input").glob("input*")):
+        try:
+            name = (input_dir / "name").read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if not name.startswith(name_prefix):
+            continue
+        for event in sorted(input_dir.glob("event*")):
+            return Path("/dev/input") / event.name
+    return None
+
+
+def abs_range(fd, axis):
+    values = struct.unpack("6i", fcntl.ioctl(fd, EVIOCGABS + axis, bytes(24)))
+    return values[1], values[2]  # min, max
+
+
+def create_uinput():
+    fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
+    fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
+    fcntl.ioctl(fd, UI_SET_EVBIT, EV_REL)
+    fcntl.ioctl(fd, UI_SET_RELBIT, REL_X)
+    fcntl.ioctl(fd, UI_SET_RELBIT, REL_Y)
+    fcntl.ioctl(fd, UI_SET_KEYBIT, BTN_LEFT)
+    fcntl.ioctl(fd, UI_SET_KEYBIT, BTN_RIGHT)
+    setup = struct.pack("HHHH", 0x03, 0x222A, 0x0001, 1) + b"Nebel Internal Touchpad".ljust(80, b"\0") + struct.pack("I", 0)
+    fcntl.ioctl(fd, UI_DEV_SETUP, setup)
+    fcntl.ioctl(fd, UI_DEV_CREATE)
+    return fd
+
+
+def emit(fd, etype, code, value):
+    os.write(fd, INPUT_EVENT.pack(0, 0, etype, code, value))
+
+
+def emit_click(fd, button):
+    emit(fd, EV_KEY, button, 1)
+    emit(fd, EV_SYN, SYN_REPORT, 0)
+    emit(fd, EV_KEY, button, 0)
+    emit(fd, EV_SYN, SYN_REPORT, 0)
+
+
+def main():
+    env = device_env()
+    name_prefix = env.get("NEBEL_INTERNAL_TOUCHSCREEN", "")
+    if not name_prefix:
+        sys.exit("NEBEL_INTERNAL_TOUCHSCREEN is not set for this device")
+    rotate = ROTATIONS.get(env.get("NEBEL_PANEL_ORIENTATION", "normal"), ROTATIONS["normal"])
+
+    node = find_touch_event(name_prefix)
+    if node is None:
+        sys.exit(f"touchscreen '{name_prefix}*' not found")
+
+    touch_fd = os.open(node, os.O_RDONLY)
+    fcntl.ioctl(touch_fd, EVIOCGRAB, 1)
+    # Range comes from the MT axes the loop actually consumes; some
+    # digitizers don't expose the single-touch ABS_X/ABS_Y emulation.
+    x_min, x_max = abs_range(touch_fd, ABS_MT_POSITION_X)
+    y_min, y_max = abs_range(touch_fd, ABS_MT_POSITION_Y)
+    if x_max <= x_min:
+        x_min, x_max = abs_range(touch_fd, 0x00)  # ABS_X
+    if y_max <= y_min:
+        y_min, y_max = abs_range(touch_fd, 0x01)  # ABS_Y
+    tap_max_move = max(x_max - x_min, y_max - y_min) * TAP_MAX_MOVE_FRACTION
+
+    uinput_fd = create_uinput()
+    try:
+        run(touch_fd, uinput_fd, rotate, tap_max_move)
+    finally:
+        fcntl.ioctl(uinput_fd, UI_DEV_DESTROY)
+        os.close(uinput_fd)
+        os.close(touch_fd)
+
+
+def run(touch_fd, uinput_fd, rotate, tap_max_move):
+    slot = 0
+    contacts = {}  # slot -> [x, y]
+    primary = None
+    primary_down_at = 0.0
+    primary_travel = 0.0
+    max_contacts = 0
+    # Fractional remainders, so slow drags don't get truncated away by int().
+    acc_x = 0.0
+    acc_y = 0.0
+
+    while True:
+        data = os.read(touch_fd, INPUT_EVENT.size * 32)
+        for off in range(0, len(data) - INPUT_EVENT.size + 1, INPUT_EVENT.size):
+            _, _, etype, code, value = INPUT_EVENT.unpack_from(data, off)
+            if etype != EV_ABS:
+                continue
+            if code == ABS_MT_SLOT:
+                slot = value
+            elif code == ABS_MT_TRACKING_ID:
+                if value >= 0:
+                    contacts.setdefault(slot, [None, None])
+                    if primary is None:
+                        primary = slot
+                        primary_down_at = time.monotonic()
+                        primary_travel = 0.0
+                    max_contacts = max(max_contacts, len(contacts))
+                else:
+                    contacts.pop(slot, None)
+                    if slot == primary:
+                        # A quick, nearly stationary primary contact is a
+                        # click; a second finger having been down makes it a
+                        # right click.
+                        if (time.monotonic() - primary_down_at < TAP_MAX_SECONDS
+                                and primary_travel < tap_max_move):
+                            emit_click(uinput_fd, BTN_RIGHT if max_contacts > 1 else BTN_LEFT)
+                        primary = None
+                    if not contacts:
+                        primary = None
+                        max_contacts = 0
+            elif code in (ABS_MT_POSITION_X, ABS_MT_POSITION_Y) and slot in contacts:
+                pos = contacts[slot]
+                axis = 0 if code == ABS_MT_POSITION_X else 1
+                previous = pos[axis]
+                pos[axis] = value
+                if previous is None or slot != primary:
+                    continue
+                dx = (value - previous) if axis == 0 else 0
+                dy = (value - previous) if axis == 1 else 0
+                primary_travel += abs(dx) + abs(dy)
+                rdx, rdy = rotate(dx, dy)
+                acc_x += rdx * SENSITIVITY
+                acc_y += rdy * SENSITIVITY
+                out_x, out_y = int(acc_x), int(acc_y)
+                if out_x or out_y:
+                    acc_x -= out_x
+                    acc_y -= out_y
+                    if out_x:
+                        emit(uinput_fd, EV_REL, REL_X, out_x)
+                    if out_y:
+                        emit(uinput_fd, EV_REL, REL_Y, out_y)
+                    emit(uinput_fd, EV_SYN, SYN_REPORT, 0)
+
+
+if __name__ == "__main__":
+    main()

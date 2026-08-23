@@ -41,10 +41,12 @@ if [[ -n "${NEBEL_SECONDARY_TOUCHSCREEN:-}" ]]; then
     /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_SECONDARY_TOUCHSCREEN" 0 2>/dev/null || true
 fi
 # Same for the internal touchscreen - game mode inhibits it while an external
-# display is primary, the desktop lights the internal panel back up.
+# display is primary (or hands it to the trackpad service), the desktop lights
+# the internal panel back up.
 if [[ -n "${NEBEL_INTERNAL_TOUCHSCREEN:-}" ]]; then
     /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_INTERNAL_TOUCHSCREEN" 0 2>/dev/null || true
 fi
+systemctl --user stop nebel-internal-touchpad.service 2>/dev/null || true
 
 display_connector="${NEBEL_PRIMARY_CONNECTOR:-}"
 panel_orientation="${NEBEL_PANEL_ORIENTATION:-normal}"

@@ -9,7 +9,7 @@ from nebel_control.calibration import (
 )
 from nebel_control.config import build_config
 from nebel_control.controller import set_controller_type
-from nebel_control.display import display_state, restart_gamescope_session, set_display_config
+from nebel_control.display import display_state, restart_gamescope_session, set_display_config, set_internal_touchpad
 from nebel_control.filepick import list_dir
 from nebel_control.lighting import (
     set_stick_led_charging_indicator,
@@ -167,6 +167,9 @@ class Plugin:
 
     async def restart_gamescope_session(self):
         return await asyncio.to_thread(restart_gamescope_session)
+
+    async def set_internal_touchpad(self, enabled):
+        return await asyncio.to_thread(set_internal_touchpad, enabled)
 
     async def set_stick_led_notify(self, enabled):
         return await asyncio.to_thread(set_stick_led_notify, enabled)
