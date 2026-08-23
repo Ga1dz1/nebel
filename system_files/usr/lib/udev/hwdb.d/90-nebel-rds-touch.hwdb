@@ -1,0 +1,11 @@
+# Retroid Dual Screen addon (USB 222a:0001, "RetroidPocket RDS Touchscreen"):
+# the digitizer reports coordinates in the MOUNTED landscape frame
+# (ABS_X 0..1920, ABS_Y 0..1080) while the panel's native frame is portrait
+# (1080x1920, EDID's only mode). Both game mode (gamescope's wlserver touch
+# transform follows the active connector's orientation) and desktop mode
+# (kwin maps touch through the output transform) assume the touch frame is
+# panel-native, so without this the pointer lands 90 degrees off
+# (live-confirmed). Rotate the device into the panel's portrait frame here
+# so both of those transforms come out right.
+evdev:input:b0003v222Ap0001*
+ LIBINPUT_CALIBRATION_MATRIX=0 1 0 -1 0 1
