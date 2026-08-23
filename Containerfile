@@ -54,6 +54,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=bind,from=pcsx2,source=/pcsx2,target=/packages/pcsx2 \
     --mount=type=bind,from=eden,source=/eden,target=/packages/eden \
     --mount=type=bind,from=decky-build,source=/build/dist,target=/packages/decky-dist \
+    --mount=type=secret,id=gh_api_token,dst=/run/secrets/gh_api_token,required=false \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \

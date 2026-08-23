@@ -11,8 +11,16 @@ rm -f /usr/share/decky-plugins/nebel-control/dist/*.map
 find /usr/share/decky-plugins/nebel-control -name __pycache__ -type d -prune -exec rm -rf {} +
 chmod 0755 /usr/lib/decky-loader/nebel-decky-sync
 
+# api.github.com without a token is rate-limited per shared runner IP and
+# 403s often enough to take whole image builds down with it (seen live);
+# GITHUB_TOKEN is passed in as a build secret when available.
+gh_auth=()
+if [[ -f /run/secrets/gh_api_token ]]; then
+    gh_auth=(-H "Authorization: Bearer $(cat /run/secrets/gh_api_token)")
+fi
+
 decky_release="$(
-    curl --retry 3 --retry-delay 2 -fsSL \
+    curl --retry 3 --retry-delay 2 -fsSL "${gh_auth[@]}" \
         https://api.github.com/repos/SteamDeckHomebrew/decky-loader/releases |
         jq -r 'first(.[])'
 )"

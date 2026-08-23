@@ -113,6 +113,8 @@ jobs:
       - name: Build Image
         id: build_image
         uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2
+        env:
+          GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           containerfiles: |
             ./Containerfile
@@ -121,6 +123,11 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           build-args: |
             NEBEL_VERSION=${{ steps.version.outputs.version }}
+          # Feeds /run/secrets/gh_api_token inside RUNs - the decky release
+          # lookup hits api.github.com, which 403s unauthenticated CI runner
+          # IPs on rate limit and takes the whole build down with it.
+          extra-args: |
+            --secret id=gh_api_token,env=GH_API_TOKEN
           oci: false
 
       - name: Rechunk for small OTA deltas
