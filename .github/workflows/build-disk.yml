@@ -59,6 +59,10 @@ jobs:
           set -euxo pipefail
           JUST_BIN=$(command -v just)
           sudo git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          # Ubuntu 24.04's AppArmor userns restriction breaks rootful podman
+          # ("/libpod_lock: numerical result out of range") — same workaround
+          # as build.yml's rechunk step.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           # Build the disk FROM the published container so the disk and the ghcr
           # image are identical content and the installed system's bootc origin
           # points at ghcr (so OTA works). The Justfile pulls the ref for BIB.
