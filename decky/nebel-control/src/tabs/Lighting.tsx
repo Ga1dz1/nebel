@@ -362,11 +362,12 @@ export function Lighting({ config, setConfig, qam }: {
     }
   };
   const makeToggleSetter = (
-    field: "chase" | "compass" | "seesaw",
+    field: "chase" | "compass" | "seesaw" | "flip",
     apply: (side: "l" | "r", value: boolean) => Promise<StickLedState>,
+    sidesOverride?: ("l" | "r")[],
   ) => async (value: boolean) => {
     if (!stickLed || !sideState) return;
-    const sides = targetSides;
+    const sides = sidesOverride ?? targetSides;
     const previous = sides.map((s) => stickLed.sides[s][field]);
     setConfig((current) => {
       if (!current) return current;
@@ -390,7 +391,7 @@ export function Lighting({ config, setConfig, qam }: {
   const setStickLedChase = makeToggleSetter("chase", applyStickLedChase);
   const setStickLedCompass = makeToggleSetter("compass", applyStickLedCompass);
   const setStickLedSeesaw = makeToggleSetter("seesaw", applyStickLedSeesaw);
-  const setStickLedFlip = makeToggleSetter("flip", applyStickLedFlip);
+  const setStickLedFlip = makeToggleSetter("flip", applyStickLedFlip, ["l"]);
 
   if (!stickLed?.supported || !sideState) {
     return (
@@ -561,8 +562,8 @@ export function Lighting({ config, setConfig, qam }: {
         )}
         <ToggleRow
           label={t("Flip stick ring")}
-          description={t("Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)")}
-          value={!!sideState.flip}
+          description={t("Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down")}
+          value={!!stickLed.sides.l.flip}
           onChange={setStickLedFlip}
         />
       </Collapsible>

@@ -382,6 +382,7 @@ def _action_set_stick_led_bool_toggle(cli_command):
 action_set_stick_led_chase = _action_set_stick_led_bool_toggle("set-chase")
 action_set_stick_led_compass = _action_set_stick_led_bool_toggle("set-compass")
 action_set_stick_led_seesaw = _action_set_stick_led_bool_toggle("set-seesaw")
+action_set_stick_led_flip = _action_set_stick_led_bool_toggle("set-flip")
 
 
 def action_set_stick_led_notify(request):
@@ -446,6 +447,7 @@ def _default_stick_side_state():
         "chase": False,
         "compass": False,
         "seesaw": False,
+        "flip": False,
         "params": {},
     }
 
@@ -507,6 +509,11 @@ def _stick_led_state():
             s["compass"] = value == "1"
         elif base == "seesaw":
             s["seesaw"] = value == "1"
+        elif base == "orientation_offset":
+            try:
+                s["flip"] = abs(float(value)) > 0.01
+            except ValueError:
+                pass
         elif "_" in base and base.split("_", 1)[0] in STICK_LED_PARAMS:
             try:
                 s["params"][base] = float(value)
@@ -616,6 +623,7 @@ ACTIONS = {
     "set_stick_led_chase": action_set_stick_led_chase,
     "set_stick_led_compass": action_set_stick_led_compass,
     "set_stick_led_seesaw": action_set_stick_led_seesaw,
+    "set_stick_led_flip": action_set_stick_led_flip,
     "set_stick_led_notify": action_set_stick_led_notify,
     "set_stick_led_notify_color": action_set_stick_led_notify_color,
     "list_displays": action_list_displays,
