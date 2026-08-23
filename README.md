@@ -9,10 +9,18 @@ Includes:
 * CachyOS Proton 11
 * Desktop mode (KDE)
 * Bazaar App Store
-* Over-the-air updates
+* Waydroid (Android apps) with controller passthrough
+* Heroic, ProtonPlus/ProtonUp-Qt, EmuDeck dependencies out of the box
+* Real suspend (s2idle) with fast resume
+* Over-the-air updates (cosign-signed, verified on-device)
 * Install to internal storage (alongside Android)
 * Power and fan control in the Steam UI
 * Per-game FEX and Proton settings (Decky plugin)
+* External display management from game mode
+* RGB stick lighting studio with notification cascade
+* Save & settings sync between devices (Syncthing)
+* Built-in non-Steam game picker
+* Ukrainian, Russian, Spanish and French UI localization
 
 > [!WARNING]
 > **Prototype software. Use at your own risk.** Nebel is under active
@@ -25,16 +33,21 @@ Includes:
 > reliable recovery.
 >
 > **Nebel ships with a known default password.** The image ships with user
-> `armada` / password `armada`. SSH is disabled by default, but if you enable it
+> `nebel` / password `nebel`. SSH is disabled by default, but if you enable it
 > from Nebel Control, anyone on your network can log in until you change the
 > password.
 
-## About this fork
+## About
 
-This fork adds **Retroid Pocket Mini V2 (SM8250)** support on top of upstream
-[virtudude/armada](https://github.com/virtudude/armada): kernel/device-tree
-support for the SM8250 SoC, a device profile (panel, gamepad, audio), and a
-few fixes that ended up being generally useful beyond just this one device:
+Nebel is a standalone SteamOS-like OS for ARM64 handhelds. It grew out of
+work around the [armada](https://github.com/virtudude/armada) codebase, but
+the trees have diverged — different plumbing, drivers, release pipeline and
+update channel — so it lives as its own project.
+
+On top of the SM8550/SM8650/SM8750 device lineup, Nebel brings full support
+for the **SM8250 Retroid family** — kernel and device trees, device profiles
+(panel, gamepad, audio) — plus a stack of fixes that ended up being generally
+useful beyond any single device:
 
 - **Unified ROCKNIX-ABL boot for all supported SoCs (no GRUB).** ROCKNIX's
   [ABL](https://github.com/ROCKNIX/abl) (v1.1.6+) ships a per-device selection
@@ -53,19 +66,19 @@ few fixes that ended up being generally useful beyond just this one device:
 - **RGB stick lighting** (see [Stick RGB lighting](#stick-rgb-lighting)) - ten
   modes including a screen-color-reactive "Ambilight" mode, all configurable
   from Nebel Control.
+- **SM8250 audio self-heal** — retries hard-failed LPASS probes at boot until
+  the sound card assembles.
+- **Boot-time stick auto-calibration** and a stable Wi-Fi MAC address
+  (instead of trusting the factory "permanent" one).
 
 The kernel/DTS side lives in
-[Ga1dz1/armada-packages](https://github.com/Ga1dz1/armada-packages), also a
-fork of virtudude's own
-[armada-packages](https://github.com/virtudude/armada-packages).
+[Ga1dz1/armada-packages](https://github.com/Ga1dz1/armada-packages).
 
+**Retroid Pocket Mini V2 (SM8250)** is tested on real hardware.
 **Retroid Pocket 5 and Retroid Pocket Flip2** (both SM8250) have their device
 trees ported from ROCKNIX and device profiles wired up, selectable from the
-ABL's per-device menu - but **completely
-unverified**, with no hardware to test any of it on yet. Panel orientation
-and physical size in particular are first guesses, not measured values;
-audio is assumed to work off the same generic UCM2 profile Mini V2 uses,
-also unconfirmed. If you have one of these devices, testing reports (and
+ABL's per-device menu - but are **less battle-tested**; panel orientation and
+physical size in particular may need per-unit tweaks. Testing reports (and
 fixes) are very welcome.
 
 ## Supported devices
@@ -196,20 +209,23 @@ occasional game that needs it.
 ### Quick Access Menu and Nebel Control
 
 Press the **Steam** button to open the Quick Access Menu (on AYANEO devices the
-QAM is unmapped, so use **Home + A**), then open **Nebel Control**. It has three
-tabs:
+QAM is unmapped, so use **Home + A**), then open **Nebel Control**. Every
+section has a simplified view in the QAM; the full set of controls lives on
+the fullscreen page (open it via **Open full screen** at the top):
 
-- **Power.** Pick a profile: **Eco**, **Balanced**, or **Performance**. Each sets
-  a fan curve, CPU underclock, and a GPU clock range. Profiles are editable in
-  **Nebel Control**.
-- **Compatibility.** Per-game resolution and FEX settings. Pick a FEX preset
-  (**Default**, **Fast**, **Compatible**, or **Custom**). The defaults work for
-  most titles; change these only if a game misbehaves. Settings are saved per game.
-- **Settings.** Choose the controller emulation type (**Xbox 360**, **Steam
-  Deck**, or **DualSense**), launch stick and trigger **calibration**, adjust
-  system options, and (on devices with RGB analog sticks, currently Retroid
-  Pocket Mini V2) configure **Stick Lighting** - see
+- **Home.** System monitor (CPU/GPU temps, fan, battery) and quick toggles:
+  FPS overlay, stick-LED notification flash.
+- **Games.** Per-game compatibility: ARM64-native or x86_64 via FEX, FEX
+  preset, resolution override, Proton selection. Add non-Steam games with the
+  built-in file browser.
+- **Display.** Internal/external display: primary display, resolution.
+- **Power.** Fan curve, CPU/GPU clock limits, CPU underclock.
+- **Lighting.** Stick lighting studio — see
   [Stick RGB lighting](#stick-rgb-lighting).
+- **Sync.** Save/settings sync between devices over Syncthing: pairing,
+  folder presets, custom folders.
+- **System.** Controller emulation type (**Xbox 360**, **Steam Deck**, or
+  **DualSense**), stick/trigger **calibration**, SSH, shared storage.
 
 ### Desktop mode
 
@@ -220,33 +236,37 @@ desktop. The **Bazaar** app store and the **Nebel Installer**
 
 ### Power button and sleep
 
-Pressing the power button does a "fake suspend" (inspired by ROCKNIX) rather than
-real S3 sleep: it blanks the screen and freezes the session, and the same press
-wakes it. Because the device does not truly sleep, idle battery drain is higher
-than it would be with real suspend.
+On SM8250 devices (Retroid Pocket Mini V2, 5, Flip 2) Nebel uses **real
+s2idle suspend**: the power button puts the device to sleep and wakes it
+quickly, with stick lighting and audio handled across the transition. Other
+devices fall back to a "fake suspend" (inspired by ROCKNIX): it blanks the
+screen and freezes the session, and the same press wakes it. Because those
+devices do not truly sleep, their idle battery drain is higher.
 
 ### Stick RGB lighting
 
-On devices whose analog sticks have addressable RGB (currently Retroid Pocket
-Mini V2), **Nebel Control > Settings > Stick Lighting** controls them:
+On devices whose analog sticks have addressable RGB (Retroid Pocket Mini V2,
+Retroid Pocket 6), **Nebel Control > Lighting** controls them:
 
 | Mode | Behavior |
 |---|---|
 | Static | A fixed color. |
 | Breathing | The saved color, pulsing. |
-| Battery | Color follows battery level (red → yellow → green), solid green while charging. |
-| Battery + Breathing | Battery color, pulsing. |
 | Rainbow | Hue cycles continuously. |
-| Chase | A lit zone with a fading tail travels around each stick's 4 zones. |
-| Alternating | Breathing, but the left and right sticks are 180° out of phase. |
-| Reactive | Each stick's own deflection drives its brightness and hue (centered = off); each button press flashes both sticks in that button's own color. |
-| Multidot | Three colored dots (red/green/blue) chase each other around each stick's zones. |
+| Wave | The rainbow spread around each stick's LED ring. |
+| Starlight | Zones twinkle at random. |
+| Spin | A lit zone travels around the ring. |
+| Reactive | Stick deflection and button presses drive the light; per-button flash colors. |
+| Multidot | Three colored dots (red/green/blue) chase each other around the zones. |
 | Ambilight | Each stick tracks the average color of the screen near its own side. |
+| Duotone | Two-color split of the ring (horizontal/vertical/diagonal), with optional "seesaw" breathing between the groups. |
 
-Most modes have per-mode **Speed**, **Intensity**, and/or **Size** sliders, and
-Reactive lets you set a different flash color per button. A **Follow screen
-brightness** toggle scales all of the above by the display's current backlight
-level.
+Extras: **Battery level** as a color source (red → yellow → green) with an
+optional spinning charging indicator, **Compass** (lit zones follow the stick's
+push direction), per-stick independent configuration, a 180° ring flip for
+upside-down stick variants, and a **notification cascade** — incoming
+notifications flash the sticks top-pair then bottom-pair. A **Follow screen
+brightness** toggle scales everything by the display's backlight level.
 
 ## Updating
 
@@ -255,12 +275,12 @@ level.
 > if an update fails.
 
 Nebel can update itself in place, with no reflash and no need to redownload
-games. Choose an update channel and trigger the update from Steam's system
-settings:
+games. Images are cosign-signed and verified on-device before they can boot.
+Choose an update channel and trigger the update from Steam's system settings:
 
-- **Beta** is recommended for normal use. It receives builds after they have
+- **Stable** is recommended for normal use. It receives builds after they have
   been through release testing.
-- **Preview** is the bleeding edge channel. It follows the latest commits on
+- **Testing** is the bleeding edge channel. It follows the latest commits on
   `main` and may contain changes that are incomplete or have received little
   on device testing.
 
@@ -286,6 +306,9 @@ Join the Discord: [discord.gg/HdmdSxTD5S](https://discord.gg/HdmdSxTD5S)
 
 ## Credits
 
+- **[armada](https://github.com/virtudude/armada):** the codebase Nebel grew
+  out of; large parts of the device enablement and image structure started
+  there.
 - **[ROCKNIX](https://github.com/ROCKNIX):** bootloader, device support,
   input mappings, audio profiles, and more.
 - **[Bazzite](https://github.com/ublue-os/bazzite)** and the
