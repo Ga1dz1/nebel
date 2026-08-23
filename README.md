@@ -20,7 +20,7 @@ Includes:
 * RGB stick lighting studio with notification cascade
 * Save & settings sync between devices (Syncthing)
 * Built-in non-Steam game picker
-* Ukrainian, Russian, Spanish and French UI localization
+* Ukrainian, Spanish and French UI localization
 
 > [!WARNING]
 > **Prototype software. Use at your own risk.** Nebel is under active
@@ -299,6 +299,36 @@ Choose an update channel and trigger the update from Steam's system settings:
   devices (Retroid Pocket Mini V2, 5, Flip2) has a targeted fix (bouncing
   PipeWire's graph quantum post-resume); not yet confirmed to cover every
   device or every case.
+
+## Українською
+
+**Nebel OS** — операційна система для ARM-портативок у дусі SteamOS, збудована
+на Fedora bootc із залізною підтримкою від ROCKNIX. Повноцінний ARM64 Steam,
+найсвіжіші FEX і CachyOS Proton 11, режим робочого столу на KDE, крамниця
+застосунків Bazaar, Waydroid для Android-застосунків, Heroic і залежності
+EmuDeck — усе з коробки.
+
+- Справжній сон (s2idle) із блискавичним пробудженням
+- Оновлення «по повітрю» з підписом cosign і перевіркою на пристрої
+- Встановлення у внутрішню пам'ять — поруч із Android
+- Керування живленням і вентилятором просто в інтерфейсі Steam
+- Повігорні налаштування FEX і Proton (плаґін Decky)
+- Керування зовнішнім екраном із ігрового режиму
+- Студія підсвітки стіків із каскадом сповіщень
+- Синхронізація збережень і налаштувань між пристроями (Syncthing)
+- Українська, іспанська та французька локалізації інтерфейсу
+
+Підтримується родина **SM8250 Retroid** (Pocket Mini V2, 5, Flip 2) поруч із
+пристроями на SM8550/SM8650/SM8750.
+
+> [!WARNING]
+> **Прототип. Використовуйте на власний ризик.** Для завантаження потрібно
+> прошити ABL — помилка може «цеглинити» пристрій або пошкодити розділ
+> Android. Образ постачається з типовим паролем `nebel`/`nebel` — змініть його,
+> перш ніж вмикати SSH.
+
+Завантаження й покрокове встановлення — у
+[релізі 1.0](https://github.com/Ga1dz1/nebel/releases/tag/1.0).
 
 ## Community
 
