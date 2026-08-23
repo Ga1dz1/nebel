@@ -21,6 +21,12 @@ USE_ROTATION_SHADER="${NEBEL_GAMESCOPE_USE_ROTATION_SHADER:-0}"
 if [[ -n "${NEBEL_SECONDARY_TOUCHSCREEN:-}" ]]; then
     /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_SECONDARY_TOUCHSCREEN" 1 2>/dev/null || true
 fi
+# The external-override branch below re-inhibits the internal touchscreen when
+# an external display owns the session; make sure every session start from a
+# clean slate re-enables it first.
+if [[ -n "${NEBEL_INTERNAL_TOUCHSCREEN:-}" ]]; then
+    /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_INTERNAL_TOUCHSCREEN" 0 2>/dev/null || true
+fi
 if [[ -n "${NEBEL_GAMESCOPE_FAKE_OUTPUT_MM:-}" ]]; then
     export GAMESCOPE_FAKE_OUTPUT_MM="$NEBEL_GAMESCOPE_FAKE_OUTPUT_MM"
 fi
@@ -93,6 +99,13 @@ if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
                 USE_ROTATION_SHADER=0
             fi
             unset CUSTOM_REFRESH_RATES STEAM_DISPLAY_REFRESH_LIMITS
+            # The internal panel goes dark while an external display owns game
+            # mode - silence its touchscreen so fingers on the dark glass don't
+            # move Steam's cursor on the other screen (same reason the Thor's
+            # secondary touchscreen is inhibited above).
+            if [[ -n "${NEBEL_INTERNAL_TOUCHSCREEN:-}" ]]; then
+                /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_INTERNAL_TOUCHSCREEN" 1 2>/dev/null || true
+            fi
         fi
     fi
 fi
