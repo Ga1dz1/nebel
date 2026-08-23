@@ -1,4 +1,4 @@
-import { Field, Focusable, PanelSection, Tabs } from "@decky/ui";
+import { Field, Focusable, PanelSection } from "@decky/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { getConfig, getInstalledGames, savePowerConfig, saveTweaks } from "./backend";
@@ -106,26 +106,18 @@ function buildTabs(config: Config, setConfig: SetConfig, qam: boolean): PluginTa
   ];
 }
 
-const tabTitle = (icon: ReactNode, label: string) => (
-  <div className="nc-tab-title">{icon}<span>{label}</span></div>
-);
-
+// The QAM stays a lightweight "quick shade": just the Home panel (monitor,
+// quick toggles, OS version, "Open full screen" at the top). All other
+// sections live on the fullscreen /nebel-control page.
 export function Content() {
   const { config, setConfig, message } = usePluginConfig();
-  const [tab, setTab] = useState("Home");
   if (!config) return <PanelSection title="Nebel Control"><Field label={message} /></PanelSection>;
   return (
     <div className="nebel-control-tabs nebel-control-root">
       <style>{styles}</style>
-      <Tabs
-        activeTab={tab}
-        onShowTab={setTab}
-        tabs={buildTabs(config, setConfig, true).map((pluginTab) => ({
-          id: pluginTab.id,
-          title: tabTitle(pluginTab.icon, pluginTab.label),
-          content: <div className="nebel-control-tab-content">{pluginTab.content}</div>,
-        }))}
-      />
+      <div className="nebel-control-tab-content">
+        <Home config={config} setConfig={setConfig} qam />
+      </div>
     </div>
   );
 }

@@ -159,6 +159,11 @@ export const styles = `
         background: #0D141C;
         color: #dbe2e6;
         overflow: hidden;
+        /* Custom routes render under Steam's status/title bar; Decky exposes
+           no header-height constant, so pad by a safe fixed ~64px (Steam's
+           gamepad-UI header is 56-64px depending on DPI). QAM is unaffected. */
+        padding-top: 64px;
+        box-sizing: border-box;
       }
       .nc-page-sidebar {
         flex: 0 0 216px;

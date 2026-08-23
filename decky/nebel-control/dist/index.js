@@ -1630,6 +1630,11 @@ const styles = `
         background: #0D141C;
         color: #dbe2e6;
         overflow: hidden;
+        /* Custom routes render under Steam's status/title bar; Decky exposes
+           no header-height constant, so pad by a safe fixed ~64px (Steam's
+           gamepad-UI header is 56-64px depending on DPI). QAM is unaffected. */
+        padding-top: 64px;
+        box-sizing: border-box;
       }
       .nc-page-sidebar {
         flex: 0 0 216px;
@@ -3450,17 +3455,14 @@ function buildTabs(config, setConfig, qam) {
         { id: "System", icon: tabIcons.System, label: t("TabSystem"), content: SP_JSX.jsx(System, { config: config, setConfig: setConfig }) },
     ];
 }
-const tabTitle = (icon, label) => (SP_JSX.jsxs("div", { className: "nc-tab-title", children: [icon, SP_JSX.jsx("span", { children: label })] }));
+// The QAM stays a lightweight "quick shade": just the Home panel (monitor,
+// quick toggles, OS version, "Open full screen" at the top). All other
+// sections live on the fullscreen /nebel-control page.
 function Content() {
     const { config, setConfig, message } = usePluginConfig();
-    const [tab, setTab] = SP_REACT.useState("Home");
     if (!config)
         return SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) });
-    return (SP_JSX.jsxs("div", { className: "nebel-control-tabs nebel-control-root", children: [SP_JSX.jsx("style", { children: styles }), SP_JSX.jsx(DFL.Tabs, { activeTab: tab, onShowTab: setTab, tabs: buildTabs(config, setConfig, true).map((pluginTab) => ({
-                    id: pluginTab.id,
-                    title: tabTitle(pluginTab.icon, pluginTab.label),
-                    content: SP_JSX.jsx("div", { className: "nebel-control-tab-content", children: pluginTab.content }),
-                })) })] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-control-tabs nebel-control-root", children: [SP_JSX.jsx("style", { children: styles }), SP_JSX.jsx("div", { className: "nebel-control-tab-content", children: SP_JSX.jsx(Home, { config: config, setConfig: setConfig, qam: true }) })] }));
 }
 // Fullscreen variant registered as the /nebel-control route: Steam-settings-
 // style layout with a vertical tab list on the left and content on the right.
