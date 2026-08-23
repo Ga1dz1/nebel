@@ -120,8 +120,13 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
     if [[ -n "${SUDO_USER:-}" || "${UID}" -eq "0" ]]; then
         # Always re-pull a remote tag so the disk uses the freshly published
         # image, not a stale cached one; localhost builds are already loaded.
+        # skopeo, not podman pull: rootful podman login/pull hit a lock bug
+        # ("failed to open 2048 locks in /libpod_lock") on ubuntu-24.04-arm
+        # GHA runners; skopeo works there and on dev boxes alike.
         if [[ "${target_image}" != localhost/* ]]; then
-            sudo podman pull "${target_image}:${tag}"
+            sudo skopeo copy --retry-times 3 \
+              "docker://${target_image}:${tag}" \
+              "containers-storage:${target_image}:${tag}"
         fi
         exit 0
     fi
