@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { saveCompatApplied, listDir } from "../backend";
 import type { DirListing } from "../backend";
-import { Collapsible, SelectEdit } from "../components/widgets";
+import { Collapsible, OpenFullScreenButton, SelectEdit } from "../components/widgets";
 import { t } from "../i18n";
 import { getGlobalResolution, setGlobalResolution } from "../lib/steamSettings";
 import { clone } from "../lib/util";
@@ -94,7 +94,7 @@ function ConfirmResetAllModal({ closeModal, onConfirm }: { closeModal?: () => vo
   );
 }
 
-export function Games({ config, setConfig }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>> }) {
+export function Games({ config, setConfig, qam }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>>; qam?: boolean }) {
   const [resolution, setResolution] = useState("Default");
   const [defaultResolution, setDefaultResolution] = useState(getGlobalResolution());
   const [resolutionMessage, setResolutionMessage] = useState("");
@@ -406,12 +406,14 @@ export function Games({ config, setConfig }: { config: Config; setConfig: Dispat
               }}
             />
             <SelectEdit label={t("Game Resolution")} value={defaultResolution} options={resolutionOptions} onChange={setSteamDefaultResolution} />
-            <ToggleField
-              label={t("Performance Overlay")}
-              description={t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart")}
-              checked={tweaks.global.mangoapp === true}
-              onChange={(enabled) => patchSettings({ mangoapp: enabled })}
-            />
+            {!qam && (
+              <ToggleField
+                label={t("Performance Overlay")}
+                description={t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart")}
+                checked={tweaks.global.mangoapp === true}
+                onChange={(enabled) => patchSettings({ mangoapp: enabled })}
+              />
+            )}
           </>
         ) : (
           <>
@@ -420,45 +422,54 @@ export function Games({ config, setConfig }: { config: Config; setConfig: Dispat
           </>
         )}
         {resolutionMessage ? <Field label={t("Status")} description={resolutionMessage} /> : null}
-        <SelectEdit label={t("FEX Preset")} value={fexValue} options={fexOptions} onChange={onSelectFex} />
-        {isCustom
-          ? fexKnobs.map((knob) => (
-              <ToggleField key={knob.key} label={knob.label} checked={fexConfig[knob.key] === "1"} onChange={(value) => setKnob(knob.key, value)} />
-            ))
-          : null}
+        {!qam && (
+          <>
+            <SelectEdit label={t("FEX Preset")} value={fexValue} options={fexOptions} onChange={onSelectFex} />
+            {isCustom
+              ? fexKnobs.map((knob) => (
+                  <ToggleField key={knob.key} label={knob.label} checked={fexConfig[knob.key] === "1"} onChange={(value) => setKnob(knob.key, value)} />
+                ))
+              : null}
+          </>
+        )}
       </PanelSection>
-      <PanelSection>
-        <Collapsible label={t("ADVANCED")}>
-          <SelectEdit
-            label={t("CPU Cores")}
-            value={String(values.cores || "")}
-            options={cpuAffinityOptions}
-            onChange={(value) => patchSettings({ cores: value || undefined })}
-          />
-          <ButtonItem layout="below" onClick={() => setShowThunks((value) => !value)}>
-            {showThunks ? t("Hide Host Thunks") : t("Host Thunks")}
-          </ButtonItem>
-          {showThunks
-            ? thunkModules.map((thunk) => (
-                <ToggleField key={thunk.module} label={thunk.label} checked={thunks[thunk.module] !== false} onChange={(value) => setThunk(thunk.module, value)} />
-              ))
-            : null}
-        </Collapsible>
-      </PanelSection>
-      {!editingDefault ? (
-        <PanelSection>
-          <ButtonItem layout="below" onClick={resetGame}>
-            {t("Reset to Default")}
-          </ButtonItem>
-        </PanelSection>
-      ) : (
-        <PanelSection>
-          <ButtonItem layout="below" disabled={resettingAll} onClick={confirmResetAllGames}>
-            {resettingAll ? t("Resetting...") : t("Reset All Games")}
-          </ButtonItem>
-        </PanelSection>
+      {!qam && (
+        <>
+          <PanelSection>
+            <Collapsible label={t("ADVANCED")}>
+              <SelectEdit
+                label={t("CPU Cores")}
+                value={String(values.cores || "")}
+                options={cpuAffinityOptions}
+                onChange={(value) => patchSettings({ cores: value || undefined })}
+              />
+              <ButtonItem layout="below" onClick={() => setShowThunks((value) => !value)}>
+                {showThunks ? t("Hide Host Thunks") : t("Host Thunks")}
+              </ButtonItem>
+              {showThunks
+                ? thunkModules.map((thunk) => (
+                    <ToggleField key={thunk.module} label={thunk.label} checked={thunks[thunk.module] !== false} onChange={(value) => setThunk(thunk.module, value)} />
+                  ))
+                : null}
+            </Collapsible>
+          </PanelSection>
+          {!editingDefault ? (
+            <PanelSection>
+              <ButtonItem layout="below" onClick={resetGame}>
+                {t("Reset to Default")}
+              </ButtonItem>
+            </PanelSection>
+          ) : (
+            <PanelSection>
+              <ButtonItem layout="below" disabled={resettingAll} onClick={confirmResetAllGames}>
+                {resettingAll ? t("Resetting...") : t("Reset All Games")}
+              </ButtonItem>
+            </PanelSection>
+          )}
+          <AddGameSection />
+        </>
       )}
-      <AddGameSection />
+      {qam && <OpenFullScreenButton />}
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { Field, Focusable, PanelSection } from "@decky/ui";
+import { Field, Focusable, PanelSection, Tabs } from "@decky/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { getConfig, getInstalledGames, savePowerConfig, saveTweaks } from "./backend";
@@ -92,32 +92,42 @@ function usePluginConfig(): { config: Config | null; setConfig: SetConfig; messa
 }
 
 // One tab model feeds both surfaces: the QAM Tabs bar and the fullscreen
-// page sidebar. `qam` only toggles QAM-only affordances (e.g. Home's
-// "Open full screen" button); the tabs themselves are identical.
+// page sidebar. `qam` switches each tab to its simplified subset (full
+// controls live on the fullscreen page).
 function buildTabs(config: Config, setConfig: SetConfig, qam: boolean): PluginTab[] {
   return [
     { id: "Home", icon: tabIcons.Home, label: t("TabHome"), content: <Home config={config} setConfig={setConfig} qam={qam} /> },
-    { id: "Games", icon: tabIcons.Games, label: t("TabGames"), content: <Games config={config} setConfig={setConfig} /> },
-    { id: "Display", icon: tabIcons.Display, label: t("TabDisplay"), content: <Display /> },
-    { id: "Power", icon: tabIcons.Power, label: t("TabPower"), content: <Power config={config} setConfig={setConfig} /> },
-    { id: "Lighting", icon: tabIcons.Lighting, label: t("TabLighting"), content: <Lighting config={config} setConfig={setConfig} /> },
-    { id: "Sync", icon: tabIcons.Sync, label: t("TabSync"), content: <Sync /> },
-    { id: "System", icon: tabIcons.System, label: t("TabSystem"), content: <System config={config} setConfig={setConfig} /> },
+    { id: "Games", icon: tabIcons.Games, label: t("TabGames"), content: <Games config={config} setConfig={setConfig} qam={qam} /> },
+    { id: "Display", icon: tabIcons.Display, label: t("TabDisplay"), content: <Display qam={qam} /> },
+    { id: "Power", icon: tabIcons.Power, label: t("TabPower"), content: <Power config={config} setConfig={setConfig} qam={qam} /> },
+    { id: "Lighting", icon: tabIcons.Lighting, label: t("TabLighting"), content: <Lighting config={config} setConfig={setConfig} qam={qam} /> },
+    { id: "Sync", icon: tabIcons.Sync, label: t("TabSync"), content: <Sync qam={qam} /> },
+    { id: "System", icon: tabIcons.System, label: t("TabSystem"), content: <System config={config} setConfig={setConfig} qam={qam} /> },
   ];
 }
 
-// The QAM stays a lightweight "quick shade": just the Home panel (monitor,
-// quick toggles, OS version, "Open full screen" at the top). All other
-// sections live on the fullscreen /nebel-control page.
+const tabTitle = (icon: ReactNode, label: string) => (
+  <div className="nc-tab-title">{icon}<span>{label}</span></div>
+);
+
+// The QAM keeps the tab bar with all 7 tabs, each showing its simplified
+// subset; the fullscreen /nebel-control page has the full controls.
 export function Content() {
   const { config, setConfig, message } = usePluginConfig();
+  const [tab, setTab] = useState("Home");
   if (!config) return <PanelSection title="Nebel Control"><Field label={message} /></PanelSection>;
   return (
     <div className="nebel-control-tabs nebel-control-root">
       <style>{styles}</style>
-      <div className="nebel-control-tab-content">
-        <Home config={config} setConfig={setConfig} qam />
-      </div>
+      <Tabs
+        activeTab={tab}
+        onShowTab={setTab}
+        tabs={buildTabs(config, setConfig, true).map((pluginTab) => ({
+          id: pluginTab.id,
+          title: tabTitle(pluginTab.icon, pluginTab.label),
+          content: <div className="nebel-control-tab-content">{pluginTab.content}</div>,
+        }))}
+      />
     </div>
   );
 }

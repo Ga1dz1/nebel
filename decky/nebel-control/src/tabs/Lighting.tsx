@@ -20,7 +20,7 @@ import {
 } from "../backend";
 import { ColorPicker } from "../components/ColorPicker";
 import { ModePreview } from "../components/ModePreview";
-import { Collapsible, PresetSwatchGrid, SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
+import { Collapsible, OpenFullScreenButton, PresetSwatchGrid, SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { Config, StickLedSideState, StickLedState } from "../types";
 
@@ -125,9 +125,10 @@ const PARAM_UI: Record<string, { label: string; min: number; max: number; step: 
 };
 const PARAM_DEFAULTS: Record<string, number> = { speed: 1.0, intensity: 0.15, size: 2 };
 
-export function Lighting({ config, setConfig }: {
+export function Lighting({ config, setConfig, qam }: {
   config: Config;
   setConfig: Dispatch<SetStateAction<Config | null>>;
+  qam?: boolean;
 }) {
   const [customColorExpanded, setCustomColorExpanded] = useState(false);
   const [flashButton, setFlashButton] = useState("south");
@@ -400,6 +401,7 @@ export function Lighting({ config, setConfig }: {
   }
 
   return (
+    <>
     <PanelSection title={t("Stick Lighting")}>
       <ToggleRow
         label={t("Enable")}
@@ -434,6 +436,9 @@ export function Lighting({ config, setConfig }: {
         duotoneColorB={sideState.duotoneColorB}
         duotoneOrientation={sideState.duotoneOrientation}
       />
+      {/* Everything past the mode preview is fullscreen-page territory. */}
+      {!qam && (
+        <>
       {mode === "spin" && (
         <ToggleRow
           label={t("Soft trail")}
@@ -563,6 +568,10 @@ export function Lighting({ config, setConfig }: {
       </Collapsible>
         </>
       )}
+        </>
+      )}
     </PanelSection>
+    {qam && <OpenFullScreenButton />}
+    </>
   );
 }

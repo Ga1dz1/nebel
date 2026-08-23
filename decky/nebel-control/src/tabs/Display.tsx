@@ -12,7 +12,7 @@ import type { DisplayState } from "../types";
 // extend/mirror choice.
 const INTERNAL = "__internal__";
 
-export function Display() {
+export function Display(_props: { qam?: boolean }) {
   const [state, setState] = useState<DisplayState | null>(null);
   const [loadMessage, setLoadMessage] = useState(t("Loading"));
   const [errorMessage, setErrorMessage] = useState("");

@@ -21,7 +21,7 @@ import {
   syncRemoveDevice,
   syncSetFolderEnabled,
 } from "../backend";
-import { ToggleRow } from "../components/widgets";
+import { OpenFullScreenButton, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { SyncState } from "../types";
 
@@ -137,7 +137,7 @@ function AddFolderModal({ closeModal, onAdd }: {
   );
 }
 
-export function Sync() {  const [state, setState] = useState<SyncState | null>(null);
+export function Sync({ qam }: { qam?: boolean }) {  const [state, setState] = useState<SyncState | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
@@ -252,7 +252,7 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
           ))}
         </PanelSection>
       )}
-      {state.serviceActive && (
+      {!qam && state.serviceActive && (
         <PanelSection title={t("Devices")}>
           {state.devices.map((device) => (
             <PanelSectionRow key={device.id}>
@@ -288,7 +288,7 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
           </PanelSectionRow>
         </PanelSection>
       )}
-      {state.serviceActive && (
+      {!qam && state.serviceActive && (
         <PanelSection title={t("Folders")}>
           {state.devices.length === 0 && (
             <Field label={t("Add a device first - folders sync only to paired devices")} />
@@ -343,6 +343,7 @@ export function Sync() {  const [state, setState] = useState<SyncState | null>(n
           </PanelSectionRow>
         </PanelSection>
       )}
+      {qam && <OpenFullScreenButton />}
     </>
   );
 }

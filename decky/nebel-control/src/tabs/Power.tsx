@@ -13,7 +13,7 @@ const underclocks = [
   { data: "large", label: t("Large") },
 ];
 
-export function Power({ config, setConfig }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>> }) {
+export function Power({ config, setConfig }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>>; qam?: boolean }) {
   const [profile, setProfile] = useState(config.power.general.default_profile || "balanced");
   const p = config.power.profiles[profile] || ({} as PowerProfile);
   const profiles = Object.entries(config.power.profiles || {}).map(([name, profile]) => ({

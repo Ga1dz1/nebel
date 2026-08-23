@@ -1,6 +1,7 @@
-import { ButtonItem, Dropdown, DropdownItemInternal, Field, Focusable, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { ButtonItem, Dropdown, DropdownItemInternal, Field, Focusable, Navigation, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { t } from "../i18n";
 import type { DropdownChoice } from "../types";
 
 type Option = string | DropdownChoice;
@@ -26,6 +27,24 @@ export function SelectEdit({ label, value, options, onChange, labelBelow, disabl
         <DropdownItemInternal disabled={disabled} childrenContainerWidth="max" label={label} selectedOption={value} rgOptions={rgOptions} onChange={(option) => onChange(option.data)} />
       )}
     </PanelSectionRow>
+  );
+}
+
+// "More on the full page" affordance for simplified QAM tabs: jumps to the
+// fullscreen /nebel-control route where the complete controls live.
+export function OpenFullScreenButton() {
+  return (
+    <PanelSection>
+      <ButtonItem
+        layout="below"
+        onClick={() => {
+          Navigation.Navigate("/nebel-control");
+          Navigation.CloseSideMenus();
+        }}
+      >
+        {t("Open full screen")}
+      </ButtonItem>
+    </PanelSection>
   );
 }
 

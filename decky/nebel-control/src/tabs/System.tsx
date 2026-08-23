@@ -2,13 +2,14 @@ import { ButtonItem, PanelSection } from "@decky/ui";
 import type { Dispatch, SetStateAction } from "react";
 import { setControllerType as applyControllerType, setSharedStorageEnabled as applySharedStorageEnabled, setSshEnabled as applySshEnabled } from "../backend";
 import { openCalibration } from "../components/Calibration";
-import { SelectEdit, ToggleRow } from "../components/widgets";
+import { OpenFullScreenButton, SelectEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { Config } from "../types";
 
-export function System({ config, setConfig }: {
+export function System({ config, setConfig, qam }: {
   config: Config;
   setConfig: Dispatch<SetStateAction<Config | null>>;
+  qam?: boolean;
 }) {
   const setSshEnabled = async (enabled: boolean) => {
     if (enabled === !!config.sshEnabled) {
@@ -47,23 +48,28 @@ export function System({ config, setConfig }: {
   return (
     <>
       <PanelSection title={t("Controller")}>
-        <SelectEdit
-          label={t("Emulation")}
-          value={config.controllerType || "deck-uhid"}
-          options={config.controllerTypes || []}
-          onChange={setControllerType}
-        />
+        {!qam && (
+          <SelectEdit
+            label={t("Emulation")}
+            value={config.controllerType || "deck-uhid"}
+            options={config.controllerTypes || []}
+            onChange={setControllerType}
+          />
+        )}
         <ButtonItem layout="below" onClick={openCalibration}>{t("Launch Calibration")}</ButtonItem>
       </PanelSection>
       <PanelSection title={t("System")}>
         <ToggleRow label={t("Enable SSH")} value={!!config.sshEnabled} onChange={setSshEnabled} />
-        <ToggleRow
-          label={t("Mount shared storage")}
-          description={t("Mount NEBEL_SHARED partition at ~/Shared")}
-          value={!!config.sharedStorageEnabled}
-          onChange={setSharedStorageEnabled}
-        />
+        {!qam && (
+          <ToggleRow
+            label={t("Mount shared storage")}
+            description={t("Mount NEBEL_SHARED partition at ~/Shared")}
+            value={!!config.sharedStorageEnabled}
+            onChange={setSharedStorageEnabled}
+          />
+        )}
       </PanelSection>
+      {qam && <OpenFullScreenButton />}
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { ButtonItem, Field, Navigation, PanelSection } from "@decky/ui";
+import { Field, PanelSection } from "@decky/ui";
 import { useEffect, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import {
@@ -8,7 +8,7 @@ import {
   setStickLedNotifyColor as applyStickLedNotifyColor,
 } from "../backend";
 import { ColorPicker } from "../components/ColorPicker";
-import { ToggleRow } from "../components/widgets";
+import { OpenFullScreenButton, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { Config, SystemMonitor } from "../types";
 
@@ -72,19 +72,7 @@ export function Home({ config, setConfig, qam }: { config: Config; setConfig: Di
       .join(" · ");
   return (
     <>
-      {qam && (
-        <PanelSection>
-          <ButtonItem
-            layout="below"
-            onClick={() => {
-              Navigation.Navigate("/nebel-control");
-              Navigation.CloseSideMenus();
-            }}
-          >
-            {t("Open full screen")}
-          </ButtonItem>
-        </PanelSection>
-      )}
+      {qam && <OpenFullScreenButton />}
       <PanelSection title={t("Monitor")}>
         {mon && (
           <>
@@ -109,7 +97,8 @@ export function Home({ config, setConfig, qam }: { config: Config; setConfig: Di
               value={!!stickLed.notifyEnabled}
               onChange={setStickLedNotify}
             />
-            {stickLed.notifyEnabled && (
+            {/* The flash color picker is fullscreen-only - not quick-toggle material. */}
+            {!qam && stickLed.notifyEnabled && (
               <ColorPicker label={t("Flash color")} hex={stickLed.notifyColor || "33AAFF"} onChange={setStickLedNotifyColor} />
             )}
           </>
