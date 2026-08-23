@@ -466,9 +466,9 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
               </ButtonItem>
             </PanelSection>
           )}
-          <AddGameSection />
         </>
       )}
+      <AddGameSection />
       {qam && <OpenFullScreenButton />}
     </>
   );
