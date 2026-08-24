@@ -73,11 +73,11 @@ The kernel/DTS side lives in
 [Ga1dz1/armada-packages](https://github.com/Ga1dz1/armada-packages).
 
 **Retroid Pocket Mini V2 (SM8250)** is tested on real hardware.
-**Retroid Pocket 5 and Retroid Pocket Flip2** (both SM8250) have their device
-trees ported from ROCKNIX and device profiles wired up, selectable from the
-ABL's per-device menu - but are **less battle-tested**; panel orientation and
-physical size in particular may need per-unit tweaks. Testing reports (and
-fixes) are very welcome.
+**Retroid Pocket 5, Retroid Pocket Flip2 and Retroid Pocket Mini** (all
+SM8250) have their device trees ported from ROCKNIX and device profiles
+wired up, selectable from the ABL's per-device menu - but are **less
+battle-tested**; panel orientation and physical size in particular may need
+per-unit tweaks. Testing reports (and fixes) are very welcome.
 
 ## Supported devices
 
@@ -97,6 +97,7 @@ fixes) are very welcome.
 | AYANEO Pocket DMG | SM8550 | ✅ Tested |
 | AYANEO Pocket S 2K | SM8550 | ⚪ Untested |
 | Retroid Pocket Mini V2 | SM8250 | ✅ Tested |
+| Retroid Pocket Mini | SM8250 | 🚧 Work in progress |
 | Retroid Pocket 5 | SM8250 | 🚧 Work in progress |
 | Retroid Pocket Flip 2 | SM8250 | 🚧 Work in progress |
 
@@ -373,11 +374,11 @@ Nebel — самостійна операційна система для ARM64-
 [Ga1dz1/armada-packages](https://github.com/Ga1dz1/armada-packages).
 
 **Retroid Pocket Mini V2 (SM8250)** випробувано на справжньому залізі.
-**Retroid Pocket 5 і Retroid Pocket Flip2** (обидва SM8250) мають портовані з
-ROCKNIX дерева пристроїв і під'єднані профілі, доступні з меню ABL, — проте
-**менш обстріляні**; зокрема, орієнтація панелі та її фізичний розмір можуть
-потребувати підлаштування під конкретний екземпляр. Звіти з випробувань (і
-виправлення) дуже вітаються.
+**Retroid Pocket 5, Retroid Pocket Flip2 і Retroid Pocket Mini** (усі SM8250)
+мають портовані з ROCKNIX дерева пристроїв і під'єднані профілі, доступні з
+меню ABL, — проте **менш обстріляні**; зокрема, орієнтація панелі та її
+фізичний розмір можуть потребувати підлаштування під конкретний екземпляр.
+Звіти з випробувань (і виправлення) дуже вітаються.
 
 ## Підтримувані пристрої
 
@@ -397,6 +398,7 @@ ROCKNIX дерева пристроїв і під'єднані профілі, �
 | AYANEO Pocket DMG | SM8550 | ✅ Випробувано |
 | AYANEO Pocket S 2K | SM8550 | ⚪ Не випробувано |
 | Retroid Pocket Mini V2 | SM8250 | ✅ Випробувано |
+| Retroid Pocket Mini | SM8250 | 🚧 У роботі |
 | Retroid Pocket 5 | SM8250 | 🚧 У роботі |
 | Retroid Pocket Flip 2 | SM8250 | 🚧 У роботі |
 

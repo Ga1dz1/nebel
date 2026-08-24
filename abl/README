@@ -12,7 +12,7 @@ From ROCKNIX (https://github.com/ROCKNIX/abl), GPL-2.0, (c) ROCKNIX contributors
               KONKR Pocket FIT (G3 Gen 3)
      SM8750 - AYN Odin 3
               KONKR Pocket FIT (8 Elite)
-     SM8250 - Retroid Pocket Mini V2
+     SM8250 - Retroid Pocket Mini V2, Mini, 5, Flip2
 
 3. Using "run script as root" in settings, browse to your SoC's folder (e.g.
    rocknix_abl/SM8750) and run backup_abl.sh to back up your current ABL.

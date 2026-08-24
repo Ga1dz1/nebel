@@ -25,6 +25,7 @@ case "$model" in
     "Retroid Pocket 6") profile=retroid-pocket-6 ;;
     "Retroid Pocket 6 TOP-DPAD") profile=retroid-pocket-6 ;;
     "Retroid Pocket Mini V2") profile=retroid-pocket-mini-v2 ;;
+    "Retroid Pocket Mini") profile=retroid-pocket-mini ;;
     "Retroid Pocket 5") profile=retroid-pocket-5 ;;
     "Retroid Pocket Flip2") profile=retroid-pocket-flip2 ;;
     *) profile= ;;
