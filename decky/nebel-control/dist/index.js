@@ -126,7 +126,7 @@ const uk = {
     "Close": "Закрити",
     "Edit Game Profile": "Редагування профілю гри",
     "Profile Settings": "Налаштування профілю",
-    "ADVANCED": "ДОДАТКОВО",
+    "Advanced": "Додатково",
     "Compatibility changes apply on next launch": "Зміни сумісності застосуються під час наступного запуску",
     "Compatibility Mode": "Режим сумісності",
     "ARM64 (native, recommended)": "ARM64 (нативний, рекомендовано)",
@@ -249,14 +249,13 @@ const uk = {
     "Point the lit zone(s) at the stick's push direction instead of lighting evenly": "Спрямовувати світлі зони в бік нахилу стіка замість рівномірного світла",
     "Seesaw": "Гойдалка",
     "Breathe the two color groups against each other instead of a static split": "Дві групи кольорів «дихають» назустріч одна одній замість статичного поділу",
-    "Colors": "Кольори",
     "Color Source": "Джерело кольору",
     "Custom color": "Власний колір",
     "Battery level": "Рівень заряду",
     "Random (unpredictable color shift)": "Випадковий (непередбачувана зміна кольору)",
     "Shimmer (pale/cool to rich/warm)": "Мерехтіння (від блідого холодного до насиченого теплого)",
     "Charging indicator": "Індикатор заряджання",
-    "Spin a blue dot around the stick while charging": "Обертати синю точку навколо стіка під час заряджання",
+    "Spin a blue dot around the stick while charging (when the stick color follows the battery level)": "Обертати синю точку навколо стіка під час заряджання (коли колір стіка відображає рівень заряду)",
     "Custom color (advanced)": "Власний колір (розширено)",
     "Hide custom color": "Сховати власний колір",
     "Button": "Кнопка",
@@ -267,6 +266,7 @@ const uk = {
     "Color A": "Колір A",
     "Color B": "Колір B",
     "Flip stick ring": "Перевернути кільце стіка",
+    "Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down": "Повернути LED-кільце лівого стіка на 180° - на деяких пристроях ліве кільце підключено догори ногами",
     "Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)": "Повернути LED-кільце на 180° для стіків, розпаяних догори ногами (виправляє компас/напрямок на деяких RP6)",
     "Blue": "Синій",
     "Cyan": "Блакитний",
@@ -339,7 +339,8 @@ const uk = {
     "TabSystem": "Система",
     "Quick toggles": "Швидкі перемикачі",
     "Open full screen": "Відкрити на весь екран",
-    "Open Nebel Control": "Відкрити Nebel Control",
+    "Control Center": "Центр керування",
+    "Open Control Center": "Відкрити центр керування",
     "Power Profile": "Профіль живлення",
     "Add non-Steam game": "Додати сторонню гру",
     "Select the game's executable": "Виберіть виконуваний файл гри",
@@ -372,9 +373,6 @@ const uk = {
     "Volume": "Гучність",
     "Brightness": "Яскравість",
     "Menu key": "Клавіша меню",
-    "Nebel: Stick Lighting": "Nebel: підсвітка стіків",
-    "Nebel: Power Profile": "Nebel: профіль живлення",
-    "Nebel: Game Tweaks": "Nebel: налаштування гри",
 };
 const ru = {
     "Loading": "Загрузка",
@@ -389,7 +387,7 @@ const ru = {
     "Close": "Закрыть",
     "Edit Game Profile": "Редактирование профиля игры",
     "Profile Settings": "Настройки профиля",
-    "ADVANCED": "ДОПОЛНИТЕЛЬНО",
+    "Advanced": "Дополнительно",
     "Compatibility changes apply on next launch": "Изменения совместимости применятся при следующем запуске",
     "Compatibility Mode": "Режим совместимости",
     "ARM64 (native, recommended)": "ARM64 (нативный, рекомендуется)",
@@ -512,14 +510,13 @@ const ru = {
     "Point the lit zone(s) at the stick's push direction instead of lighting evenly": "Направлять светящиеся зоны в сторону наклона стика вместо равномерного свечения",
     "Seesaw": "Качели",
     "Breathe the two color groups against each other instead of a static split": "Две группы цветов «дышат» навстречу друг другу вместо статичного разделения",
-    "Colors": "Цвета",
     "Color Source": "Источник цвета",
     "Custom color": "Свой цвет",
     "Battery level": "Уровень заряда",
     "Random (unpredictable color shift)": "Случайный (непредсказуемая смена цвета)",
     "Shimmer (pale/cool to rich/warm)": "Мерцание (от бледного холодного к насыщенному тёплому)",
     "Charging indicator": "Индикатор зарядки",
-    "Spin a blue dot around the stick while charging": "Вращать синюю точку вокруг стика во время зарядки",
+    "Spin a blue dot around the stick while charging (when the stick color follows the battery level)": "Во время зарядки вокруг стика вращается синяя точка (когда цвет стика отражает уровень заряда)",
     "Custom color (advanced)": "Свой цвет (расширенно)",
     "Hide custom color": "Скрыть свой цвет",
     "Button": "Кнопка",
@@ -530,6 +527,7 @@ const ru = {
     "Color A": "Цвет A",
     "Color B": "Цвет B",
     "Flip stick ring": "Перевернуть кольцо стика",
+    "Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down": "Повернуть LED-кольцо левого стика на 180° - на некоторых устройствах левое кольцо подключено вверх ногами",
     "Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)": "Повернуть LED-кольцо на 180° для стиков, распаянных вверх ногами (исправляет компас/направление на некоторых RP6)",
     "Blue": "Синий",
     "Cyan": "Голубой",
@@ -602,7 +600,8 @@ const ru = {
     "TabSystem": "Система",
     "Quick toggles": "Быстрые переключатели",
     "Open full screen": "Открыть на весь экран",
-    "Open Nebel Control": "Открыть Nebel Control",
+    "Control Center": "Центр управления",
+    "Open Control Center": "Открыть центр управления",
     "Power Profile": "Профиль питания",
     "Add non-Steam game": "Добавить стороннюю игру",
     "Select the game's executable": "Выберите исполняемый файл игры",
@@ -635,9 +634,6 @@ const ru = {
     "Volume": "Громкость",
     "Brightness": "Яркость",
     "Menu key": "Клавиша меню",
-    "Nebel: Stick Lighting": "Nebel: подсветка стиков",
-    "Nebel: Power Profile": "Nebel: профиль питания",
-    "Nebel: Game Tweaks": "Nebel: настройки игры",
 };
 const es = {
     "Loading": "Cargando",
@@ -652,7 +648,7 @@ const es = {
     "Close": "Cerrar",
     "Edit Game Profile": "Editar perfil de juego",
     "Profile Settings": "Ajustes del perfil",
-    "ADVANCED": "AVANZADO",
+    "Advanced": "Avanzado",
     "Compatibility changes apply on next launch": "Los cambios de compatibilidad se aplicarán en el próximo inicio",
     "Compatibility Mode": "Modo de compatibilidad",
     "ARM64 (native, recommended)": "ARM64 (nativo, recomendado)",
@@ -775,14 +771,13 @@ const es = {
     "Point the lit zone(s) at the stick's push direction instead of lighting evenly": "Apuntar las zonas iluminadas hacia la dirección de empuje del stick en lugar de iluminar uniformemente",
     "Seesaw": "Subibaja",
     "Breathe the two color groups against each other instead of a static split": "Los dos grupos de color «respiran» uno contra otro en lugar de una división estática",
-    "Colors": "Colores",
     "Color Source": "Fuente de color",
     "Custom color": "Color personalizado",
     "Battery level": "Nivel de batería",
     "Random (unpredictable color shift)": "Aleatorio (cambio de color impredecible)",
     "Shimmer (pale/cool to rich/warm)": "Destello (de pálido/frío a intenso/cálido)",
     "Charging indicator": "Indicador de carga",
-    "Spin a blue dot around the stick while charging": "Girar un punto azul alrededor del stick durante la carga",
+    "Spin a blue dot around the stick while charging (when the stick color follows the battery level)": "Un punto azul gira alrededor del stick durante la carga (cuando el color del stick sigue el nivel de batería)",
     "Custom color (advanced)": "Color personalizado (avanzado)",
     "Hide custom color": "Ocultar color personalizado",
     "Button": "Botón",
@@ -793,6 +788,7 @@ const es = {
     "Color A": "Color A",
     "Color B": "Color B",
     "Flip stick ring": "Invertir el anillo del stick",
+    "Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down": "Gira el anillo LED del stick izquierdo 180°: en algunas unidades el anillo izquierdo está cableado al revés",
     "Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)": "Girar el anillo LED 180° para variantes de stick cableadas al revés (corrige la brújula/dirección en algunas RP6)",
     "Blue": "Azul",
     "Cyan": "Cian",
@@ -865,7 +861,8 @@ const es = {
     "TabSystem": "Sistema",
     "Quick toggles": "Interruptores rápidos",
     "Open full screen": "Abrir a pantalla completa",
-    "Open Nebel Control": "Abrir Nebel Control",
+    "Control Center": "Centro de control",
+    "Open Control Center": "Abrir el centro de control",
     "Power Profile": "Perfil de energía",
     "Add non-Steam game": "Añadir juego externo",
     "Select the game's executable": "Selecciona el ejecutable del juego",
@@ -898,9 +895,6 @@ const es = {
     "Volume": "Volumen",
     "Brightness": "Brillo",
     "Menu key": "Tecla de menú",
-    "Nebel: Stick Lighting": "Nebel: iluminación de los sticks",
-    "Nebel: Power Profile": "Nebel: perfil de energía",
-    "Nebel: Game Tweaks": "Nebel: ajustes del juego",
 };
 const fr = {
     "Loading": "Chargement",
@@ -915,7 +909,7 @@ const fr = {
     "Close": "Fermer",
     "Edit Game Profile": "Modifier le profil du jeu",
     "Profile Settings": "Paramètres du profil",
-    "ADVANCED": "AVANCÉ",
+    "Advanced": "Avancé",
     "Compatibility changes apply on next launch": "Les changements de compatibilité s'appliqueront au prochain lancement",
     "Compatibility Mode": "Mode de compatibilité",
     "ARM64 (native, recommended)": "ARM64 (natif, recommandé)",
@@ -1038,14 +1032,13 @@ const fr = {
     "Point the lit zone(s) at the stick's push direction instead of lighting evenly": "Orienter les zones éclairées vers la direction d'inclinaison du stick au lieu d'un éclairage uniforme",
     "Seesaw": "Bascule",
     "Breathe the two color groups against each other instead of a static split": "Les deux groupes de couleurs « respirent » l'un contre l'autre au lieu d'une répartition statique",
-    "Colors": "Couleurs",
     "Color Source": "Source de couleur",
     "Custom color": "Couleur personnalisée",
     "Battery level": "Niveau de batterie",
     "Random (unpredictable color shift)": "Aléatoire (changement de couleur imprévisible)",
     "Shimmer (pale/cool to rich/warm)": "Chatoyant (de pâle/froid à riche/chaud)",
     "Charging indicator": "Indicateur de charge",
-    "Spin a blue dot around the stick while charging": "Faire tourner un point bleu autour du stick pendant la charge",
+    "Spin a blue dot around the stick while charging (when the stick color follows the battery level)": "Un point bleu tourne autour du stick pendant la charge (quand la couleur du stick suit le niveau de batterie)",
     "Custom color (advanced)": "Couleur personnalisée (avancé)",
     "Hide custom color": "Masquer la couleur personnalisée",
     "Button": "Bouton",
@@ -1056,6 +1049,7 @@ const fr = {
     "Color A": "Couleur A",
     "Color B": "Couleur B",
     "Flip stick ring": "Inverser l'anneau du stick",
+    "Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down": "Fait pivoter l'anneau LED du stick gauche de 180° - sur certaines unités, l'anneau gauche est câblé à l'envers",
     "Rotate the LED ring 180° for stick variants wired upside-down (fixes compass/direction on some RP6 units)": "Pivoter l'anneau LED de 180° pour les variantes de sticks câblées à l'envers (corrige la boussole/direction sur certaines RP6)",
     "Blue": "Bleu",
     "Cyan": "Cyan",
@@ -1128,7 +1122,8 @@ const fr = {
     "TabSystem": "Système",
     "Quick toggles": "Raccourcis rapides",
     "Open full screen": "Ouvrir en plein écran",
-    "Open Nebel Control": "Ouvrir Nebel Control",
+    "Control Center": "Centre de contrôle",
+    "Open Control Center": "Ouvrir le centre de contrôle",
     "Power Profile": "Profil d'alimentation",
     "Add non-Steam game": "Ajouter un jeu externe",
     "Select the game's executable": "Sélectionnez l'exécutable du jeu",
@@ -1161,9 +1156,6 @@ const fr = {
     "Volume": "Volume",
     "Brightness": "Luminosité",
     "Menu key": "Touche menu",
-    "Nebel: Stick Lighting": "Nebel : éclairage des sticks",
-    "Nebel: Power Profile": "Nebel : profil d'alimentation",
-    "Nebel: Game Tweaks": "Nebel : réglages du jeu",
 };
 const dictionaries = { uk, ru, es, fr };
 // CEF's navigator.language follows the Steam UI language in game mode, which
@@ -1872,16 +1864,6 @@ const styles = `
         font-variant-numeric: tabular-nums;
         opacity: 0.62;
         font-size: 12px;
-      }
-      .nebel-control-root .nebel-mode-preview-wrap {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-        padding: 4px 0 8px;
-      }
-      .nebel-control-root .nebel-mode-preview-canvas {
-        background: rgba(0, 0, 0, 0.25);
-        border-radius: 8px;
       }
       .nebel-control-root .nebel-preset-swatch {
         width: 34px;
@@ -2649,7 +2631,7 @@ function Games({ config, setConfig, qam, lockedAppid, injected }) {
                                     patchSettings({ autoApplyCompat: enabled });
                                 } }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!injected && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: perGameMode, options: perGameModeOptions, onChange: onSelectPerGameMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool })] })), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
-                                : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
+                                : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("Advanced"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                             ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
                                             : null] }))] }) }), !editingDefault && game?.appid ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
@@ -2986,142 +2968,6 @@ const HOTKEYS = [
     { mode: "Desktop mode", action: "F12", combo: "Home + Start" },
     { mode: "Desktop mode", action: "Menu key", combo: "Home + Select" },
 ];
-
-// Small animated preview of the selected stick-lighting mode: four dots
-// arranged like the real HTR3212 LED ring (N/E/S/W, matching the actual
-// 4-zone-per-stick hardware layout), animated with a simplified version of
-// each mode's real algorithm. Not a pixel-exact simulation of the backend
-// (ambilight in particular can't be, since it mirrors the screen) - just
-// enough motion to tell the modes apart at a glance before committing to one,
-// same job Steam's own settings previews do.
-const SIZE = 96;
-const CENTER = SIZE / 2;
-const DOT_RADIUS = 10;
-const RING_RADIUS = SIZE / 2 - DOT_RADIUS - 4;
-// Two dots on top, two on the bottom - matches the physical HTR3212 ring
-// layout (zones 1=SW, 2=NW, 3=NE, 4=SE) when the stick is viewed from above.
-// Ordered clockwise: NE (top-right), SE (bottom-right), SW (bottom-left), NW (top-left).
-const ZONE_ANGLES = [-45, 45, 135, 225];
-// Canvas index -> hardware zone, per the confirmed live mapping above.
-const INDEX_TO_ZONE = [3, 4, 1, 2];
-// Same split as the backend's DUOTONE_ZONE_GROUPS: which zones take color A.
-const DUOTONE_GROUP_A = {
-    horizontal: [2, 3], // top (NW+NE)
-    vertical: [4, 3], //   right (SE+NE)
-    diagonal: [4, 2], //   SE+NW
-};
-function rgbCss([r, g, b], alpha = 1) {
-    return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`;
-}
-function zonePosition(angleDeg) {
-    const rad = (angleDeg * Math.PI) / 180;
-    return { x: CENTER + RING_RADIUS * Math.cos(rad), y: CENTER + RING_RADIUS * Math.sin(rad) };
-}
-function ModePreview({ mode, color, duotoneColorA, duotoneColorB, duotoneOrientation }) {
-    const canvasRef = SP_REACT.useRef(null);
-    SP_REACT.useEffect(() => {
-        const canvas = canvasRef.current;
-        const ctx = canvas?.getContext("2d");
-        if (!canvas || !ctx)
-            return;
-        const base = hexToRgb(color);
-        const colorA = hexToRgb(duotoneColorA);
-        const colorB = hexToRgb(duotoneColorB);
-        let raf = 0;
-        const start = performance.now();
-        // A handful of fixed pseudo-random phases so "starlight" twinkles look
-        // scattered instead of perfectly synchronized - not meant to match the
-        // backend's actual RNG, just to avoid an obviously-fake unison blink.
-        const twinklePhases = [0.15, 0.6, 0.35, 0.85];
-        function zoneColor(i, t) {
-            switch (mode) {
-                case "static":
-                    return base;
-                case "breathing": {
-                    const level = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 2.2));
-                    return [base[0] * level, base[1] * level, base[2] * level];
-                }
-                case "rainbow": {
-                    const [r, g, b] = hsbToRgb((t * 70) % 360, 100, 100);
-                    return [r, g, b];
-                }
-                case "wave": {
-                    const [r, g, b] = hsbToRgb((t * 70 + i * 90) % 360, 100, 100);
-                    return [r, g, b];
-                }
-                case "starlight": {
-                    const phase = twinklePhases[i];
-                    const level = 0.15 + 0.85 * Math.max(0, Math.sin((t * 1.4 + phase * 8) % (Math.PI * 2)));
-                    return [base[0] * level, base[1] * level, base[2] * level];
-                }
-                case "spin": {
-                    const litIndex = Math.floor((t * 1.6) % 4);
-                    const dist = Math.min((i - litIndex + 4) % 4, (litIndex - i + 4) % 4);
-                    const level = dist === 0 ? 1 : dist === 1 ? 0.25 : 0.05;
-                    return [base[0] * level, base[1] * level, base[2] * level];
-                }
-                case "reactive": {
-                    // Simplified stand-in for a button flash: a soft pulse every ~1.6s
-                    // rather than a real input event, since there's nothing to react to here.
-                    const pulse = Math.max(0, Math.sin(t * 1.2 - Math.PI / 2));
-                    const level = 0.2 + 0.8 * Math.pow(pulse, 3);
-                    return [base[0] * level, base[1] * level, base[2] * level];
-                }
-                case "multidot": {
-                    const litIndex = Math.floor((t * 2.4) % 4);
-                    const trailIndex = (litIndex + 3) % 4;
-                    if (i === litIndex)
-                        return base;
-                    if (i === trailIndex)
-                        return [base[0] * 0.35, base[1] * 0.35, base[2] * 0.35];
-                    return [0, 0, 0];
-                }
-                case "ambilight": {
-                    // Real mode mirrors the screen - approximated here with a slow,
-                    // generic hue drift so it still reads as "alive" rather than static.
-                    const [r, g, b] = hsbToRgb((t * 25 + i * 30) % 360, 70, 90);
-                    return [r, g, b];
-                }
-                case "duotone": {
-                    const level = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 1.8));
-                    const groupA = DUOTONE_GROUP_A[duotoneOrientation || "horizontal"] || DUOTONE_GROUP_A.horizontal;
-                    const isA = groupA.includes(INDEX_TO_ZONE[i]);
-                    const [pr, pg, pb] = isA ? colorA : colorB;
-                    return isA
-                        ? [pr, pg, pb]
-                        : [pr * level, pg * level, pb * level];
-                }
-                default:
-                    return base;
-            }
-        }
-        function draw(now) {
-            const t = (now - start) / 1000;
-            ctx.clearRect(0, 0, SIZE, SIZE);
-            // Faint ring guide so empty/dim zones still read as "part of the stick".
-            ctx.strokeStyle = "rgba(255,255,255,0.08)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.arc(CENTER, CENTER, RING_RADIUS, 0, Math.PI * 2);
-            ctx.stroke();
-            ZONE_ANGLES.forEach((angle, i) => {
-                const { x, y } = zonePosition(angle);
-                const rgb = zoneColor(i, t);
-                ctx.beginPath();
-                ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
-                ctx.fillStyle = rgbCss(rgb);
-                ctx.shadowColor = rgbCss(rgb, 0.9);
-                ctx.shadowBlur = 8;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            });
-            raf = requestAnimationFrame(draw);
-        }
-        raf = requestAnimationFrame(draw);
-        return () => cancelAnimationFrame(raf);
-    }, [mode, color, duotoneColorA, duotoneColorB, duotoneOrientation]);
-    return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "nebel-mode-preview-wrap", children: SP_JSX.jsx("canvas", { ref: canvasRef, width: SIZE, height: SIZE, className: "nebel-mode-preview-canvas" }) }) }));
-}
 
 const PRESET_COLORS = [
     { label: t("Blue"), value: "0050FF" },
@@ -3465,35 +3311,6 @@ function Lighting({ config, setConfig, qam }) {
             });
         }
     };
-    const setStickLedChargingIndicator$1 = async (value) => {
-        if (!stickLed || !sideState)
-            return;
-        const sides = targetSides;
-        const previous = sides.map((s) => stickLed.sides[s].chargingIndicator);
-        setConfig((current) => {
-            if (!current)
-                return current;
-            let sl = current.stickLed;
-            for (const s of sides)
-                sl = patchSide(sl, s, { chargingIndicator: value });
-            return { ...current, stickLed: sl };
-        });
-        try {
-            let applied = stickLed;
-            for (const s of sides)
-                applied = await setStickLedChargingIndicator(s, value);
-            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-        }
-        catch (error) {
-            setConfig((current) => {
-                if (!current)
-                    return current;
-                let sl = current.stickLed;
-                sides.forEach((s, i) => { sl = patchSide(sl, s, { chargingIndicator: previous[i] }); });
-                return { ...current, stickLed: sl };
-            });
-        }
-    };
     const makeToggleSetter = (field, apply, sidesOverride) => async (value) => {
         if (!stickLed || !sideState)
             return;
@@ -3530,13 +3347,13 @@ function Lighting({ config, setConfig, qam }) {
     if (!stickLed?.supported || !sideState) {
         return (SP_JSX.jsx(DFL.PanelSection, { title: t("Stick Lighting"), children: SP_JSX.jsx(DFL.Field, { label: t("No addressable stick lighting hardware detected on this device.") }) }));
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("Stick Lighting"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable"), description: t("Turn both sticks off entirely, without losing the mode/color settings below"), value: stickLed.enabled, onChange: setStickLedEnabled$1 }), !stickLed.enabled && SP_JSX.jsx(DFL.Field, { label: t("Sticks are off - settings below are kept, not applied.") }), stickLed.enabled && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Follow screen brightness"), description: t("Dim both sticks along with the display backlight"), value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => setStickLedMaxBrightness$1(value / 100) })), SP_JSX.jsx(SelectEdit, { label: t("Mode"), value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), SP_JSX.jsx(ModePreview, { mode: mode, color: sideState.color, duotoneColorA: sideState.duotoneColorA, duotoneColorB: sideState.duotoneColorB, duotoneOrientation: sideState.duotoneOrientation }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [mode === "spin" && (SP_JSX.jsx(ToggleRow, { label: t("Soft trail"), description: t("Trailing fade (uses Size below) instead of a single hard-edged dot"), value: !!sideState.chase, onChange: setStickLedChase$1 })), mode === "reactive" && (SP_JSX.jsx(ToggleRow, { label: t("Compass"), description: t("Point the lit zone(s) at the stick's push direction instead of lighting evenly"), value: !!sideState.compass, onChange: setStickLedCompass$1 })), mode === "duotone" && (SP_JSX.jsx(ToggleRow, { label: t("Seesaw"), description: t("Breathe the two color groups against each other instead of a static split"), value: !!sideState.seesaw, onChange: setStickLedSeesaw$1 })), Object.entries(PARAM_UI)
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("Stick Lighting"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable"), description: t("Turn both sticks off entirely, without losing the mode/color settings below"), value: stickLed.enabled, onChange: setStickLedEnabled$1 }), !stickLed.enabled && SP_JSX.jsx(DFL.Field, { label: t("Sticks are off - settings below are kept, not applied.") }), stickLed.enabled && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Mode"), value: mode, options: MODE_OPTIONS, onChange: setStickLedMode$1 }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [mode === "spin" && (SP_JSX.jsx(ToggleRow, { label: t("Soft trail"), description: t("Trailing fade (uses Size below) instead of a single hard-edged dot"), value: !!sideState.chase, onChange: setStickLedChase$1 })), mode === "reactive" && (SP_JSX.jsx(ToggleRow, { label: t("Compass"), description: t("Point the lit zone(s) at the stick's push direction instead of lighting evenly"), value: !!sideState.compass, onChange: setStickLedCompass$1 })), mode === "duotone" && (SP_JSX.jsx(ToggleRow, { label: t("Seesaw"), description: t("Breathe the two color groups against each other instead of a static split"), value: !!sideState.seesaw, onChange: setStickLedSeesaw$1 })), Object.entries(PARAM_UI)
                                         .filter(([, spec]) => spec.modes.has(mode))
                                         .map(([param, spec]) => {
                                         const key = `${param}_${mode}`;
                                         const raw = sideState.params[key] ?? PARAM_DEFAULTS[param];
                                         return (SP_JSX.jsx(SliderEdit, { label: spec.label, value: spec.fromBackend(raw), min: spec.min, max: spec.max, step: spec.step, onChange: (value) => setStickLedParam$1(param, spec.toBackend(value)) }, param));
-                                    }), (COLOR_VISIBLE_MODES.has(mode) || mode === "duotone") && (SP_JSX.jsxs(Collapsible, { label: t("Colors"), children: [COLOR_VISIBLE_MODES.has(mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Color Source"), value: sideState.colorSource || "static", options: COLOR_SOURCE_OPTIONS, onChange: setStickLedColorSource$1 }), sideState.colorSource === "battery" && (SP_JSX.jsx(ToggleRow, { label: t("Charging indicator"), description: t("Spin a blue dot around the stick while charging"), value: sideState.chargingIndicator, onChange: setStickLedChargingIndicator$1 })), sideState.colorSource !== "battery" && sideState.colorSource !== "random" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: sideState.color, onSelect: setStickLedColor$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setCustomColorExpanded((expanded) => !expanded), children: customColorExpanded ? t("Hide custom color") + " ▲" : t("Custom color (advanced)") + " ▼" }), customColorExpanded && (SP_JSX.jsx(ColorPicker, { hex: sideState.color, onChange: setStickLedColor$1 }))] }))] })), mode === "duotone" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Split"), value: sideState.duotoneOrientation || "horizontal", options: DUOTONE_ORIENTATION_OPTIONS, onChange: setStickLedDuotoneOrientation$1 }), SP_JSX.jsx(ColorPicker, { label: t("Color A"), hex: sideState.duotoneColorA, onChange: (hex) => setStickLedDuotoneColor$1("a", hex) }), SP_JSX.jsx(ColorPicker, { label: t("Color B"), hex: sideState.duotoneColorB, onChange: (hex) => setStickLedDuotoneColor$1("b", hex) })] }))] })), SP_JSX.jsxs(Collapsible, { label: t("Configure each stick separately"), children: [SP_JSX.jsx(ToggleRow, { label: t("Configure each stick separately"), description: t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one."), value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: t("Stick"), value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) }))] }), SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [mode === "reactive" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Button"), value: flashButton, options: FLASH_BUTTON_OPTIONS, onChange: setFlashButton }), SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onSelect: setStickLedFlashColor$1 }), SP_JSX.jsx(ColorPicker, { hex: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onChange: setStickLedFlashColor$1 })] })), SP_JSX.jsx(ToggleRow, { label: t("Flip stick ring"), description: t("Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down"), value: !!stickLed.sides.l.flip, onChange: setStickLedFlip$1 })] })] }))] }))] }), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+                                    }), COLOR_VISIBLE_MODES.has(mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Color Source"), value: sideState.colorSource || "static", options: COLOR_SOURCE_OPTIONS, onChange: setStickLedColorSource$1 }), sideState.colorSource !== "battery" && sideState.colorSource !== "random" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: sideState.color, onSelect: setStickLedColor$1 }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setCustomColorExpanded((expanded) => !expanded), children: customColorExpanded ? t("Hide custom color") + " ▲" : t("Custom color (advanced)") + " ▼" }), customColorExpanded && (SP_JSX.jsx(ColorPicker, { hex: sideState.color, onChange: setStickLedColor$1 }))] }))] })), mode === "duotone" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Split"), value: sideState.duotoneOrientation || "horizontal", options: DUOTONE_ORIENTATION_OPTIONS, onChange: setStickLedDuotoneOrientation$1 }), SP_JSX.jsx(ColorPicker, { label: t("Color A"), hex: sideState.duotoneColorA, onChange: (hex) => setStickLedDuotoneColor$1("a", hex) }), SP_JSX.jsx(ColorPicker, { label: t("Color B"), hex: sideState.duotoneColorB, onChange: (hex) => setStickLedDuotoneColor$1("b", hex) })] }))] })), SP_JSX.jsx(ToggleRow, { label: t("Follow screen brightness"), description: t("Dim both sticks along with the display backlight"), value: !!stickLed.screenLink, onChange: setStickLedScreenLink$1 }), !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => setStickLedMaxBrightness$1(value / 100) })), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Configure each stick separately"), description: t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one."), value: separate, onChange: setSeparate }), separate && (SP_JSX.jsx(SelectEdit, { label: t("Stick"), value: selectedSide, options: SIDE_OPTIONS, onChange: (value) => setSelectedSide(value) })), SP_JSX.jsxs(Collapsible, { label: t("Advanced"), children: [mode === "reactive" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Button"), value: flashButton, options: FLASH_BUTTON_OPTIONS, onChange: setFlashButton }), SP_JSX.jsx(PresetSwatchGrid, { colors: PRESET_COLORS, selected: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onSelect: setStickLedFlashColor$1 }), SP_JSX.jsx(ColorPicker, { hex: stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR, onChange: setStickLedFlashColor$1 })] })), SP_JSX.jsx(ToggleRow, { label: t("Flip stick ring"), description: t("Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down"), value: !!stickLed.sides.l.flip, onChange: setStickLedFlip$1 })] })] }))] }))] }), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
 
 const underclocks = [
@@ -3583,7 +3400,43 @@ function Power({ config, setConfig }) {
     };
     const underclockLevel = p.cpu_underclock || "";
     const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Edit Power Profile"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Profile Settings"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] })] }));
+    // The stick LED charging dot is a battery/charging concern, so it lives
+    // here rather than in the Lighting tab. Always applied to both sticks.
+    const stickLed = config.stickLed?.supported ? config.stickLed : null;
+    const setChargingIndicator = async (value) => {
+        if (!stickLed)
+            return;
+        const sides = ["l", "r"];
+        const previous = sides.map((s) => stickLed.sides[s].chargingIndicator);
+        const patch = (sl, s, v) => ({
+            ...sl,
+            sides: { ...sl.sides, [s]: { ...sl.sides[s], chargingIndicator: v } },
+        });
+        setConfig((current) => {
+            if (!current)
+                return current;
+            let sl = current.stickLed;
+            for (const s of sides)
+                sl = patch(sl, s, value);
+            return { ...current, stickLed: sl };
+        });
+        try {
+            let applied = stickLed;
+            for (const s of sides)
+                applied = await setStickLedChargingIndicator(s, value);
+            setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => {
+                if (!current)
+                    return current;
+                let sl = current.stickLed;
+                sides.forEach((s, i) => { sl = patch(sl, s, previous[i]); });
+                return { ...current, stickLed: sl };
+            });
+        }
+    };
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Edit Power Profile"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Profile Settings"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] }), stickLed && (SP_JSX.jsx(DFL.PanelSection, { title: t("Stick Lighting"), children: SP_JSX.jsx(ToggleRow, { label: t("Charging indicator"), description: t("Spin a blue dot around the stick while charging (when the stick color follows the battery level)"), value: !!stickLed.sides?.l?.chargingIndicator, onChange: setChargingIndicator }) }))] }));
 }
 
 function AddDeviceModal({ closeModal, onAdd }) {
@@ -4100,7 +3953,7 @@ function NativeStyles() {
 // group their controls into titled PanelSections that read like the host
 // page's own groups.
 function MissingConfig({ message }) {
-    return (SP_JSX.jsx(DFL.PanelSection, { title: "Nebel", children: SP_JSX.jsx(DFL.Field, { label: message }) }));
+    return (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.Field, { label: message }) }));
 }
 // Settings -> Controller: stick lighting (full Lighting tab).
 function ControllerLightingSection() {
@@ -4139,9 +3992,11 @@ function CloudSyncSection() {
 // Settings -> System: entry point to the fullscreen control center. The
 // plugin no longer appears in Decky's QAM plugin list (no `content`
 // returned), so this is the discoverable way in; /nebel-control stays
-// directly navigable as before.
+// directly navigable as before. Neutrally labeled ("Control Center", not
+// "Nebel Control") so the settings page keeps a stock look - the brand only
+// shows on the fullscreen page itself, where it belongs.
 function ControlCenterSection() {
-    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.Navigate("/nebel-control"), children: t("Open Nebel Control") }) }) })] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Control Center"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.Navigate("/nebel-control"), children: t("Open Control Center") }) }) })] }));
 }
 
 // Duplicates Nebel Control's management UI into Steam's own settings pages
@@ -4422,10 +4277,12 @@ function installNativeSettingsSections() {
 
 // One compact block appended to Steam's own Quick Access "Settings" panel
 // (the "..." menu): just the levers worth touching mid-game - stick lighting
-// on/off + brightness, the power profile, primary-display pick when an
-// external panel is connected, and a door to the fullscreen control center.
-// The plugin returns no `content` to Decky (so it no longer clutters the
-// Decky plugin list); this block is its QAM presence instead.
+// on/off + brightness, the power profile, and the primary-display pick when
+// an external panel is connected. Deliberately UNBRANDED (no section title,
+// no "Nebel Control" anywhere): it must read as stock quick settings, not a
+// plugin ad. The plugin returns no `content` to Decky (so it no longer
+// clutters the Decky plugin list); this block is its QAM presence instead,
+// and the fullscreen control center is reached from Settings -> System.
 // Compact external-display control: only rendered while an external panel is
 // actually connected; mirrors Display.tsx's primary-pick semantics (single
 // output per gamescope session, portrait panels pre-select a rotation).
@@ -4468,7 +4325,7 @@ function QuickDisplayRows() {
 function QuickPanel() {
     const { config, setConfig, message } = useInjectedConfig();
     if (!config) {
-        return (SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) }));
+        return (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.Field, { label: message }) }));
     }
     const stickLed = config.stickLed?.supported ? config.stickLed : null;
     const profile = config.power?.general?.default_profile || "balanced";
@@ -4485,10 +4342,7 @@ function QuickPanel() {
             .then((applied) => setConfig((current) => (current ? { ...current, stickLed: applied } : current)))
             .catch(() => setConfig((current) => (current ? { ...current, stickLed: previous } : current)));
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Nebel Control", children: [stickLed && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Stick Lighting"), value: stickLed.enabled, onChange: (value) => applyLighting({ enabled: value }, () => setStickLedEnabled(value)) }), stickLed.enabled && !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => applyLighting({ maxBrightness: value / 100 }, () => setStickLedMaxBrightness(value / 100)) }))] })), profiles.length > 0 && (SP_JSX.jsx(SelectEdit, { label: t("Power Profile"), value: profile, options: profiles, onChange: (value) => setConfig((current) => (current ? update(current, ["power", "general", "default_profile"], value) : current)) })), SP_JSX.jsx(QuickDisplayRows, {}), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => {
-                    DFL.Navigation.Navigate("/nebel-control");
-                    DFL.Navigation.CloseSideMenus();
-                }, children: t("Open Nebel Control") })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { children: [stickLed && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Stick Lighting"), value: stickLed.enabled, onChange: (value) => applyLighting({ enabled: value }, () => setStickLedEnabled(value)) }), stickLed.enabled && !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => applyLighting({ maxBrightness: value / 100 }, () => setStickLedMaxBrightness(value / 100)) }))] })), profiles.length > 0 && (SP_JSX.jsx(SelectEdit, { label: t("Power Profile"), value: profile, options: profiles, onChange: (value) => setConfig((current) => (current ? update(current, ["power", "general", "default_profile"], value) : current)) })), SP_JSX.jsx(QuickDisplayRows, {})] }));
 }
 const LOG = "[Nebel Control] qam-quick-panel:";
 const QUICK_ACCESS_TAB_SETTINGS = 4;

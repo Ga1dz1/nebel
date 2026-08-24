@@ -1,4 +1,4 @@
-import { ButtonItem, ErrorBoundary, Field, Navigation, PanelSection, afterPatch, findInReactTree, findModuleByExport, getReactRoot } from "@decky/ui";
+import { ButtonItem, ErrorBoundary, Field, PanelSection, afterPatch, findInReactTree, findModuleByExport, getReactRoot } from "@decky/ui";
 import { useEffect, useState } from "react";
 import type { Patch } from "@decky/ui";
 import { getDisplayState, restartGamescopeSession, setDisplayConfig, setStickLedEnabled, setStickLedMaxBrightness } from "../backend";
@@ -10,10 +10,12 @@ import { useInjectedConfig } from "./injectedConfig";
 
 // One compact block appended to Steam's own Quick Access "Settings" panel
 // (the "..." menu): just the levers worth touching mid-game - stick lighting
-// on/off + brightness, the power profile, primary-display pick when an
-// external panel is connected, and a door to the fullscreen control center.
-// The plugin returns no `content` to Decky (so it no longer clutters the
-// Decky plugin list); this block is its QAM presence instead.
+// on/off + brightness, the power profile, and the primary-display pick when
+// an external panel is connected. Deliberately UNBRANDED (no section title,
+// no "Nebel Control" anywhere): it must read as stock quick settings, not a
+// plugin ad. The plugin returns no `content` to Decky (so it no longer
+// clutters the Decky plugin list); this block is its QAM presence instead,
+// and the fullscreen control center is reached from Settings -> System.
 
 // Compact external-display control: only rendered while an external panel is
 // actually connected; mirrors Display.tsx's primary-pick semantics (single
@@ -76,7 +78,7 @@ function QuickPanel() {
   const { config, setConfig, message } = useInjectedConfig();
   if (!config) {
     return (
-      <PanelSection title="Nebel Control">
+      <PanelSection>
         <Field label={message} />
       </PanelSection>
     );
@@ -97,7 +99,7 @@ function QuickPanel() {
       .catch(() => setConfig((current) => (current ? { ...current, stickLed: previous } : current)));
   };
   return (
-    <PanelSection title="Nebel Control">
+    <PanelSection>
       {stickLed && (
         <>
           <ToggleRow
@@ -126,15 +128,6 @@ function QuickPanel() {
         />
       )}
       <QuickDisplayRows />
-      <ButtonItem
-        layout="below"
-        onClick={() => {
-          Navigation.Navigate("/nebel-control");
-          Navigation.CloseSideMenus();
-        }}
-      >
-        {t("Open Nebel Control")}
-      </ButtonItem>
     </PanelSection>
   );
 }

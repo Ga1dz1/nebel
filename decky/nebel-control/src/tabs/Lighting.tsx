@@ -2,7 +2,6 @@ import { ButtonItem, Field, PanelSection } from "@decky/ui";
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import {
-  setStickLedChargingIndicator as applyStickLedChargingIndicator,
   setStickLedChase as applyStickLedChase,
   setStickLedColor as applyStickLedColor,
   setStickLedColorSource as applyStickLedColorSource,
@@ -19,7 +18,6 @@ import {
   setStickLedFlip as applyStickLedFlip,
 } from "../backend";
 import { ColorPicker } from "../components/ColorPicker";
-import { ModePreview } from "../components/ModePreview";
 import { Collapsible, OpenFullScreenButton, PresetSwatchGrid, SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { Config, StickLedSideState, StickLedState } from "../types";
@@ -338,29 +336,6 @@ export function Lighting({ config, setConfig, qam }: {
       });
     }
   };
-  const setStickLedChargingIndicator = async (value: boolean) => {
-    if (!stickLed || !sideState) return;
-    const sides = targetSides;
-    const previous = sides.map((s) => stickLed.sides[s].chargingIndicator);
-    setConfig((current) => {
-      if (!current) return current;
-      let sl = current.stickLed;
-      for (const s of sides) sl = patchSide(sl, s, { chargingIndicator: value });
-      return { ...current, stickLed: sl };
-    });
-    try {
-      let applied = stickLed;
-      for (const s of sides) applied = await applyStickLedChargingIndicator(s, value);
-      setConfig((current) => (current ? { ...current, stickLed: applied } : current));
-    } catch (error) {
-      setConfig((current) => {
-        if (!current) return current;
-        let sl = current.stickLed;
-        sides.forEach((s, i) => { sl = patchSide(sl, s, { chargingIndicator: previous[i] }); });
-        return { ...current, stickLed: sl };
-      });
-    }
-  };
   const makeToggleSetter = (
     field: "chase" | "compass" | "seesaw" | "flip",
     apply: (side: "l" | "r", value: boolean) => Promise<StickLedState>,
@@ -413,31 +388,9 @@ export function Lighting({ config, setConfig, qam }: {
       {!stickLed.enabled && <Field label={t("Sticks are off - settings below are kept, not applied.")} />}
       {stickLed.enabled && (
         <>
-      <ToggleRow
-        label={t("Follow screen brightness")}
-        description={t("Dim both sticks along with the display backlight")}
-        value={!!stickLed.screenLink}
-        onChange={setStickLedScreenLink}
-      />
-      {!stickLed.screenLink && (
-        <SliderEdit
-          label={t("Max Brightness")}
-          value={Math.round((stickLed.maxBrightness ?? 1) * 100)}
-          min={0}
-          max={100}
-          step={5}
-          onChange={(value) => setStickLedMaxBrightness(value / 100)}
-        />
-      )}
       <SelectEdit label={t("Mode")} value={mode} options={MODE_OPTIONS} onChange={setStickLedMode} />
-      <ModePreview
-        mode={mode}
-        color={sideState.color}
-        duotoneColorA={sideState.duotoneColorA}
-        duotoneColorB={sideState.duotoneColorB}
-        duotoneOrientation={sideState.duotoneOrientation}
-      />
-      {/* Everything past the mode preview is fullscreen-page territory. */}
+      {/* Mode-specific tuning and the color controls are fullscreen-page
+          territory; the (currently unused) QAM variant stops at the mode. */}
       {!qam && (
         <>
       {mode === "spin" && (
@@ -481,71 +434,79 @@ export function Lighting({ config, setConfig, qam }: {
             />
           );
         })}
-      {(COLOR_VISIBLE_MODES.has(mode) || mode === "duotone") && (
-        <Collapsible label={t("Colors")}>
-          {COLOR_VISIBLE_MODES.has(mode) && (
+      {COLOR_VISIBLE_MODES.has(mode) && (
+        <>
+          <SelectEdit
+            label={t("Color Source")}
+            value={sideState.colorSource || "static"}
+            options={COLOR_SOURCE_OPTIONS}
+            onChange={setStickLedColorSource}
+          />
+          {sideState.colorSource !== "battery" && sideState.colorSource !== "random" && (
             <>
-              <SelectEdit
-                label={t("Color Source")}
-                value={sideState.colorSource || "static"}
-                options={COLOR_SOURCE_OPTIONS}
-                onChange={setStickLedColorSource}
-              />
-              {sideState.colorSource === "battery" && (
-                <ToggleRow
-                  label={t("Charging indicator")}
-                  description={t("Spin a blue dot around the stick while charging")}
-                  value={sideState.chargingIndicator}
-                  onChange={setStickLedChargingIndicator}
-                />
-              )}
-              {sideState.colorSource !== "battery" && sideState.colorSource !== "random" && (
-                <>
-                  <PresetSwatchGrid colors={PRESET_COLORS} selected={sideState.color} onSelect={setStickLedColor} />
-                  <ButtonItem layout="below" onClick={() => setCustomColorExpanded((expanded) => !expanded)}>
-                    {customColorExpanded ? t("Hide custom color") + " ▲" : t("Custom color (advanced)") + " ▼"}
-                  </ButtonItem>
-                  {customColorExpanded && (
-                    <ColorPicker hex={sideState.color} onChange={setStickLedColor} />
-                  )}
-                </>
+              <PresetSwatchGrid colors={PRESET_COLORS} selected={sideState.color} onSelect={setStickLedColor} />
+              <ButtonItem layout="below" onClick={() => setCustomColorExpanded((expanded) => !expanded)}>
+                {customColorExpanded ? t("Hide custom color") + " ▲" : t("Custom color (advanced)") + " ▼"}
+              </ButtonItem>
+              {customColorExpanded && (
+                <ColorPicker hex={sideState.color} onChange={setStickLedColor} />
               )}
             </>
           )}
-          {mode === "duotone" && (
-            <>
-              <SelectEdit
-                label={t("Split")}
-                value={sideState.duotoneOrientation || "horizontal"}
-                options={DUOTONE_ORIENTATION_OPTIONS}
-                onChange={setStickLedDuotoneOrientation}
-              />
-              <ColorPicker
-                label={t("Color A")}
-                hex={sideState.duotoneColorA}
-                onChange={(hex) => setStickLedDuotoneColor("a", hex)}
-              />
-              <ColorPicker
-                label={t("Color B")}
-                hex={sideState.duotoneColorB}
-                onChange={(hex) => setStickLedDuotoneColor("b", hex)}
-              />
-            </>
-          )}
-        </Collapsible>
+        </>
       )}
-      <Collapsible label={t("Configure each stick separately")}>
-        <ToggleRow
-          label={t("Configure each stick separately")}
-          description={t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.")}
-          value={separate}
-          onChange={setSeparate}
+      {mode === "duotone" && (
+        <>
+          <SelectEdit
+            label={t("Split")}
+            value={sideState.duotoneOrientation || "horizontal"}
+            options={DUOTONE_ORIENTATION_OPTIONS}
+            onChange={setStickLedDuotoneOrientation}
+          />
+          <ColorPicker
+            label={t("Color A")}
+            hex={sideState.duotoneColorA}
+            onChange={(hex) => setStickLedDuotoneColor("a", hex)}
+          />
+          <ColorPicker
+            label={t("Color B")}
+            hex={sideState.duotoneColorB}
+            onChange={(hex) => setStickLedDuotoneColor("b", hex)}
+          />
+        </>
+      )}
+        </>
+      )}
+      <ToggleRow
+        label={t("Follow screen brightness")}
+        description={t("Dim both sticks along with the display backlight")}
+        value={!!stickLed.screenLink}
+        onChange={setStickLedScreenLink}
+      />
+      {!stickLed.screenLink && (
+        <SliderEdit
+          label={t("Max Brightness")}
+          value={Math.round((stickLed.maxBrightness ?? 1) * 100)}
+          min={0}
+          max={100}
+          step={5}
+          onChange={(value) => setStickLedMaxBrightness(value / 100)}
         />
-        {separate && (
-          <SelectEdit label={t("Stick")} value={selectedSide} options={SIDE_OPTIONS} onChange={(value) => setSelectedSide(value as "l" | "r")} />
-        )}
-      </Collapsible>
-      <Collapsible label={t("ADVANCED")}>
+      )}
+      {/* Rarely-touched hardware quirks sit flat at the bottom; only the
+          genuinely exceptional ones hide behind a spoiler. */}
+      {!qam && (
+        <>
+      <ToggleRow
+        label={t("Configure each stick separately")}
+        description={t("Off: changes below apply to both sticks at once. On: pick a stick and edit just that one.")}
+        value={separate}
+        onChange={setSeparate}
+      />
+      {separate && (
+        <SelectEdit label={t("Stick")} value={selectedSide} options={SIDE_OPTIONS} onChange={(value) => setSelectedSide(value as "l" | "r")} />
+      )}
+      <Collapsible label={t("Advanced")}>
         {mode === "reactive" && (
           <>
             <SelectEdit label={t("Button")} value={flashButton} options={FLASH_BUTTON_OPTIONS} onChange={setFlashButton} />
@@ -560,6 +521,9 @@ export function Lighting({ config, setConfig, qam }: {
             />
           </>
         )}
+        {/* No reliable device-model detection exists for the upside-down left
+            ring (config's controllerType is the input emulation type, not the
+            hardware model), so this stays a plain toggle in Advanced. */}
         <ToggleRow
           label={t("Flip stick ring")}
           description={t("Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down")}

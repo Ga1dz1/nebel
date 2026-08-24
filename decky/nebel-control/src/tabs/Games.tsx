@@ -570,7 +570,7 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
       {!qam && (
         <>
           <PanelSection>
-            <Collapsible label={t("ADVANCED")}>
+            <Collapsible label={t("Advanced")}>
               <SelectEdit
                 label={t("CPU Cores")}
                 value={String(values.cores || "")}

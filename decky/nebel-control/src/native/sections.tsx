@@ -16,7 +16,7 @@ import { NativeStyles, useInjectedConfig } from "./injectedConfig";
 
 function MissingConfig({ message }: { message: string }) {
   return (
-    <PanelSection title="Nebel">
+    <PanelSection>
       <Field label={message} />
     </PanelSection>
   );
@@ -86,15 +86,17 @@ export function CloudSyncSection() {
 // Settings -> System: entry point to the fullscreen control center. The
 // plugin no longer appears in Decky's QAM plugin list (no `content`
 // returned), so this is the discoverable way in; /nebel-control stays
-// directly navigable as before.
+// directly navigable as before. Neutrally labeled ("Control Center", not
+// "Nebel Control") so the settings page keeps a stock look - the brand only
+// shows on the fullscreen page itself, where it belongs.
 export function ControlCenterSection() {
   return (
     <div className="nebel-native">
       <NativeStyles />
-      <PanelSection title="Nebel Control">
+      <PanelSection title={t("Control Center")}>
         <PanelSectionRow>
           <ButtonItem layout="below" onClick={() => Navigation.Navigate("/nebel-control")}>
-            {t("Open Nebel Control")}
+            {t("Open Control Center")}
           </ButtonItem>
         </PanelSectionRow>
       </PanelSection>

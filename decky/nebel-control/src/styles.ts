@@ -78,16 +78,6 @@ export const styles = `
         opacity: 0.62;
         font-size: 12px;
       }
-      .nebel-control-root .nebel-mode-preview-wrap {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-        padding: 4px 0 8px;
-      }
-      .nebel-control-root .nebel-mode-preview-canvas {
-        background: rgba(0, 0, 0, 0.25);
-        border-radius: 8px;
-      }
       .nebel-control-root .nebel-preset-swatch {
         width: 34px;
         height: 34px;

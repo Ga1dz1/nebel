@@ -1,7 +1,8 @@
 import { ButtonItem, PanelSection } from "@decky/ui";
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { SelectEdit, SliderEdit } from "../components/widgets";
+import { setStickLedChargingIndicator as applyStickLedChargingIndicator } from "../backend";
+import { SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import { clone, titleCase, update } from "../lib/util";
 import type { Config, PowerProfile } from "../types";
@@ -49,6 +50,36 @@ export function Power({ config, setConfig }: { config: Config; setConfig: Dispat
   };
   const underclockLevel = p.cpu_underclock || "";
   const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
+  // The stick LED charging dot is a battery/charging concern, so it lives
+  // here rather than in the Lighting tab. Always applied to both sticks.
+  const stickLed = config.stickLed?.supported ? config.stickLed : null;
+  const setChargingIndicator = async (value: boolean) => {
+    if (!stickLed) return;
+    const sides: ("l" | "r")[] = ["l", "r"];
+    const previous = sides.map((s) => stickLed.sides[s].chargingIndicator);
+    const patch = (sl: typeof stickLed, s: "l" | "r", v: boolean) => ({
+      ...sl,
+      sides: { ...sl.sides, [s]: { ...sl.sides[s], chargingIndicator: v } },
+    });
+    setConfig((current) => {
+      if (!current) return current;
+      let sl = current.stickLed;
+      for (const s of sides) sl = patch(sl, s, value);
+      return { ...current, stickLed: sl };
+    });
+    try {
+      let applied = stickLed;
+      for (const s of sides) applied = await applyStickLedChargingIndicator(s, value);
+      setConfig((current) => (current ? { ...current, stickLed: applied } : current));
+    } catch (error) {
+      setConfig((current) => {
+        if (!current) return current;
+        let sl = current.stickLed;
+        sides.forEach((s, i) => { sl = patch(sl, s, previous[i]); });
+        return { ...current, stickLed: sl };
+      });
+    }
+  };
   return (
     <>
       <PanelSection title={t("Edit Power Profile")}>
@@ -67,6 +98,16 @@ export function Power({ config, setConfig }: { config: Config; setConfig: Dispat
           <ButtonItem layout="below" onClick={resetProfile}>{t("Reset to Default")}</ButtonItem>
         </div>
       </PanelSection>
+      {stickLed && (
+        <PanelSection title={t("Stick Lighting")}>
+          <ToggleRow
+            label={t("Charging indicator")}
+            description={t("Spin a blue dot around the stick while charging (when the stick color follows the battery level)")}
+            value={!!stickLed.sides?.l?.chargingIndicator}
+            onChange={setChargingIndicator}
+          />
+        </PanelSection>
+      )}
     </>
   );
 }
