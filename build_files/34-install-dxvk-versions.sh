@@ -72,6 +72,10 @@ unpack_layer "${DXVK_DIR}/dxvk-2.7.1" \
 unpack_layer "${DXVK_DIR}/dxvk-sarek" "${SAREK_URL}"
 unpack_layer "${DXVK_DIR}/dxvk-async-1.10.3" \
     "https://github.com/Sporif/dxvk-async/releases/download/1.10.3/dxvk-async-1.10.3.tar.gz"
+unpack_layer "${VKD3D_DIR}/vkd3d-3.0.1" \
+    "https://github.com/HansKristian-Work/vkd3d-proton/releases/download/v3.0.1/vkd3d-proton-3.0.1.tar.zst"
+unpack_layer "${VKD3D_DIR}/vkd3d-3.0" \
+    "https://github.com/HansKristian-Work/vkd3d-proton/releases/download/v3.0/vkd3d-proton-3.0.tar.zst"
 unpack_layer "${VKD3D_DIR}/vkd3d-2.14.1" \
     "https://github.com/HansKristian-Work/vkd3d-proton/releases/download/v2.14.1/vkd3d-proton-2.14.1.tar.zst"
 unpack_layer "${VKD3D_DIR}/vkd3d-2.10" \
@@ -80,6 +84,6 @@ unpack_layer "${VKD3D_DIR}/vkd3d-2.10" \
 for build in dxvk-2.7.1 dxvk-sarek dxvk-async-1.10.3; do
     require_dlls "${DXVK_DIR}/${build}" d3d9.dll d3d10core.dll d3d11.dll dxgi.dll
 done
-for build in vkd3d-2.14.1 vkd3d-2.10; do
+for build in vkd3d-3.0.1 vkd3d-3.0 vkd3d-2.14.1 vkd3d-2.10; do
     require_dlls "${VKD3D_DIR}/${build}" d3d12.dll d3d12core.dll
 done
