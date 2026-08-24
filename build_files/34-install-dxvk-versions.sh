@@ -42,7 +42,17 @@ unpack_layer() {
     curl --retry 3 --retry-delay 2 -fsSL -o "${tmp}/layer.tar" "${url}"
     tar -xf "${tmp}/layer.tar" -C "${tmp}/unpack" --strip-components=1
     rm "${tmp}/layer.tar"
-    # vkd3d-proton names its 32-bit dir x86, dxvk says x32
+    # vkd3d-proton names its 32-bit dir x86, dxvk says x32; DXVK-Sarek 1.13+
+    # nests both under build/ one level deeper
+    if [ ! -d "${tmp}/unpack/x64" ] && [ -d "${tmp}/unpack/build/x64" ]; then
+        mv "${tmp}/unpack/build/x64" "${tmp}/unpack/x64"
+        if [ -d "${tmp}/unpack/build/x86" ] && [ ! -d "${tmp}/unpack/x32" ]; then
+            mv "${tmp}/unpack/build/x86" "${tmp}/unpack/x32"
+        fi
+        if [ -d "${tmp}/unpack/build/x32" ] && [ ! -d "${tmp}/unpack/x32" ]; then
+            mv "${tmp}/unpack/build/x32" "${tmp}/unpack/x32"
+        fi
+    fi
     if [ -d "${tmp}/unpack/x86" ] && [ ! -d "${tmp}/unpack/x32" ]; then
         mv "${tmp}/unpack/x86" "${tmp}/unpack/x32"
     fi
