@@ -241,6 +241,11 @@ python3 -c 'import os,sys; os.setxattr(sys.argv[1],"user.component",b"fex-rootfs
 # not expected to break anything else in the build.
 PROTON_ARM64_APPID="4628740"
 PROTON_ARM64_DIR="${STEAM_HOME}/steamapps/common/Proton 11.0 (ARM64)"
+# Both ARM64 Protons (this one and Experimental) declare this runtime as
+# their tool dependency; without it Steam leaves them stuck mid-registration
+# and never lists them in compat pickers.
+SLR4_ARM64_APPID="4185400"
+SLR4_ARM64_DIR="${STEAM_HOME}/steamapps/common/SteamLinuxRuntime_4-arm64"
 STEAMCMD_DIR="/tmp/steamcmd"
 
 set +e
@@ -250,9 +255,11 @@ curl --retry 3 --retry-delay 2 -fsSL "https://steamcdn-a.akamaihd.net/client/ins
     && tar -xzf "${STEAMCMD_DIR}/steamcmd_linux.tar.gz" -C "${STEAMCMD_DIR}" \
     && FEXInterpreter "${STEAMCMD_DIR}/linux32/steamcmd" \
         +@sSteamCmdForcePlatformType linux \
-        +force_install_dir "${STEAM_HOME}/steamapps/common/Proton 11.0 (ARM64)" \
+        +force_install_dir "${PROTON_ARM64_DIR}" \
         +login anonymous \
         +app_update "${PROTON_ARM64_APPID}" validate \
+        +force_install_dir "${SLR4_ARM64_DIR}" \
+        +app_update "${SLR4_ARM64_APPID}" validate \
         +quit
 proton_arm64_rc=$?
 set -e
@@ -263,6 +270,12 @@ if [[ ${proton_arm64_rc} -eq 0 && -d "${PROTON_ARM64_DIR}" ]]; then
     echo "Pre-staged: official Proton 11.0 (ARM64), app ${PROTON_ARM64_APPID}"
 else
     echo "WARNING: could not pre-stage official Proton 11.0 (ARM64) (rc=${proton_arm64_rc}) - users can still install it manually from their Steam library, same as before this change" >&2
+fi
+if [[ ${proton_arm64_rc} -eq 0 && -d "${SLR4_ARM64_DIR}" ]]; then
+    python3 -c 'import os,sys; os.setxattr(sys.argv[1],"user.component",b"steam")' "${SLR4_ARM64_DIR}"
+    echo "Pre-staged: Steam Linux Runtime 4.0 (ARM64), app ${SLR4_ARM64_APPID}"
+else
+    echo "WARNING: could not pre-stage Steam Linux Runtime 4.0 (ARM64) (rc=${proton_arm64_rc})" >&2
 fi
 
 echo "Pre-staged: ARM64 Steam bootstrap + CachyOS Proton 11 ${PROTON_VER}"
