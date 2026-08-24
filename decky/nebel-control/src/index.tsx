@@ -7,6 +7,7 @@ import {
   registerDownloadWatcher,
   sweepInstalledGames,
 } from "./lib/steamCompat";
+import { installNativeSettingsSections } from "./native";
 
 export default definePlugin(() => {
   let unregisterDownloadWatcher = () => {};
@@ -62,12 +63,14 @@ export default definePlugin(() => {
   };
   bootstrap();
   routerHook.addRoute("/nebel-control", FullPage);
+  const uninstallNativeSections = installNativeSettingsSections();
   return {
     name: "Nebel Control",
     content: <Content />,
     onDismount() {
       cancelled = true;
       unregisterDownloadWatcher();
+      uninstallNativeSections();
       routerHook.removeRoute("/nebel-control");
     },
     icon: (

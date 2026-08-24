@@ -263,6 +263,9 @@ const uk: Dictionary = {
   "Volume": "Гучність",
   "Brightness": "Яскравість",
   "Menu key": "Клавіша меню",
+  "Nebel: Stick Lighting": "Nebel: підсвітка стіків",
+  "Nebel: Power Profile": "Nebel: профіль живлення",
+  "Nebel: Game Tweaks": "Nebel: налаштування гри",
 };
 
 const ru: Dictionary = {
@@ -522,6 +525,9 @@ const ru: Dictionary = {
   "Volume": "Громкость",
   "Brightness": "Яркость",
   "Menu key": "Клавиша меню",
+  "Nebel: Stick Lighting": "Nebel: подсветка стиков",
+  "Nebel: Power Profile": "Nebel: профиль питания",
+  "Nebel: Game Tweaks": "Nebel: настройки игры",
 };
 
 const es: Dictionary = {
@@ -781,6 +787,9 @@ const es: Dictionary = {
   "Volume": "Volumen",
   "Brightness": "Brillo",
   "Menu key": "Tecla de menú",
+  "Nebel: Stick Lighting": "Nebel: iluminación de los sticks",
+  "Nebel: Power Profile": "Nebel: perfil de energía",
+  "Nebel: Game Tweaks": "Nebel: ajustes del juego",
 };
 
 const fr: Dictionary = {
@@ -1040,6 +1049,9 @@ const fr: Dictionary = {
   "Volume": "Volume",
   "Brightness": "Luminosité",
   "Menu key": "Touche menu",
+  "Nebel: Stick Lighting": "Nebel : éclairage des sticks",
+  "Nebel: Power Profile": "Nebel : profil d'alimentation",
+  "Nebel: Game Tweaks": "Nebel : réglages du jeu",
 };
 
 const dictionaries: Partial<Record<Locale, Dictionary>> = { uk, ru, es, fr };

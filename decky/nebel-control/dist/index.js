@@ -370,6 +370,9 @@ const uk = {
     "Volume": "Гучність",
     "Brightness": "Яскравість",
     "Menu key": "Клавіша меню",
+    "Nebel: Stick Lighting": "Nebel: підсвітка стіків",
+    "Nebel: Power Profile": "Nebel: профіль живлення",
+    "Nebel: Game Tweaks": "Nebel: налаштування гри",
 };
 const ru = {
     "Loading": "Загрузка",
@@ -628,6 +631,9 @@ const ru = {
     "Volume": "Громкость",
     "Brightness": "Яркость",
     "Menu key": "Клавиша меню",
+    "Nebel: Stick Lighting": "Nebel: подсветка стиков",
+    "Nebel: Power Profile": "Nebel: профиль питания",
+    "Nebel: Game Tweaks": "Nebel: настройки игры",
 };
 const es = {
     "Loading": "Cargando",
@@ -886,6 +892,9 @@ const es = {
     "Volume": "Volumen",
     "Brightness": "Brillo",
     "Menu key": "Tecla de menú",
+    "Nebel: Stick Lighting": "Nebel: iluminación de los sticks",
+    "Nebel: Power Profile": "Nebel: perfil de energía",
+    "Nebel: Game Tweaks": "Nebel: ajustes del juego",
 };
 const fr = {
     "Loading": "Chargement",
@@ -1144,6 +1153,9 @@ const fr = {
     "Volume": "Volume",
     "Brightness": "Luminosité",
     "Menu key": "Touche menu",
+    "Nebel: Stick Lighting": "Nebel : éclairage des sticks",
+    "Nebel: Power Profile": "Nebel : profil d'alimentation",
+    "Nebel: Game Tweaks": "Nebel : réglages du jeu",
 };
 const dictionaries = { uk, ru, es, fr };
 // CEF's navigator.language follows the Steam UI language in game mode, which
@@ -1694,8 +1706,20 @@ function currentGame() {
     const appid = running?.appid;
     if (!appid)
         return null;
+    return gameRefFromAppid(String(appid), running?.display_name || running?.displayName || "");
+}
+// Name resolution for a known appid (Properties-page injection passes the
+// appid from the route, so the Games editor can lock onto it without the
+// picker). Falls back to "App <id>" while stores are still cold.
+function gameRefFromAppid(appid, fallbackName = "") {
     const id = String(appid);
-    let name = running?.display_name || running?.displayName || "";
+    let name = fallbackName;
+    try {
+        const overview = window.appStore?.GetAppOverviewByAppID?.(Number(id));
+        name = overview?.display_name || name;
+    }
+    catch (error) {
+    }
     try {
         const details = window.appDetailsStore?.GetAppDetails?.(Number(id));
         name = details?.strDisplayName || details?.strName || details?.name || name;
@@ -1926,8 +1950,8 @@ function OpenFullScreenButton() {
 }
 // Progressive disclosure: a ButtonItem header with a chevron that shows/hides
 // its children. Closed by default so rarely-needed options stay out of the way.
-function Collapsible({ label, children }) {
-    const [open, setOpen] = SP_REACT.useState(false);
+function Collapsible({ label, children, defaultOpen }) {
+    const [open, setOpen] = SP_REACT.useState(!!defaultOpen);
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => setOpen((value) => !value), children: [open ? "▾ " : "▸ ", label] }), open ? children : null] }));
 }
 function ToggleRow({ label, value, onChange, disabled, description }) {
@@ -2194,7 +2218,7 @@ function ConfirmResetAllModal({ closeModal, onConfirm }) {
     };
     return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: closeModal, children: [SP_JSX.jsx(DFL.DialogBody, { children: t("This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.") }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx(DFL.DialogButton, { onClick: confirm, children: t("Reset All Games") }), SP_JSX.jsx(DFL.DialogButton, { onClick: closeModal, children: t("Cancel") })] })] }));
 }
-function Games({ config, setConfig, qam }) {
+function Games({ config, setConfig, qam, lockedAppid }) {
     const [resolution, setResolution] = SP_REACT.useState("Default");
     const [defaultResolution, setDefaultResolution] = SP_REACT.useState(getGlobalResolution());
     const [resolutionMessage, setResolutionMessage] = SP_REACT.useState("");
@@ -2207,7 +2231,11 @@ function Games({ config, setConfig, qam }) {
     const [globalTool, setGlobalTool] = SP_REACT.useState(String(config.tweaks?.global?.windowsCompatTool || DEFAULT_WINDOWS_COMPAT_TOOL));
     const runtimeGame = config.game;
     const games = availableGames(config);
-    const selectedGame = config.selectedGame || runtimeGame || null;
+    // lockedAppid: the injected Properties-page variant pins the editor to the
+    // app whose Properties is open - no game picker, no "Default" target.
+    const selectedGame = lockedAppid
+        ? gameRefFromAppid(lockedAppid)
+        : config.selectedGame || runtimeGame || null;
     const game = selectedGame;
     const selectedAppidRef = SP_REACT.useRef("");
     selectedAppidRef.current = game?.appid || "";
@@ -2543,14 +2571,14 @@ function Games({ config, setConfig, qam }) {
     const setKnob = (key, on) => patchSettings({ fexProfile: "custom", fexConfig: { ...fexConfig, [key]: on ? "1" : "0" } });
     const thunks = values.thunks || {};
     const setThunk = (module, on) => patchSettings({ thunks: { ...thunks, [module]: on } });
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("EDIT GAME PROFILE"), children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Compatibility changes apply on next launch") })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: compatMode, options: compatModeOptions, onChange: onSelectCompatMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Default Proton"), value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: t("Apply to New Games"), checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!lockedAppid && (SP_JSX.jsxs(DFL.PanelSection, { title: t("EDIT GAME PROFILE"), children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Compatibility changes apply on next launch") })] })), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: compatMode, options: compatModeOptions, onChange: onSelectCompatMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Default Proton"), value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: t("Apply to New Games"), checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
                                     setAutoApplyCompat(enabled);
                                     patchSettings({ autoApplyCompat: enabled });
                                 } }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: perGameMode, options: perGameModeOptions, onChange: onSelectPerGameMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
                                 : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] }), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                     ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
-                                    : null] }) }), !editingDefault && game?.appid ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+                                    : null] }) }), !editingDefault && game?.appid ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
 // Per-game winetricks verbs ("Dependencies"): installs run in a backend
 // worker thread, so the UI polls deps_status while busy instead of blocking.
@@ -3951,6 +3979,367 @@ function FullPage() {
     return pageShell(SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { className: "nc-page-sidebar", children: tabs.map((candidate) => (SP_JSX.jsxs(DFL.Focusable, { className: `nc-page-tab${candidate.id === active.id ? " nc-active" : ""}`, onActivate: () => setTab(candidate.id), onClick: () => setTab(candidate.id), children: [candidate.icon, SP_JSX.jsx("span", { children: candidate.label })] }, candidate.id))) }), SP_JSX.jsx("div", { className: "nc-page-content", children: SP_JSX.jsx("div", { className: "nc-page-content-inner", children: active.content }) })] }));
 }
 
+// Config source for the sections injected into Steam's native settings pages.
+// This mirrors Content.tsx's usePluginConfig (same backend calls, same
+// debounced whole-object saves for `power` and `tweaks`), but is standalone:
+// each injected page holds its own copy, the python backend stays the single
+// source of truth. The running-game polling of the QAM/fullpage variant is
+// intentionally left out - the injected sections never target "whatever is
+// running", only fixed appids or device-wide settings.
+function useInjectedConfig() {
+    const [config, setConfig] = SP_REACT.useState(null);
+    const [message, setMessage] = SP_REACT.useState(t("Loading"));
+    const savedPowerSnapshot = SP_REACT.useRef("");
+    const savedTweaksSnapshot = SP_REACT.useRef("");
+    const installedGamesRequested = SP_REACT.useRef(false);
+    const load = SP_REACT.useCallback(async () => {
+        try {
+            const next = await getConfig();
+            savedPowerSnapshot.current = JSON.stringify(next.power);
+            savedTweaksSnapshot.current = JSON.stringify(next.tweaks);
+            setConfig((current) => ({ ...next, installedGames: current?.installedGames || next.installedGames }));
+        }
+        catch (error) {
+            setMessage(String(error));
+        }
+    }, []);
+    SP_REACT.useEffect(() => {
+        load();
+    }, [load]);
+    SP_REACT.useEffect(() => {
+        if (!config || installedGamesRequested.current)
+            return;
+        installedGamesRequested.current = true;
+        let cancelled = false;
+        getInstalledGames()
+            .then((installedGames) => {
+            if (cancelled)
+                return;
+            setConfig((current) => (current ? { ...current, installedGames } : current));
+        })
+            .catch(() => { });
+        return () => {
+            cancelled = true;
+        };
+    }, [!!config]);
+    useDebouncedSave({ config, field: "power", snapshot: savedPowerSnapshot, save: savePowerConfig, setConfig, onError: load });
+    useDebouncedSave({ config, field: "tweaks", snapshot: savedTweaksSnapshot, save: saveTweaks, setConfig, onError: load });
+    return { config, setConfig, message };
+}
+// The injected sections live inside Steam's own settings tree, outside
+// nebel-control-root, so the plugin stylesheet has to come along - otherwise
+// the shared widgets (slider rows, swatch grid, notes) render unstyled.
+function NativeStyles() {
+    return SP_JSX.jsx("style", { children: styles });
+}
+
+// The sections duplicated into Steam's own settings pages. Each one renders
+// the corresponding plugin tab as-is (same components, same python backend
+// calls - the injected UI is a pure frontend addition) inside the native
+// page's content panel. Blocks with more than a couple of controls sit in a
+// spoiler (Collapsible) so the host page stays tidy; spoilers start open so
+// the duplication is discoverable, and collapse state is per-mount.
+function MissingConfig({ message }) {
+    return (SP_JSX.jsx(DFL.PanelSection, { title: "Nebel", children: SP_JSX.jsx(DFL.Field, { label: message }) }));
+}
+// Settings -> Controller: stick lighting (full Lighting tab).
+function ControllerLightingSection() {
+    const { config, setConfig, message } = useInjectedConfig();
+    if (!config)
+        return SP_JSX.jsx(MissingConfig, { message: message });
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Collapsible, { label: t("Nebel: Stick Lighting"), defaultOpen: true, children: SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig }) })] }));
+}
+// Settings -> Power: fan curve / CPU-GPU limits (Power tab).
+function PowerLimitsSection() {
+    const { config, setConfig, message } = useInjectedConfig();
+    if (!config)
+        return SP_JSX.jsx(MissingConfig, { message: message });
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Collapsible, { label: t("Nebel: Power Profile"), defaultOpen: true, children: SP_JSX.jsx(Power, { config: config, setConfig: setConfig }) })] }));
+}
+// Settings -> Display: external display (Display tab). Small enough to render
+// without a spoiler of its own - it is a single titled group already.
+function ExternalDisplaySection() {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Display, {})] }));
+}
+// Game page -> Properties (gear): per-game tweaks for the app whose
+// Properties page is open (Games tab locked to that appid - works for Steam
+// games and non-Steam shortcuts alike, tweaks are keyed by appid).
+function GameTweaksSection({ appid }) {
+    const { config, setConfig, message } = useInjectedConfig();
+    if (!config)
+        return SP_JSX.jsx(MissingConfig, { message: message });
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Collapsible, { label: t("Nebel: Game Tweaks"), defaultOpen: true, children: SP_JSX.jsx(Games, { config: config, setConfig: setConfig, lockedAppid: appid }) })] }));
+}
+
+// Duplicates Nebel Control's management UI into Steam's own settings pages
+// (Steam Settings -> Controller/Power/Display and game Properties), rendered
+// with Steam's native components so it reads as part of the host UI. The
+// Decky QAM/fullpage plugin stays the parallel full control center; both hit
+// the same python backend.
+//
+// Technique: Steam builds both the Settings root and the game Properties
+// page from a `pages` array ({title, route, link, content, icon, visible})
+// handed to a shared paged-navigation component. We hook the route via
+// routerHook.addPatch, wrap the route child component's type, and from there
+// cascade: every function component in the returned element tree gets its
+// type wrapped once (WeakSet-guarded, so identity is stable and nothing
+// remounts), so when it renders we scan its output too. Once the element
+// carrying `props.pages` shows up, the matching pages' `content` element is
+// replaced with ours appended. Everything stays inside Steam's React tree,
+// so navigation/focus/SteamInput behave natively.
+//
+// Graceful degradation: every step is try/caught and every injected block is
+// behind an ErrorBoundary, so if a Steam update moves or renames the anchors
+// (no pages host, unknown routes), only the duplicate disappears - the
+// plugin itself never breaks.
+const LOG = "[Nebel Control] native-settings:";
+// Marks a component type we already wrapped - the router re-runs route
+// patches on every render, and a fresh wrapper each time would remount the
+// whole page subtree (focus/state loss), so wrapping must be idempotent.
+const NEO_WRAPPED = "__nebelNativeTypeWrapped";
+const SETTINGS_SECTIONS = [
+    {
+        name: "controller-lighting",
+        match: (page) => String(page.route || "").startsWith("/settings/controller"),
+        render: () => SP_JSX.jsx(ControllerLightingSection, {}),
+    },
+    {
+        name: "power-limits",
+        match: (page) => page.route === "/settings/power",
+        render: () => SP_JSX.jsx(PowerLimitsSection, {}),
+    },
+    {
+        name: "external-display",
+        match: (page) => page.route === "/settings/display",
+        render: () => SP_JSX.jsx(ExternalDisplaySection, {}),
+    },
+];
+const PROPERTIES_SECTIONS = [
+    {
+        name: "game-tweaks",
+        // Steam games land on /properties/general, non-Steam shortcuts get
+        // /properties/shortcut instead - cover both so every game gets the block.
+        match: (page) => {
+            const route = String(page.route || "");
+            return route.endsWith("/properties/general") || route.endsWith("/properties/shortcut");
+        },
+        render: (page) => {
+            const appid = String(page.link || "").match(/\/app\/(\d+)\//)?.[1] || "";
+            return appid ? SP_JSX.jsx(GameTweaksSection, { appid: appid }) : null;
+        },
+    },
+];
+const KINDS = {
+    settings: {
+        name: "settings",
+        sections: SETTINGS_SECTIONS,
+        hostMatch: (page) => String(page?.route || "").startsWith("/settings"),
+    },
+    properties: {
+        name: "properties",
+        sections: PROPERTIES_SECTIONS,
+        hostMatch: (page) => /\/app\/(\d+|\:appid)\/properties/.test(String(page?.route || "") + " " + String(page?.link || "")),
+    },
+};
+// Every render produces fresh element objects carrying the ORIGINAL
+// component types, so "wrap once and skip" breaks the cascade on the very
+// next render. Cache wrappers per original type (stable identity - no
+// remounts) and substitute on every element we scan.
+const wrappedTypeCache = new WeakMap();
+const hostFound = new Set();
+const hostMissLogged = new Set();
+function wrapPagesInHost(host, kind) {
+    const pages = host.props.pages;
+    const touched = [];
+    const nextPages = pages.map((page) => {
+        if (page?.__nebelWrapped)
+            return page;
+        const section = kind.sections.find((candidate) => {
+            try {
+                return candidate.match(page);
+            }
+            catch (error) {
+                return false;
+            }
+        });
+        if (!section)
+            return page;
+        let node = null;
+        try {
+            node = section.render(page);
+        }
+        catch (error) {
+            console.warn(LOG, kind.name, section.name, "render factory failed", error);
+        }
+        if (!node)
+            return page;
+        touched.push(section.name);
+        return {
+            ...page,
+            __nebelWrapped: true,
+            content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [page.content, SP_JSX.jsx(DFL.ErrorBoundary, { children: node })] })),
+        };
+    });
+    if (!touched.length)
+        return;
+    host.props.pages = nextPages;
+    if (!hostFound.has(kind.name)) {
+        hostFound.add(kind.name);
+        console.log(LOG, kind.name, "injected sections:", touched.join(", "));
+    }
+}
+function isPagesHost(el, kind) {
+    const pages = el?.props?.pages;
+    return (Array.isArray(pages) &&
+        pages.some((page) => {
+            if (typeof page?.route !== "string")
+                return false;
+            try {
+                return kind.hostMatch(page);
+            }
+            catch (error) {
+                return false;
+            }
+        }));
+}
+// Wraps a component type (plain function, memo/observer object, or
+// forwardRef object) so that when it renders, its output tree is scanned
+// too. Returns the cached wrapper (stable identity), or the input unchanged
+// when there is nothing wrappable.
+function wrapComponentType(type, kind) {
+    if (!type || typeof type === "string")
+        return type;
+    if (typeof type === "function") {
+        if (type.prototype?.isReactComponent || type[NEO_WRAPPED])
+            return type;
+        const cached = wrappedTypeCache.get(type);
+        if (cached)
+            return cached;
+        const wrapped = (componentProps) => {
+            const ret = type(componentProps);
+            try {
+                scanTree(ret, kind, 0);
+            }
+            catch (error) {
+                console.warn(LOG, kind.name, "scan failed in", type.name || "component", error);
+            }
+            return ret;
+        };
+        Object.assign(wrapped, type);
+        wrapped.toString = () => type.toString();
+        wrapped[NEO_WRAPPED] = true;
+        wrappedTypeCache.set(type, wrapped);
+        return wrapped;
+    }
+    if (typeof type === "object") {
+        // mobx observer()/React.memo(): {$$typeof, type: fn}; forwardRef:
+        // {$$typeof, render: fn}. Spread keeps $$typeof and compare/render props.
+        const inner = typeof type.type === "function" ? "type" : typeof type.render === "function" ? "render" : null;
+        if (!inner || type[inner][NEO_WRAPPED])
+            return type;
+        const cached = wrappedTypeCache.get(type);
+        if (cached)
+            return cached;
+        const wrappedInner = wrapComponentType(type[inner], kind);
+        if (wrappedInner === type[inner])
+            return type;
+        const wrapped = { ...type, [inner]: wrappedInner };
+        wrappedTypeCache.set(type, wrapped);
+        return wrapped;
+    }
+    return type;
+}
+// Walks a returned (still unrendered) element fragment. Pages hosts get their
+// matching page contents wrapped immediately; component children get their
+// type wrapped once so the scan cascades into their render output.
+function scanTree(node, kind, depth) {
+    if (!node || typeof node !== "object" || depth > 12)
+        return;
+    if (Array.isArray(node)) {
+        for (const child of node)
+            scanTree(child, kind, depth);
+        return;
+    }
+    const props = node.props;
+    if (!props || typeof props !== "object")
+        return;
+    if (isPagesHost(node, kind)) {
+        try {
+            wrapPagesInHost(node, kind);
+        }
+        catch (error) {
+            console.warn(LOG, kind.name, "wrapping pages failed", error);
+        }
+    }
+    else {
+        try {
+            const nextType = wrapComponentType(node.type, kind);
+            if (nextType !== node.type)
+                node.type = nextType;
+        }
+        catch (error) {
+            console.warn(LOG, kind.name, "type wrap failed", error);
+        }
+    }
+    scanTree(props.children, kind, depth + 1);
+}
+function makeRoutePatch(kind) {
+    return (route) => {
+        try {
+            const child = route?.children;
+            const first = Array.isArray(child) ? child[0] : child;
+            const originalType = first?.type;
+            if (originalType?.[NEO_WRAPPED])
+                return route;
+            const patchedType = wrapComponentType(originalType, kind);
+            if (patchedType === originalType) {
+                if (!hostMissLogged.has(`${kind.name}-type`)) {
+                    hostMissLogged.add(`${kind.name}-type`);
+                    console.log(LOG, kind.name, "route child has no wrappable component type:", typeof originalType);
+                }
+                return route;
+            }
+            const patchedChild = { ...first, type: patchedType };
+            route.children = Array.isArray(child) ? [patchedChild, ...child.slice(1)] : patchedChild;
+            console.log(LOG, kind.name, "route component wrapped");
+        }
+        catch (error) {
+            console.warn(LOG, kind.name, "route patch failed", error);
+        }
+        return route;
+    };
+}
+// Installs both injections; returns the uninstaller for onDismount. Never
+// throws - a half-broken Steam update must cost us the duplicates, not the
+// plugin.
+function installNativeSettingsSections() {
+    console.log(LOG, "installing");
+    let settingsPatch = null;
+    let propertiesPatch = null;
+    try {
+        settingsPatch = routerHook.addPatch("/settings", makeRoutePatch(KINDS.settings));
+    }
+    catch (error) {
+        console.warn(LOG, "failed to register /settings patch", error);
+    }
+    try {
+        propertiesPatch = routerHook.addPatch("/app/:appid/properties", makeRoutePatch(KINDS.properties));
+    }
+    catch (error) {
+        console.warn(LOG, "failed to register /app/:appid/properties patch", error);
+    }
+    return () => {
+        try {
+            if (settingsPatch)
+                routerHook.removePatch("/settings", settingsPatch);
+            if (propertiesPatch)
+                routerHook.removePatch("/app/:appid/properties", propertiesPatch);
+        }
+        catch (error) {
+        }
+    };
+}
+
 var index = definePlugin(() => {
     let unregisterDownloadWatcher = () => { };
     const persistHandledGames = () => {
@@ -4006,12 +4395,14 @@ var index = definePlugin(() => {
     };
     bootstrap();
     routerHook.addRoute("/nebel-control", FullPage);
+    const uninstallNativeSections = installNativeSettingsSections();
     return {
         name: "Nebel Control",
         content: SP_JSX.jsx(Content, {}),
         onDismount() {
             cancelled = true;
             unregisterDownloadWatcher();
+            uninstallNativeSections();
             routerHook.removeRoute("/nebel-control");
         },
         icon: (SP_JSX.jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [SP_JSX.jsx("path", { d: "M14 17H5" }), SP_JSX.jsx("path", { d: "M19 7h-9" }), SP_JSX.jsx("circle", { cx: "17", cy: "17", r: "3" }), SP_JSX.jsx("circle", { cx: "7", cy: "7", r: "3" })] })),
