@@ -4,20 +4,20 @@ A SteamOS-like Linux distribution for ARM handhelds built on Fedora bootc.
 
 Includes:
 * ARM64 Steam
-* Latest FEX
+* x86/x86_64 game emulation
 * CachyOS Proton 11
 * Desktop mode (KDE)
 * Bazaar App Store
 * Waydroid (Android apps) with controller passthrough
 * Heroic, ProtonPlus/ProtonUp-Qt, EmuDeck dependencies out of the box
-* Real suspend (s2idle) with fast resume
-* Over-the-air updates (cosign-signed, verified on-device)
+* Real suspend with fast resume
+* Over-the-air updates (signed and verified on-device)
 * Install to internal storage (alongside Android)
 * Power and fan control in the Steam UI
-* Per-game FEX and Proton settings (Decky plugin)
+* Per-game compatibility and Proton settings (Decky plugin)
 * External display management from game mode
 * RGB stick lighting studio with notification cascade
-* Save & settings sync between devices (Syncthing)
+* Save & settings sync between devices
 * Built-in non-Steam game picker
 * Ukrainian, Spanish and French UI localization
 
@@ -65,10 +65,9 @@ useful beyond any single device:
 - **RGB stick lighting** (see [Stick RGB lighting](#stick-rgb-lighting)) - ten
   modes including a screen-color-reactive "Ambilight" mode, all configurable
   from Nebel Control.
-- **SM8250 audio self-heal** — retries hard-failed LPASS probes at boot until
-  the sound card assembles.
-- **Boot-time stick auto-calibration** and a stable Wi-Fi MAC address
-  (instead of trusting the factory "permanent" one).
+- **SM8250 audio self-heal** — the sound card is brought up reliably at
+  every boot, no manual intervention.
+- **Stick auto-calibration** at boot and a stable Wi-Fi MAC address.
 
 The kernel/DTS side lives in
 [Ga1dz1/armada-packages](https://github.com/Ga1dz1/armada-packages).
@@ -199,8 +198,8 @@ partition over `fastboot` to force it back to the SD card.
 
 ## Using Nebel
 
-FEX (x86 translation) and CachyOS Proton 11 are set up out of the box, so for most
-games you can just install from Steam and press play, with no extra setup. The
+x86/x86_64 emulation and CachyOS Proton 11 are set up out of the box, so for
+most games you can just install from Steam and press play, with no extra setup. The
 rest of Nebel works like SteamOS, and the Nebel-specific controls live in
 **Nebel Control**, a Decky plugin in the Quick Access Menu, for tuning and the
 occasional game that needs it.
@@ -214,14 +213,14 @@ the fullscreen page (open it via **Open full screen** at the top):
 
 - **Home.** System monitor (CPU/GPU temps, fan, battery) and quick toggles:
   FPS overlay, stick-LED notification flash.
-- **Games.** Per-game compatibility: ARM64-native or x86_64 via FEX, FEX
-  preset, resolution override, Proton selection. Add non-Steam games with the
-  built-in file browser.
+- **Games.** Per-game compatibility: ARM64-native or x86_64, emulation
+  preset, per-game graphics-layer versions, resolution override, Proton
+  selection. Add non-Steam games with the built-in file browser.
 - **Display.** Internal/external display: primary display, resolution.
 - **Power.** Fan curve, CPU/GPU clock limits, CPU underclock.
 - **Lighting.** Stick lighting studio — see
   [Stick RGB lighting](#stick-rgb-lighting).
-- **Sync.** Save/settings sync between devices over Syncthing: pairing,
+- **Sync.** Save/settings sync between devices: pairing,
   folder presets, custom folders.
 - **System.** Controller emulation type (**Xbox 360**, **Steam Deck**, or
   **DualSense**), stick/trigger **calibration**, SSH, shared storage.
@@ -236,7 +235,7 @@ desktop. The **Bazaar** app store and the **Nebel Installer**
 ### Power button and sleep
 
 On SM8250 devices (Retroid Pocket Mini V2, 5, Flip 2) Nebel uses **real
-s2idle suspend**: the power button puts the device to sleep and wakes it
+suspend**: the power button puts the device to sleep and wakes it
 quickly, with stick lighting and audio handled across the transition. Other
 devices fall back to a "fake suspend" (inspired by ROCKNIX): it blanks the
 screen and freezes the session, and the same press wakes it. Because those
@@ -274,7 +273,7 @@ brightness** toggle scales everything by the display's backlight level.
 > if an update fails.
 
 Nebel can update itself in place, with no reflash and no need to redownload
-games. Images are cosign-signed and verified on-device before they can boot.
+games. Images are signed and verified on-device before they can boot.
 Choose an update channel and trigger the update from Steam's system settings:
 
 - **Stable** is recommended for normal use. It receives builds after they have
@@ -306,20 +305,20 @@ Choose an update channel and trigger the update from Steam's system settings:
 
 До складу входять:
 * Повноцінний ARM64 Steam
-* Найсвіжіший FEX
+* Емуляція x86/x86_64-ігор
 * CachyOS Proton 11
 * Режим робочого столу (KDE)
 * Крамниця застосунків Bazaar
 * Waydroid (Android-застосунки) із пробросом ґеймпада
 * Heroic, ProtonPlus/ProtonUp-Qt, залежності EmuDeck — з коробки
-* Справжній сон (s2idle) із блискавичним пробудженням
-* Оновлення «по повітрю» (підписані cosign, перевіряються на пристрої)
+* Справжній сон із блискавичним пробудженням
+* Оновлення «по повітрю» (підписані, перевіряються на пристрої)
 * Встановлення у внутрішню пам'ять — поруч із Android
 * Керування живленням і вентилятором просто в інтерфейсі Steam
-* Повігорні налаштування FEX і Proton (плаґін Decky)
+* Повігорні налаштування сумісності й Proton (плаґін Decky)
 * Керування зовнішнім екраном із ігрового режиму
 * Студія RGB-підсвітки стіків із каскадом сповіщень
-* Синхронізація збережень і налаштувань між пристроями (Syncthing)
+* Синхронізація збережень і налаштувань між пристроями
 * Вбудований засіб додавання сторонніх ігор
 
 > [!WARNING]
@@ -366,10 +365,9 @@ Nebel — самостійна операційна система для ARM64-
 - **RGB-підсвітка стіків** (див. [Підсвітка стіків](#підсвітка-стіків)) —
   десять режимів, включно з «Ambilight», що слідкує за кольорами екрана; усе
   налаштовується з Nebel Control.
-- **Самозцілення звуку на SM8250** — повторює невдалі проби LPASS при
-  завантаженні, аж доки звукова карта збереться.
-- **Автокалібрування стіків при завантаженні** та стабільна MAC-адреса Wi-Fi
-  (замість довіри до заводської «перманентної»).
+- **Самозцілення звуку на SM8250** — звукова карта надійно підводиться при
+  кожному завантаженні, без ручного втручання.
+- **Автокалібрування стіків** та стабільна MAC-адреса Wi-Fi.
 
 Ядро й дерева пристроїв живуть у
 [Ga1dz1/armada-packages](https://github.com/Ga1dz1/armada-packages).
@@ -506,7 +504,7 @@ SD-картою: поки Nebel встановлений внутрішньо, �
 
 ## Як користуватися Nebel
 
-FEX (трансляція x86) і CachyOS Proton 11 налаштовані з коробки, тож для
+Емуляція x86/x86_64 і CachyOS Proton 11 налаштовані з коробки, тож для
 більшості ігор достатньо встановити гру в Steam і натиснути «грати», без
 жодного додаткового налаштування. Решта Nebel працює як SteamOS, а
 специфічні для Nebel регулятори живуть у **Nebel Control** — плаґіні Decky в
@@ -523,16 +521,17 @@ screen** угорі):
 
 - **Home.** Системний монітор (температури CPU/GPU, вентилятор, батарея) і
   швидкі перемикачі: накладення FPS, спалах підсвітки стіків для сповіщень.
-- **Games.** Сумісність повігорно: ARM64-нативно або x86_64 через FEX, пресет
-  FEX, примусова роздільна здатність, вибір Proton. Додавання сторонніх ігор
+- **Games.** Сумісність повігорно: ARM64-нативно або x86_64, пресет
+  емуляції, версії графічних прошарків для гри, примусова роздільна
+  здатність, вибір Proton. Додавання сторонніх ігор
   вбудованим файловим оглядачем.
 - **Display.** Внутрішній/зовнішній екран: основний екран, роздільна
   здатність.
 - **Power.** Крива вентилятора, обмеження частот CPU/GPU, даунклок CPU.
 - **Lighting.** Студія підсвітки стіків — див.
   [Підсвітка стіків](#підсвітка-стіків).
-- **Sync.** Синхронізація збережень/налаштувань між пристроями через
-  Syncthing: спарювання, пресети тек, власні теки.
+- **Sync.** Синхронізація збережень/налаштувань між пристроями:
+  спарювання, пресети тек, власні теки.
 - **System.** Тип емуляції контролера (**Xbox 360**, **Steam Deck** або
   **DualSense**), **калібрування** стіків/тригерів, SSH, спільне сховище.
 
@@ -546,7 +545,7 @@ Installer** ([Встановлення у внутрішню пам'ять](#в�
 ### Кнопка живлення й сон
 
 На пристроях SM8250 (Retroid Pocket Mini V2, 5, Flip 2) Nebel використовує
-**справжній сон s2idle**: кнопка живлення вкладає пристрій спати й швидко
+**справжній сон**: кнопка живлення вкладає пристрій спати й швидко
 будить, а підсвітка стіків і звук коректно переживають перехід. Інші пристрої
 вдаються до «уданого сну» (за мотивами ROCKNIX): він гасить екран і
 заморожує сесію, а те саме натискання будить пристрій. Оскільки ці пристрої
@@ -585,7 +584,7 @@ Retroid Pocket 6), ними керує **Nebel Control > Lighting**:
 > зірветься, може знадобитися перепрошивка.
 
 Nebel вміє оновлюватися на місці — без перепрошивки й без повторного
-завантаження ігор. Образи підписані cosign і перевіряються на пристрої, перш
+завантаження ігор. Образи підписані й перевіряються на пристрої, перш
 ніж їм можна буде завантажитися. Виберіть канал оновлень і запустіть
 оновлення з системних налаштувань Steam:
 
