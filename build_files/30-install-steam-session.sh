@@ -56,18 +56,95 @@ dnf5 -y install --setopt=install_weak_deps=False \
 
 dnf5 -y install --setopt=install_weak_deps=False /packages/fex/fex-emu-*.rpm
 
-# Use Arch rootfs for better compatibility with Linux games targeting SteamOS
-mkdir -p /usr/share/fex-emu/RootFS
+# Use Arch rootfs for better compatibility with Linux games targeting SteamOS.
+# Unpacked (not the sqsh) into /usr/share/guestos/fex-mesa: the FEX-Emu Steam
+# compat tool (fex-compat-tool) expects an OS-provided x86_64 rootfs with Mesa
+# at exactly that path (Valve SteamOS ARM64 convention), with a
+# graphics_provider.json manifest for pressure-vessel
+# (steam-runtime-graphics-provider.json(5)). The same directory doubles as the
+# system FEX RootFS (a plain directory works everywhere the sqsh did and saves
+# the squashfuse mount), so the 1.1G sqsh itself is not shipped.
 ARCH_ROOTFS_URL="https://rootfs.fex-emu.gg/ArchLinux/2026-01-08/ArchLinux.sqsh"
 ARCH_ROOTFS_SHA256="cb059973b7953ad9165845529655189b96f9a174b14a6a149c87ec884b0c5e90"
-curl --retry 3 --retry-delay 2 -fsSL -o /usr/share/fex-emu/RootFS/ArchLinux.sqsh "${ARCH_ROOTFS_URL}"
-echo "${ARCH_ROOTFS_SHA256}  /usr/share/fex-emu/RootFS/ArchLinux.sqsh" | sha256sum -c -
+GUESTOS_DIR=/usr/share/guestos/fex-mesa
+curl --retry 3 --retry-delay 2 -fsSL -o /tmp/ArchLinux.sqsh "${ARCH_ROOTFS_URL}"
+echo "${ARCH_ROOTFS_SHA256}  /tmp/ArchLinux.sqsh" | sha256sum -c -
+mkdir -p "${GUESTOS_DIR}"
+unsquashfs -f -d "${GUESTOS_DIR}" /tmp/ArchLinux.sqsh
+rm -f /tmp/ArchLinux.sqsh
+
+# Trim what a game runtime never touches (4.1G -> ~1.8G): dev toolchain,
+# headers, docs/man, locales (graphics provider declares locales:false),
+# bundled wine (Proton ships its own), python, OpenCL, Go/D runtimes.
+rm -rf \
+    "${GUESTOS_DIR}"/usr/include \
+    "${GUESTOS_DIR}"/usr/share/locale \
+    "${GUESTOS_DIR}"/usr/share/doc \
+    "${GUESTOS_DIR}"/usr/share/man \
+    "${GUESTOS_DIR}"/usr/share/info \
+    "${GUESTOS_DIR}"/usr/share/gir-1.0 \
+    "${GUESTOS_DIR}"/usr/share/clc \
+    "${GUESTOS_DIR}"/usr/share/i18n \
+    "${GUESTOS_DIR}"/usr/share/icons \
+    "${GUESTOS_DIR}"/usr/share/perl5 \
+    "${GUESTOS_DIR}"/usr/lib/perl5 \
+    "${GUESTOS_DIR}"/usr/lib/wine \
+    "${GUESTOS_DIR}"/usr/share/wine \
+    "${GUESTOS_DIR}"/usr/lib32/wine \
+    "${GUESTOS_DIR}"/usr/lib/python3.* \
+    "${GUESTOS_DIR}"/usr/share/python \
+    "${GUESTOS_DIR}"/usr/lib/clang \
+    "${GUESTOS_DIR}"/usr/lib32/clang \
+    "${GUESTOS_DIR}"/usr/lib/gcc \
+    "${GUESTOS_DIR}"/usr/lib32/gcc \
+    "${GUESTOS_DIR}"/chroot \
+    "${GUESTOS_DIR}"/chroot.py
+rm -f \
+    "${GUESTOS_DIR}"/usr/lib/libclang* \
+    "${GUESTOS_DIR}"/usr/lib32/libclang* \
+    "${GUESTOS_DIR}"/usr/lib/libRusticlOpenCL* \
+    "${GUESTOS_DIR}"/usr/lib32/libRusticlOpenCL* \
+    "${GUESTOS_DIR}"/usr/lib/libgo.so.* \
+    "${GUESTOS_DIR}"/usr/lib32/libgo.so.* \
+    "${GUESTOS_DIR}"/usr/lib/libgphobos* \
+    "${GUESTOS_DIR}"/usr/lib32/libgphobos* \
+    "${GUESTOS_DIR}"/usr/bin/clang* \
+    "${GUESTOS_DIR}"/usr/bin/c-index-test \
+    "${GUESTOS_DIR}"/usr/bin/clangd \
+    "${GUESTOS_DIR}"/usr/bin/llvm-* \
+    "${GUESTOS_DIR}"/usr/bin/lld*
+
+# pressure-vessel graphics provider manifest: rootfs layout, no locales,
+# no VA-API/VDPAU (the FEX rootfs build has no mesa-vdpau package).
+cat > "${GUESTOS_DIR}/graphics_provider.json" <<'EOF'
+{
+  "graphics_provider_v0": {
+    "root": "./",
+    "locales": false,
+    "va_api": false,
+    "vdpau": false,
+    "architectures": {
+      "x86_64-linux-gnu": {
+        "dri": "/usr/lib/dri",
+        "gbm": "/usr/lib/gbm",
+        "gconv": "/usr/lib/gconv"
+      },
+      "i386-linux-gnu": {
+        "dri": "/usr/lib32/dri",
+        "gbm": "/usr/lib32/gbm",
+        "fallback_library_paths": ["/usr/lib32"],
+        "gconv": "/usr/lib32/gconv"
+      }
+    }
+  }
+}
+EOF
 
 # /usr/share config stays user-overridable; ~/.fex-emu would mask it.
 cat > /usr/share/fex-emu/Config.json <<'EOF'
 {
   "Config": {
-    "RootFS": "ArchLinux.sqsh",
+    "RootFS": "/usr/share/guestos/fex-mesa",
     "TSOEnabled": "1",
     "X87ReducedPrecision": "1",
     "Multiblock": "0",
@@ -133,7 +210,7 @@ rm -f "/tmp/${PROTON_TAR}" "/tmp/${PROTON_ARCHIVE_NAME}.sha512sum"
 # user.component xattr) so a system_files change doesn't re-pull them every OTA.
 python3 -c 'import os,sys; os.setxattr(sys.argv[1],"user.component",b"steam")' "${STEAM_HOME}"
 python3 -c 'import os,sys; os.setxattr(sys.argv[1],"user.component",b"proton")' "${PROTON_DIR}/${PROTON_TOOL_NAME}"
-python3 -c 'import os,sys; os.setxattr(sys.argv[1],"user.component",b"fex-rootfs")' /usr/share/fex-emu/RootFS
+python3 -c 'import os,sys; os.setxattr(sys.argv[1],"user.component",b"fex-rootfs")' /usr/share/guestos/fex-mesa
 
 
 # Official Valve ARM64 Proton (app 4628740, "Proton 11.0 (ARM64)") - a genuine
