@@ -17,7 +17,7 @@ import { Collapsible, OpenFullScreenButton, SelectEdit } from "../components/wid
 import { t } from "../i18n";
 import { getGlobalResolution, setGlobalResolution } from "../lib/steamSettings";
 import { clone } from "../lib/util";
-import { availableGames, editTargetOptions } from "../lib/games";
+import { availableGames, editTargetOptions, gameRefFromAppid } from "../lib/games";
 import {
   ARM64_MODE_THUNKS,
   DEFAULT_WINDOWS_COMPAT_TOOL,
@@ -156,7 +156,7 @@ function ConfirmResetAllModal({ closeModal, onConfirm }: { closeModal?: () => vo
   );
 }
 
-export function Games({ config, setConfig, qam }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>>; qam?: boolean }) {
+export function Games({ config, setConfig, qam, lockedAppid }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>>; qam?: boolean; lockedAppid?: string }) {
   const [resolution, setResolution] = useState("Default");
   const [defaultResolution, setDefaultResolution] = useState(getGlobalResolution());
   const [resolutionMessage, setResolutionMessage] = useState("");
@@ -171,7 +171,11 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
   );
   const runtimeGame = config.game;
   const games = availableGames(config);
-  const selectedGame = config.selectedGame || runtimeGame || null;
+  // lockedAppid: the injected Properties-page variant pins the editor to the
+  // app whose Properties is open - no game picker, no "Default" target.
+  const selectedGame = lockedAppid
+    ? gameRefFromAppid(lockedAppid)
+    : config.selectedGame || runtimeGame || null;
   const game = selectedGame;
   const selectedAppidRef = useRef("");
   selectedAppidRef.current = game?.appid || "";
@@ -477,10 +481,12 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
 
   return (
     <>
+      {!lockedAppid && (
       <PanelSection title={t("EDIT GAME PROFILE")}>
         <SelectEdit value={game?.appid || ""} options={gameOptions} onChange={setSelectedGame} />
         <div className="nebel-compat-note">{t("Compatibility changes apply on next launch")}</div>
       </PanelSection>
+      )}
       <PanelSection title={t("PROFILE SETTINGS")}>
         {editingDefault ? (
           <>
@@ -633,7 +639,7 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
           )}
         </>
       )}
-      <AddGameSection />
+      {!lockedAppid && <AddGameSection />}
       {qam && <OpenFullScreenButton />}
     </>
   );

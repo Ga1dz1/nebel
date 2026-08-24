@@ -29,8 +29,20 @@ export function currentGame(): GameRef | null {
   const running = (Router as any)?.MainRunningApp || window.Router?.MainRunningApp;
   const appid = running?.appid;
   if (!appid) return null;
+  return gameRefFromAppid(String(appid), running?.display_name || running?.displayName || "");
+}
+
+// Name resolution for a known appid (Properties-page injection passes the
+// appid from the route, so the Games editor can lock onto it without the
+// picker). Falls back to "App <id>" while stores are still cold.
+export function gameRefFromAppid(appid: string, fallbackName = ""): GameRef {
   const id = String(appid);
-  let name = running?.display_name || running?.displayName || "";
+  let name = fallbackName;
+  try {
+    const overview = (window as any).appStore?.GetAppOverviewByAppID?.(Number(id));
+    name = overview?.display_name || name;
+  } catch (error) {
+  }
   try {
     const details: any = window.appDetailsStore?.GetAppDetails?.(Number(id));
     name = details?.strDisplayName || details?.strName || details?.name || name;

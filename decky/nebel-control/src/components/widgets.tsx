@@ -50,11 +50,12 @@ export function OpenFullScreenButton() {
 
 // Progressive disclosure: a ButtonItem header with a chevron that shows/hides
 // its children. Closed by default so rarely-needed options stay out of the way.
-export function Collapsible({ label, children }: {
+export function Collapsible({ label, children, defaultOpen }: {
   label: ReactNode;
   children: ReactNode;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!defaultOpen);
   return (
     <>
       <ButtonItem layout="below" onClick={() => setOpen((value) => !value)}>
