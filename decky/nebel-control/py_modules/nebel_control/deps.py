@@ -216,6 +216,11 @@ def get_status(appid):
 def _run_verb(appid, verb, compatdata, env):
     log_path = compatdata / ".nebel-deps.log"
     with open(log_path, "ab") as log:
+        # The plugin runs as root; the log lives in the user's library, so it
+        # must not stay root-owned (same reason the subprocess is demoted).
+        info = _user_info()
+        if os.geteuid() != info.pw_uid:
+            os.fchown(log.fileno(), info.pw_uid, info.pw_gid)
         log.write(f"\n=== {time.strftime('%F %T')} {verb} ===\n".encode())
         proc = subprocess.Popen(
             [WINETRICKS, "-q", "--unattended", verb],
