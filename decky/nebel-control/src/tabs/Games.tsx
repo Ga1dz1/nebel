@@ -52,12 +52,51 @@ const compatModeOptions = [
   { data: "arm64", label: t("ARM64 (native, recommended)") },
   { data: "x86_64", label: t("x86_64 (emulated via FEX)") },
 ];
+const perGameModeOptions = [
+  { data: FOLLOW_STEAM_COMPAT, label: t("Follow Steam") },
+  ...compatModeOptions,
+];
+const gameEraOptions = [
+  { data: "", label: t("Default") },
+  { data: "xp", label: t("Windows XP era (older games)") },
+];
+const windowsVersionOptions = [
+  { data: "auto", label: t("Auto") },
+  { data: "win10", label: t("Windows 10/11 (default)") },
+  { data: "winxp", label: "Windows XP" },
+];
+const legacyRendererOptions = [
+  { data: "auto", label: t("Auto (on for XP era)") },
+  { data: "on", label: t("WineD3D (DirectX 1-7)") },
+  { data: "off", label: t("DXVK (DirectX 8+)") },
+];
+const virtualDesktopOptions = [
+  { data: "", label: t("Off") },
+  { data: "640x480", label: "640x480" },
+  { data: "800x600", label: "800x600" },
+  { data: "1024x768", label: "1024x768" },
+];
+const memoryLimitOptions = [
+  { data: "0", label: t("Off") },
+  { data: "256", label: "256 MB" },
+  { data: "512", label: "512 MB" },
+  { data: "1024", label: "1 GB" },
+  { data: "2048", label: "2 GB" },
+];
+const gpuSpoofOptions = [
+  { data: "", label: t("Default") },
+  { data: "steamdeck", label: "Steam Deck (AMD VanGogh)" },
+  { data: "gtx1060", label: "NVIDIA GeForce GTX 1060" },
+  { data: "rx580", label: "AMD Radeon RX 580" },
+];
 // SM8250's cpu0-3 are the 1.8GHz LITTLE cluster, cpu4-7 the 2.4-2.84GHz
 // big+prime cluster - same split ROCKNIX's own SM8250 profile uses.
 const cpuAffinityOptions = [
   { data: "", label: t("Default (any core)") },
   { data: "big", label: t("Big cores only (cpu4-7)") },
   { data: "little", label: t("Little cores only (cpu0-3)") },
+  { data: "one", label: t("Single core (cpu4)") },
+  { data: "two", label: t("Two cores (cpu4-5)") },
 ];
 const fexKnobs = [
   { key: "TSOEnabled", label: "TSO Enabled" },
@@ -354,6 +393,39 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
     } catch (error) {
     }
   };
+  // FEX-Emu itself is an emulator layer Steam auto-prepends to any x86_64
+  // tool's command chain (its toolmanifest has filter_exclusive_priority) -
+  // it never appears in per-game pickers, so the per-game "FEX on/off" lever
+  // is really "x86_64 Proton vs ARM64 Proton". Picking x86_64 also flips the
+  // FEX thunks for this game: an x86_64 Proton needs them on to bridge its
+  // binaries to the host, while the global default keeps them off (ARM64
+  // mode), which is why a bare per-game tool switch used to fail to boot.
+  const perGameMode = (() => {
+    if (!currentTool || currentTool === FOLLOW_STEAM_COMPAT) return FOLLOW_STEAM_COMPAT;
+    const tool = currentTool === USE_DEFAULT_COMPAT ? globalTool : currentTool;
+    return tool.toLowerCase().includes("arm64") ? "arm64" : "x86_64";
+  })();
+  const onSelectPerGameMode = async (choice: any) => {
+    if (!game?.appid) return;
+    const mode = String(choice);
+    if (mode === perGameMode) return;
+    patchSettings({
+      thunks: mode === "arm64" ? ARM64_MODE_THUNKS : mode === "x86_64" ? X86_64_MODE_THUNKS : undefined,
+    });
+    const target = mode === "arm64"
+      ? DEFAULT_WINDOWS_COMPAT_TOOL
+      : mode === "x86_64"
+        ? DEFAULT_X86_64_COMPAT_TOOL
+        : "";
+    try {
+      await specifyCompatTool(game.appid, target);
+      markCompatHandled(game.appid);
+      persistHandledGames();
+      const state = await resolveCompatState(game.appid);
+      setCurrentTool(compatSelection(state));
+    } catch (error) {
+    }
+  };
 
   const presets = config.fexProfiles || {};
   const presetEntries = Object.entries(presets);
@@ -405,6 +477,16 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
                 patchSettings({ autoApplyCompat: enabled });
               }}
             />
+            <SelectEdit
+              labelBelow
+              label={t("Game Era")}
+              value={String(values.gameEra || "")}
+              options={gameEraOptions}
+              onChange={(value) => patchSettings({ gameEra: value || undefined })}
+            />
+            {values.gameEra === "xp" ? (
+              <div className="nebel-compat-note">{t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced")}</div>
+            ) : null}
             <SelectEdit label={t("Game Resolution")} value={defaultResolution} options={resolutionOptions} onChange={setSteamDefaultResolution} />
             {!qam && (
               <ToggleField
@@ -417,7 +499,18 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
           </>
         ) : (
           <>
+            <SelectEdit labelBelow label={t("Compatibility Mode")} value={perGameMode} options={perGameModeOptions} onChange={onSelectPerGameMode} />
             <SelectEdit labelBelow label={t("Compatibility Tool")} value={currentTool} options={perGameToolOptions} onChange={onSelectPerGameTool} />
+            <SelectEdit
+              labelBelow
+              label={t("Game Era")}
+              value={String(values.gameEra || "")}
+              options={gameEraOptions}
+              onChange={(value) => patchSettings({ gameEra: value || undefined })}
+            />
+            {values.gameEra === "xp" ? (
+              <div className="nebel-compat-note">{t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced")}</div>
+            ) : null}
             <SelectEdit label={t("Game Resolution")} value={resolution} options={resolutionOptions} onChange={setSteamResolution} />
           </>
         )}
@@ -442,6 +535,39 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
                 value={String(values.cores || "")}
                 options={cpuAffinityOptions}
                 onChange={(value) => patchSettings({ cores: value || undefined })}
+              />
+              <Collapsible label={t("Old games (legacy Windows)")}>
+                <SelectEdit
+                  label={t("Windows Version (reported)")}
+                  value={String(values.windowsVersion || "auto")}
+                  options={windowsVersionOptions}
+                  onChange={(value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value })}
+                />
+                <SelectEdit
+                  label={t("Old DirectX renderer")}
+                  value={String(values.legacyRenderer || "auto")}
+                  options={legacyRendererOptions}
+                  onChange={(value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value })}
+                />
+                <SelectEdit
+                  label={t("Virtual Desktop")}
+                  value={String(values.virtualDesktop || "")}
+                  options={virtualDesktopOptions}
+                  onChange={(value) => patchSettings({ virtualDesktop: value || undefined })}
+                />
+                <SelectEdit
+                  label={t("Memory Limit")}
+                  value={String(values.memoryLimitMB || 0)}
+                  options={memoryLimitOptions}
+                  onChange={(value) => patchSettings({ memoryLimitMB: Number(value) || undefined })}
+                />
+                <div className="nebel-compat-note">{t("Caps memory the game can allocate - last resort for very old titles; can crash modern games")}</div>
+              </Collapsible>
+              <SelectEdit
+                label={t("GPU Spoof")}
+                value={String(values.gpuSpoof || "")}
+                options={gpuSpoofOptions}
+                onChange={(value) => patchSettings({ gpuSpoof: value || undefined })}
               />
               <ButtonItem layout="below" onClick={() => setShowThunks((value) => !value)}>
                 {showThunks ? t("Hide Host Thunks") : t("Host Thunks")}

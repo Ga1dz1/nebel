@@ -27,6 +27,12 @@ export interface GameTweak {
   fexProfile?: string;
   fexConfig?: Record<string, string>;
   thunks?: Record<string, boolean>;
+  gameEra?: string;
+  windowsVersion?: string;
+  legacyRenderer?: string;
+  virtualDesktop?: string;
+  memoryLimitMB?: number;
+  gpuSpoof?: string;
   [key: string]: any;
 }
 

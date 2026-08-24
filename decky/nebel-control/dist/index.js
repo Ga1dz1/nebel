@@ -143,6 +143,22 @@ const uk = {
     "Default (any core)": "Типово (будь-яке ядро)",
     "Big cores only (cpu4-7)": "Лише великі ядра (cpu4-7)",
     "Little cores only (cpu0-3)": "Лише малі ядра (cpu0-3)",
+    "Single core (cpu4)": "Одне ядро (cpu4)",
+    "Two cores (cpu4-5)": "Два ядра (cpu4-5)",
+    "Game Era": "Епоха гри",
+    "Windows XP era (older games)": "Епоха Windows XP (старі ігри)",
+    "XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced": "Епоха XP задає версію Windows, рендер старих DirectX і два ядра ЦП — точне налаштування в розділі «Додатково»",
+    "Auto": "Автоматично",
+    "Windows 10/11 (default)": "Windows 10/11 (типово)",
+    "Auto (on for XP era)": "Автоматично (увімкнено для епохи XP)",
+    "Off": "Вимкнено",
+    "Old games (legacy Windows)": "Старі ігри (старі версії Windows)",
+    "Windows Version (reported)": "Версія Windows (яку бачить гра)",
+    "Old DirectX renderer": "Рендер старих DirectX",
+    "Virtual Desktop": "Віртуальний робочий стіл",
+    "Memory Limit": "Обмеження пам’яті",
+    "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Обмежує пам’ять, доступну грі, — останній засіб для дуже старих ігор; може спричинити збої сучасних",
+    "GPU Spoof": "Підміна відеокарти",
     "Host Thunks": "Проміжний шар хоста (thunks)",
     "Hide Host Thunks": "Сховати проміжний шар хоста",
     "Reset All Games": "Скинути всі ігри",
@@ -350,6 +366,22 @@ const ru = {
     "Default (any core)": "По умолчанию (любое ядро)",
     "Big cores only (cpu4-7)": "Только большие ядра (cpu4-7)",
     "Little cores only (cpu0-3)": "Только маленькие ядра (cpu0-3)",
+    "Single core (cpu4)": "Одно ядро (cpu4)",
+    "Two cores (cpu4-5)": "Два ядра (cpu4-5)",
+    "Game Era": "Эпоха игры",
+    "Windows XP era (older games)": "Эпоха Windows XP (старые игры)",
+    "XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced": "Эпоха XP задаёт версию Windows, рендер старых DirectX и два ядра ЦП — точная настройка в разделе «Дополнительно»",
+    "Auto": "Автоматически",
+    "Windows 10/11 (default)": "Windows 10/11 (по умолчанию)",
+    "Auto (on for XP era)": "Автоматически (вкл. для эпохи XP)",
+    "Off": "Выкл.",
+    "Old games (legacy Windows)": "Старые игры (старые версии Windows)",
+    "Windows Version (reported)": "Версия Windows (видимая игре)",
+    "Old DirectX renderer": "Рендер старых DirectX",
+    "Virtual Desktop": "Виртуальный рабочий стол",
+    "Memory Limit": "Ограничение памяти",
+    "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Ограничивает память, доступную игре, — крайняя мера для очень старых игр; может ломать современные",
+    "GPU Spoof": "Подмена видеокарты",
     "Host Thunks": "Прослойки хоста (thunks)",
     "Hide Host Thunks": "Скрыть прослойки хоста",
     "Reset All Games": "Сбросить все игры",
@@ -557,6 +589,22 @@ const es = {
     "Default (any core)": "Predeterminado (cualquier núcleo)",
     "Big cores only (cpu4-7)": "Solo núcleos grandes (cpu4-7)",
     "Little cores only (cpu0-3)": "Solo núcleos pequeños (cpu0-3)",
+    "Single core (cpu4)": "Un núcleo (cpu4)",
+    "Two cores (cpu4-5)": "Dos núcleos (cpu4-5)",
+    "Game Era": "Época del juego",
+    "Windows XP era (older games)": "Época de Windows XP (juegos antiguos)",
+    "XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced": "La época XP ajusta la versión de Windows, el renderizador de DirectX antiguo y dos núcleos de CPU; ajuste fino en Avanzado",
+    "Auto": "Automático",
+    "Windows 10/11 (default)": "Windows 10/11 (predeterminado)",
+    "Auto (on for XP era)": "Automático (activo en la época XP)",
+    "Off": "Desactivado",
+    "Old games (legacy Windows)": "Juegos antiguos (Windows heredado)",
+    "Windows Version (reported)": "Versión de Windows (visible para el juego)",
+    "Old DirectX renderer": "Renderizador de DirectX antiguo",
+    "Virtual Desktop": "Escritorio virtual",
+    "Memory Limit": "Límite de memoria",
+    "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Limita la memoria que el juego puede asignar: último recurso para títulos muy antiguos; puede bloquear juegos modernos",
+    "GPU Spoof": "Suplantación de GPU",
     "Host Thunks": "Thunks del host",
     "Hide Host Thunks": "Ocultar thunks del host",
     "Reset All Games": "Restablecer todos los juegos",
@@ -764,6 +812,22 @@ const fr = {
     "Default (any core)": "Par défaut (n'importe quel cœur)",
     "Big cores only (cpu4-7)": "Gros cœurs uniquement (cpu4-7)",
     "Little cores only (cpu0-3)": "Petits cœurs uniquement (cpu0-3)",
+    "Single core (cpu4)": "Un cœur (cpu4)",
+    "Two cores (cpu4-5)": "Deux cœurs (cpu4-5)",
+    "Game Era": "Époque du jeu",
+    "Windows XP era (older games)": "Époque Windows XP (jeux anciens)",
+    "XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced": "L'époque XP règle la version de Windows, le moteur DirectX ancien et deux cœurs CPU — réglages fins dans Avancé",
+    "Auto": "Auto",
+    "Windows 10/11 (default)": "Windows 10/11 (par défaut)",
+    "Auto (on for XP era)": "Auto (activé pour l'époque XP)",
+    "Off": "Désactivé",
+    "Old games (legacy Windows)": "Jeux anciens (Windows hérité)",
+    "Windows Version (reported)": "Version de Windows (vue par le jeu)",
+    "Old DirectX renderer": "Rendu DirectX ancien",
+    "Virtual Desktop": "Bureau virtuel",
+    "Memory Limit": "Limite de mémoire",
+    "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Limite la mémoire que le jeu peut allouer — dernier recours pour les très anciens titres ; peut planter les jeux modernes",
+    "GPU Spoof": "Usurpation de GPU",
     "Host Thunks": "Thunks hôte",
     "Hide Host Thunks": "Masquer les thunks hôte",
     "Reset All Games": "Réinitialiser tous les jeux",
@@ -1895,12 +1959,51 @@ const compatModeOptions = [
     { data: "arm64", label: t("ARM64 (native, recommended)") },
     { data: "x86_64", label: t("x86_64 (emulated via FEX)") },
 ];
+const perGameModeOptions = [
+    { data: FOLLOW_STEAM_COMPAT, label: t("Follow Steam") },
+    ...compatModeOptions,
+];
+const gameEraOptions = [
+    { data: "", label: t("Default") },
+    { data: "xp", label: t("Windows XP era (older games)") },
+];
+const windowsVersionOptions = [
+    { data: "auto", label: t("Auto") },
+    { data: "win10", label: t("Windows 10/11 (default)") },
+    { data: "winxp", label: "Windows XP" },
+];
+const legacyRendererOptions = [
+    { data: "auto", label: t("Auto (on for XP era)") },
+    { data: "on", label: t("WineD3D (DirectX 1-7)") },
+    { data: "off", label: t("DXVK (DirectX 8+)") },
+];
+const virtualDesktopOptions = [
+    { data: "", label: t("Off") },
+    { data: "640x480", label: "640x480" },
+    { data: "800x600", label: "800x600" },
+    { data: "1024x768", label: "1024x768" },
+];
+const memoryLimitOptions = [
+    { data: "0", label: t("Off") },
+    { data: "256", label: "256 MB" },
+    { data: "512", label: "512 MB" },
+    { data: "1024", label: "1 GB" },
+    { data: "2048", label: "2 GB" },
+];
+const gpuSpoofOptions = [
+    { data: "", label: t("Default") },
+    { data: "steamdeck", label: "Steam Deck (AMD VanGogh)" },
+    { data: "gtx1060", label: "NVIDIA GeForce GTX 1060" },
+    { data: "rx580", label: "AMD Radeon RX 580" },
+];
 // SM8250's cpu0-3 are the 1.8GHz LITTLE cluster, cpu4-7 the 2.4-2.84GHz
 // big+prime cluster - same split ROCKNIX's own SM8250 profile uses.
 const cpuAffinityOptions = [
     { data: "", label: t("Default (any core)") },
     { data: "big", label: t("Big cores only (cpu4-7)") },
     { data: "little", label: t("Little cores only (cpu0-3)") },
+    { data: "one", label: t("Single core (cpu4)") },
+    { data: "two", label: t("Two cores (cpu4-5)") },
 ];
 const fexKnobs = [
     { key: "TSOEnabled", label: "TSO Enabled" },
@@ -2213,6 +2316,43 @@ function Games({ config, setConfig, qam }) {
         catch (error) {
         }
     };
+    // FEX-Emu itself is an emulator layer Steam auto-prepends to any x86_64
+    // tool's command chain (its toolmanifest has filter_exclusive_priority) -
+    // it never appears in per-game pickers, so the per-game "FEX on/off" lever
+    // is really "x86_64 Proton vs ARM64 Proton". Picking x86_64 also flips the
+    // FEX thunks for this game: an x86_64 Proton needs them on to bridge its
+    // binaries to the host, while the global default keeps them off (ARM64
+    // mode), which is why a bare per-game tool switch used to fail to boot.
+    const perGameMode = (() => {
+        if (!currentTool || currentTool === FOLLOW_STEAM_COMPAT)
+            return FOLLOW_STEAM_COMPAT;
+        const tool = currentTool === USE_DEFAULT_COMPAT ? globalTool : currentTool;
+        return tool.toLowerCase().includes("arm64") ? "arm64" : "x86_64";
+    })();
+    const onSelectPerGameMode = async (choice) => {
+        if (!game?.appid)
+            return;
+        const mode = String(choice);
+        if (mode === perGameMode)
+            return;
+        patchSettings({
+            thunks: mode === "arm64" ? ARM64_MODE_THUNKS : mode === "x86_64" ? X86_64_MODE_THUNKS : undefined,
+        });
+        const target = mode === "arm64"
+            ? DEFAULT_WINDOWS_COMPAT_TOOL
+            : mode === "x86_64"
+                ? DEFAULT_X86_64_COMPAT_TOOL
+                : "";
+        try {
+            await specifyCompatTool(game.appid, target);
+            markCompatHandled(game.appid);
+            persistHandledGames();
+            const state = await resolveCompatState(game.appid);
+            setCurrentTool(compatSelection(state));
+        }
+        catch (error) {
+        }
+    };
     const presets = config.fexProfiles || {};
     const presetEntries = Object.entries(presets);
     const storedProfile = values.fexProfile;
@@ -2240,9 +2380,9 @@ function Games({ config, setConfig, qam }) {
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("EDIT GAME PROFILE"), children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Compatibility changes apply on next launch") })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: compatMode, options: compatModeOptions, onChange: onSelectCompatMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Default Proton"), value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: t("Apply to New Games"), checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
                                     setAutoApplyCompat(enabled);
                                     patchSettings({ autoApplyCompat: enabled });
-                                } }), SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
+                                } }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: perGameMode, options: perGameModeOptions, onChange: onSelectPerGameMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
-                                : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
+                                : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] }), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                     ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
                                     : null] }) }), !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
