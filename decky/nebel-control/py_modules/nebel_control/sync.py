@@ -27,6 +27,7 @@ API_BASE = "http://127.0.0.1:8384"
 # Preset folders the user can toggle. Paths are relative to the armada home.
 # Steam games themselves stay on Steam Cloud; these cover everything else.
 PRESET_FOLDERS = {
+    "nebel-config": ("Nebel (stick calibration & game profiles)", ".config/nebel"),
     "nebel-decky-settings": ("Decky Settings", "homebrew/settings"),
     "nebel-heroic-config": ("Heroic (settings)", ".config/heroic"),
     # Wine prefixes hold the actual save files; game files themselves

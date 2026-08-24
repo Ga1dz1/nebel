@@ -19,6 +19,13 @@ CONFIG_PATHS = {
     "calibration": Path("/etc/nebel/input-calibration.json"),
     "compat-applied": Path("/var/lib/nebel/compat-applied.json"),
 }
+# User-level configs live in the home dir so the Syncthing preset
+# (~/.config/nebel) can carry them between consoles; /etc/nebel keeps
+# symlinks so boot-time readers (gamescope session, systemd conditions)
+# keep working unchanged.
+SYNC_CONFIG_DIR = Path("/var/home/nebel/.config/nebel")
+SYNCED_CONFIG_NAMES = ("tweaks", "calibration")
+HOME_ROOT = Path("/var/home/nebel")
 DISPLAY_OVERRIDE_PATH = Path("/etc/nebel/display-override.conf")
 # Per-connector last-used settings, kept even after switching back to the
 # internal screen so re-picking the same monitor restores its resolution/
@@ -57,6 +64,9 @@ CALIBRATION_PARAMS = (
 
 
 def atomic_write(path, text):
+    # Write through symlinks: synced configs are linked into ~/.config/nebel.
+    if path.is_symlink():
+        path = path.resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
@@ -69,6 +79,37 @@ def atomic_write(path, text):
             os.unlink(tmp)
         except FileNotFoundError:
             pass
+    # Root writes into the synced home dir must stay user-writable so
+    # Syncthing (running as the nebel user) can apply remote changes.
+    if HOME_ROOT in path.parents:
+        try:
+            home = os.stat(HOME_ROOT)
+            os.chown(path, home.st_uid, home.st_gid)
+        except OSError:
+            pass
+
+
+def migrate_synced_configs():
+    try:
+        home = os.stat(HOME_ROOT)
+        uid, gid = home.st_uid, home.st_gid
+        SYNC_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        os.chown(SYNC_CONFIG_DIR, uid, gid)
+        for name in SYNCED_CONFIG_NAMES:
+            path = CONFIG_PATHS[name]
+            target = SYNC_CONFIG_DIR / path.name
+            if path.is_symlink():
+                continue
+            if path.exists():
+                if target.exists():
+                    # Both copies exist: the synced home copy wins.
+                    path.unlink()
+                else:
+                    os.replace(path, target)
+                    os.chown(target, uid, gid)
+            path.symlink_to(target)
+    except OSError:
+        pass
 
 
 def run(command, timeout=20):
@@ -753,6 +794,7 @@ def serve_client(conn):
 
 
 def main():
+    migrate_synced_configs()
     SOCKET.parent.mkdir(parents=True, exist_ok=True)
     try:
         SOCKET.unlink()
