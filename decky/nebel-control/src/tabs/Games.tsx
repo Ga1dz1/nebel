@@ -490,12 +490,12 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
   return (
     <>
       {!lockedAppid && (
-      <PanelSection title={t("EDIT GAME PROFILE")}>
+      <PanelSection title={t("Edit Game Profile")}>
         <SelectEdit value={game?.appid || ""} options={gameOptions} onChange={setSelectedGame} />
         <div className="nebel-compat-note">{t("Compatibility changes apply on next launch")}</div>
       </PanelSection>
       )}
-      <PanelSection title={t("PROFILE SETTINGS")}>
+      <PanelSection title={t("Profile Settings")}>
         {editingDefault ? (
           <>
             <SelectEdit
@@ -695,14 +695,14 @@ function DependenciesSection({ appid, eraXp }: { appid: string; eraXp: boolean }
   };
   if (!status.available) {
     return (
-      <PanelSection title={t("DEPENDENCIES")}>
+      <PanelSection title={t("Dependencies")}>
         <Field description={t("Dependency installer (winetricks) is missing in this OS build")} />
       </PanelSection>
     );
   }
   if (!status.prefixFound) {
     return (
-      <PanelSection title={t("DEPENDENCIES")}>
+      <PanelSection title={t("Dependencies")}>
         <Field description={t("Game prefix not found - launch the game once first")} />
       </PanelSection>
     );
@@ -725,7 +725,7 @@ function DependenciesSection({ appid, eraXp }: { appid: string; eraXp: boolean }
   })();
   const recommendedMissing = RECOMMENDED_XP_DEPS.filter((verb) => !status.installed.includes(verb));
   return (
-    <PanelSection title={t("DEPENDENCIES")}>
+    <PanelSection title={t("Dependencies")}>
       <div className="nebel-compat-note">{t("Installing dependencies needs an internet connection")}</div>
       {eraXp && recommendedMissing.length ? (
         <ButtonItem

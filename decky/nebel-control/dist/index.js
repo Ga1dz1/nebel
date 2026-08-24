@@ -124,8 +124,8 @@ const uk = {
     "Accept": "Прийняти",
     "Dismiss": "Відхилити",
     "Close": "Закрити",
-    "EDIT GAME PROFILE": "РЕДАГУВАННЯ ПРОФІЛЮ ГРИ",
-    "PROFILE SETTINGS": "НАЛАШТУВАННЯ ПРОФІЛЮ",
+    "Edit Game Profile": "Редагування профілю гри",
+    "Profile Settings": "Налаштування профілю",
     "ADVANCED": "ДОДАТКОВО",
     "Compatibility changes apply on next launch": "Зміни сумісності застосуються під час наступного запуску",
     "Compatibility Mode": "Режим сумісності",
@@ -167,7 +167,7 @@ const uk = {
     "D3D12 (VKD3D) version": "Версія D3D12 (VKD3D)",
     "Default (Proton's built-in)": "Типова (вбудована в Proton)",
     "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Старіші збірки можуть допомогти на відеокартах Adreno, де новіші DXVK/VKD3D не запускаються, — типово використовується версія, вбудована в Proton",
-    "DEPENDENCIES": "ЗАЛЕЖНОСТІ",
+    "Dependencies": "Залежності",
     ".NET 3.5 (slow)": ".NET 3.5 (повільно)",
     "Install": "Встановити",
     "Installed": "Встановлено",
@@ -188,7 +188,7 @@ const uk = {
     "Resolution override is unavailable": "Власна роздільна здатність недоступна",
     "Failed to set resolution override": "Не вдалося застосувати власну роздільну здатність",
     "Failed to set default resolution": "Не вдалося встановити типову роздільну здатність",
-    "EDIT POWER PROFILE": "РЕДАГУВАННЯ ПРОФІЛЮ ЖИВЛЕННЯ",
+    "Edit Power Profile": "Редагування профілю живлення",
     "Fan Curve": "Крива вентилятора",
     "CPU Underclock": "Зниження частоти ЦП",
     "None": "Немає",
@@ -198,8 +198,8 @@ const uk = {
     "CPU Max (%)": "Макс. ЦП (%)",
     "GPU Min (%)": "Мін. ГП (%)",
     "GPU Max (%)": "Макс. ГП (%)",
-    "DISPLAY": "ДИСПЛЕЙ",
-    "EXTERNAL DISPLAY": "ЗОВНІШНІЙ ДИСПЛЕЙ",
+    "Display": "Дисплей",
+    "External Display": "Зовнішній дисплей",
     "Internal Screen": "Вбудований екран",
     "{connector} (disconnected)": "{connector} (від’єднано)",
     "Primary Display": "Основний дисплей",
@@ -339,6 +339,8 @@ const uk = {
     "TabSystem": "Система",
     "Quick toggles": "Швидкі перемикачі",
     "Open full screen": "Відкрити на весь екран",
+    "Open Nebel Control": "Відкрити Nebel Control",
+    "Power Profile": "Профіль живлення",
     "Add non-Steam game": "Додати сторонню гру",
     "Select the game's executable": "Виберіть виконуваний файл гри",
     "Added to Steam library": "Додано до бібліотеки Steam",
@@ -385,8 +387,8 @@ const ru = {
     "Accept": "Принять",
     "Dismiss": "Отклонить",
     "Close": "Закрыть",
-    "EDIT GAME PROFILE": "РЕДАКТИРОВАНИЕ ПРОФИЛЯ ИГРЫ",
-    "PROFILE SETTINGS": "НАСТРОЙКИ ПРОФИЛЯ",
+    "Edit Game Profile": "Редактирование профиля игры",
+    "Profile Settings": "Настройки профиля",
     "ADVANCED": "ДОПОЛНИТЕЛЬНО",
     "Compatibility changes apply on next launch": "Изменения совместимости применятся при следующем запуске",
     "Compatibility Mode": "Режим совместимости",
@@ -428,7 +430,7 @@ const ru = {
     "D3D12 (VKD3D) version": "Версия D3D12 (VKD3D)",
     "Default (Proton's built-in)": "По умолчанию (встроенная в Proton)",
     "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Старые сборки могут помочь на GPU Adreno, где новые DXVK/VKD3D не запускаются, — по умолчанию используется версия, встроенная в Proton",
-    "DEPENDENCIES": "ЗАВИСИМОСТИ",
+    "Dependencies": "Зависимости",
     ".NET 3.5 (slow)": ".NET 3.5 (медленно)",
     "Install": "Установить",
     "Installed": "Установлено",
@@ -449,7 +451,7 @@ const ru = {
     "Resolution override is unavailable": "Переопределение разрешения недоступно",
     "Failed to set resolution override": "Не удалось установить переопределение разрешения",
     "Failed to set default resolution": "Не удалось установить разрешение по умолчанию",
-    "EDIT POWER PROFILE": "РЕДАКТИРОВАНИЕ ПРОФИЛЯ ПИТАНИЯ",
+    "Edit Power Profile": "Редактирование профиля питания",
     "Fan Curve": "Кривая вентилятора",
     "CPU Underclock": "Снижение частоты ЦП",
     "None": "Нет",
@@ -459,8 +461,8 @@ const ru = {
     "CPU Max (%)": "Макс. ЦП (%)",
     "GPU Min (%)": "Мин. ГП (%)",
     "GPU Max (%)": "Макс. ГП (%)",
-    "DISPLAY": "ДИСПЛЕЙ",
-    "EXTERNAL DISPLAY": "ВНЕШНИЙ ДИСПЛЕЙ",
+    "Display": "Дисплей",
+    "External Display": "Внешний дисплей",
     "Internal Screen": "Встроенный экран",
     "{connector} (disconnected)": "{connector} (отключён)",
     "Primary Display": "Основной дисплей",
@@ -600,6 +602,8 @@ const ru = {
     "TabSystem": "Система",
     "Quick toggles": "Быстрые переключатели",
     "Open full screen": "Открыть на весь экран",
+    "Open Nebel Control": "Открыть Nebel Control",
+    "Power Profile": "Профиль питания",
     "Add non-Steam game": "Добавить стороннюю игру",
     "Select the game's executable": "Выберите исполняемый файл игры",
     "Added to Steam library": "Добавлено в библиотеку Steam",
@@ -646,8 +650,8 @@ const es = {
     "Accept": "Aceptar",
     "Dismiss": "Descartar",
     "Close": "Cerrar",
-    "EDIT GAME PROFILE": "EDITAR PERFIL DE JUEGO",
-    "PROFILE SETTINGS": "AJUSTES DEL PERFIL",
+    "Edit Game Profile": "Editar perfil de juego",
+    "Profile Settings": "Ajustes del perfil",
     "ADVANCED": "AVANZADO",
     "Compatibility changes apply on next launch": "Los cambios de compatibilidad se aplicarán en el próximo inicio",
     "Compatibility Mode": "Modo de compatibilidad",
@@ -689,7 +693,7 @@ const es = {
     "D3D12 (VKD3D) version": "Versión de D3D12 (VKD3D)",
     "Default (Proton's built-in)": "Predeterminada (integrada en Proton)",
     "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Las versiones antiguas pueden ayudar en GPU Adreno donde las nuevas DXVK/VKD3D no arrancan; la predeterminada es la integrada en Proton",
-    "DEPENDENCIES": "DEPENDENCIAS",
+    "Dependencies": "Dependencias",
     ".NET 3.5 (slow)": ".NET 3.5 (lento)",
     "Install": "Instalar",
     "Installed": "Instalado",
@@ -710,7 +714,7 @@ const es = {
     "Resolution override is unavailable": "La anulación de resolución no está disponible",
     "Failed to set resolution override": "No se pudo establecer la anulación de resolución",
     "Failed to set default resolution": "No se pudo establecer la resolución predeterminada",
-    "EDIT POWER PROFILE": "EDITAR PERFIL DE ENERGÍA",
+    "Edit Power Profile": "Editar perfil de energía",
     "Fan Curve": "Curva del ventilador",
     "CPU Underclock": "Underclocking de CPU",
     "None": "Ninguno",
@@ -720,8 +724,8 @@ const es = {
     "CPU Max (%)": "CPU máx. (%)",
     "GPU Min (%)": "GPU mín. (%)",
     "GPU Max (%)": "GPU máx. (%)",
-    "DISPLAY": "PANTALLA",
-    "EXTERNAL DISPLAY": "PANTALLA EXTERNA",
+    "Display": "Pantalla",
+    "External Display": "Pantalla externa",
     "Internal Screen": "Pantalla interna",
     "{connector} (disconnected)": "{connector} (desconectado)",
     "Primary Display": "Pantalla principal",
@@ -861,6 +865,8 @@ const es = {
     "TabSystem": "Sistema",
     "Quick toggles": "Interruptores rápidos",
     "Open full screen": "Abrir a pantalla completa",
+    "Open Nebel Control": "Abrir Nebel Control",
+    "Power Profile": "Perfil de energía",
     "Add non-Steam game": "Añadir juego externo",
     "Select the game's executable": "Selecciona el ejecutable del juego",
     "Added to Steam library": "Añadido a la biblioteca de Steam",
@@ -907,8 +913,8 @@ const fr = {
     "Accept": "Accepter",
     "Dismiss": "Ignorer",
     "Close": "Fermer",
-    "EDIT GAME PROFILE": "MODIFIER LE PROFIL DU JEU",
-    "PROFILE SETTINGS": "PARAMÈTRES DU PROFIL",
+    "Edit Game Profile": "Modifier le profil du jeu",
+    "Profile Settings": "Paramètres du profil",
     "ADVANCED": "AVANCÉ",
     "Compatibility changes apply on next launch": "Les changements de compatibilité s'appliqueront au prochain lancement",
     "Compatibility Mode": "Mode de compatibilité",
@@ -950,7 +956,7 @@ const fr = {
     "D3D12 (VKD3D) version": "Version de D3D12 (VKD3D)",
     "Default (Proton's built-in)": "Par défaut (intégrée à Proton)",
     "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Les versions anciennes peuvent aider sur les GPU Adreno où les DXVK/VKD3D récents refusent de démarrer ; par défaut, la version intégrée à Proton est utilisée",
-    "DEPENDENCIES": "DÉPENDANCES",
+    "Dependencies": "Dépendances",
     ".NET 3.5 (slow)": ".NET 3.5 (lent)",
     "Install": "Installer",
     "Installed": "Installé",
@@ -971,7 +977,7 @@ const fr = {
     "Resolution override is unavailable": "Le forçage de résolution n'est pas disponible",
     "Failed to set resolution override": "Échec du forçage de résolution",
     "Failed to set default resolution": "Échec de la définition de la résolution par défaut",
-    "EDIT POWER PROFILE": "MODIFIER LE PROFIL D'ALIMENTATION",
+    "Edit Power Profile": "Modifier le profil d'alimentation",
     "Fan Curve": "Courbe du ventilateur",
     "CPU Underclock": "Underclocking du CPU",
     "None": "Aucun",
@@ -981,8 +987,8 @@ const fr = {
     "CPU Max (%)": "CPU max (%)",
     "GPU Min (%)": "GPU min (%)",
     "GPU Max (%)": "GPU max (%)",
-    "DISPLAY": "AFFICHAGE",
-    "EXTERNAL DISPLAY": "ÉCRAN EXTERNE",
+    "Display": "Affichage",
+    "External Display": "Écran externe",
     "Internal Screen": "Écran interne",
     "{connector} (disconnected)": "{connector} (déconnecté)",
     "Primary Display": "Écran principal",
@@ -1122,6 +1128,8 @@ const fr = {
     "TabSystem": "Système",
     "Quick toggles": "Raccourcis rapides",
     "Open full screen": "Ouvrir en plein écran",
+    "Open Nebel Control": "Ouvrir Nebel Control",
+    "Power Profile": "Profil d'alimentation",
     "Add non-Steam game": "Ajouter un jeu externe",
     "Select the game's executable": "Sélectionnez l'exécutable du jeu",
     "Added to Steam library": "Ajouté à la bibliothèque Steam",
@@ -1729,6 +1737,62 @@ function gameRefFromAppid(appid, fallbackName = "") {
     return { appid: id, name: name || `App ${id}` };
 }
 
+// Steam ships several copies of the QAM CSS module and the hashes shift
+// between client builds, so collect every module exposing the semantic keys
+// and target all of them, plus the tested client's hashes as a fallback.
+const QAM_CLASS_FALLBACK = {
+    PanelSection: "_3gY0aBuNR8_NPTpXIYfkby",
+    PanelSectionTitle: "_1IigUZ3GHaZS2Y-3V3T2rT",
+};
+function qamClasses(key) {
+    const found = new Set([QAM_CLASS_FALLBACK[key]]);
+    try {
+        for (const mod of DFL.classMap) {
+            const value = mod?.[key];
+            if (typeof value === "string" && value)
+                found.add(value);
+        }
+    }
+    catch (error) {
+    }
+    return Array.from(found);
+}
+const selectorList = (scope, key) => qamClasses(key).map((cls) => `${scope} .${cls}`).join(", ");
+// The QuickAccessMenu PanelSection title is small grey uppercase; Steam's
+// full-page settings groups use a plain white 16px/500 header with 36px of
+// height. This CSS restyles PanelSection titles under `scope` to the
+// full-page look. Used both for the sections injected into Steam's settings
+// pages and for the fullscreen /nebel-control page (but NOT for QAM
+// surfaces - there uppercase is Steam's native style).
+function nativeSectionTitleCss(scope) {
+    return `
+      ${selectorList(scope, "PanelSectionTitle")} {
+        padding-bottom: 0;
+        line-height: 36px;
+        color: rgb(220, 222, 223);
+        font-weight: 500;
+        letter-spacing: normal;
+        text-transform: none;
+      }
+    `;
+}
+// Full native-group alignment for blocks injected into Steam's own settings
+// pages: full-width rows (no QAM side inset - native rows pad themselves),
+// 24px margin-top between groups (the native DialogSettingsSection
+// convention), plus the title normalization above.
+function nativeSectionSpacingCss(scope) {
+    return `
+      ${selectorList(scope, "PanelSection")} {
+        padding-left: 0;
+        padding-right: 0;
+        margin: 24px 0 0;
+      }
+      ${qamClasses("PanelSection").map((cls) => `${scope} .${cls}:first-of-type`).join(", ")} {
+        margin: 24px 0 0;
+      }
+    ` + nativeSectionTitleCss(scope);
+}
+
 const styles = `
       .nebel-control-tabs {
         height: 95%;
@@ -2009,7 +2073,7 @@ function Display(_props) {
             .catch((error) => setLoadMessage(String(error)));
     }, []);
     if (!state) {
-        return (SP_JSX.jsx(DFL.PanelSection, { title: t("DISPLAY"), children: SP_JSX.jsx(DFL.Field, { label: loadMessage }) }));
+        return (SP_JSX.jsx(DFL.PanelSection, { title: t("Display"), children: SP_JSX.jsx(DFL.Field, { label: loadMessage }) }));
     }
     const externals = state.connectors.filter((c) => !c.internal);
     const selectedConnector = state.useExternal ? state.connector : INTERNAL;
@@ -2074,7 +2138,7 @@ function Display(_props) {
             .then((value) => setState({ ...state, internalTouchpad: value }))
             .catch((error) => setErrorMessage(String(error)));
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("EXTERNAL DISPLAY"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") })), SP_JSX.jsx(ToggleRow, { label: t("Internal screen as touchpad"), description: t("While an external display is primary, the dark internal touchscreen works as a trackpad (correct orientation, tap = click). Off: it is disabled entirely."), value: state.internalTouchpad, onChange: toggleTouchpad, disabled: saving })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("External Display"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") })), SP_JSX.jsx(ToggleRow, { label: t("Internal screen as touchpad"), description: t("While an external display is primary, the dark internal touchscreen works as a trackpad (correct orientation, tap = click). Off: it is disabled entirely."), value: state.internalTouchpad, onChange: toggleTouchpad, disabled: saving })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
                         setRestarting(true);
                         setErrorMessage("");
                         // A successful restart tears down this very session (and Decky
@@ -2580,7 +2644,7 @@ function Games({ config, setConfig, qam, lockedAppid, injected }) {
     const setKnob = (key, on) => patchSettings({ fexProfile: "custom", fexConfig: { ...fexConfig, [key]: on ? "1" : "0" } });
     const thunks = values.thunks || {};
     const setThunk = (module, on) => patchSettings({ thunks: { ...thunks, [module]: on } });
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!lockedAppid && (SP_JSX.jsxs(DFL.PanelSection, { title: t("EDIT GAME PROFILE"), children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Compatibility changes apply on next launch") })] })), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: compatMode, options: compatModeOptions, onChange: onSelectCompatMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Default Proton"), value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: t("Apply to New Games"), checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!lockedAppid && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Edit Game Profile"), children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Compatibility changes apply on next launch") })] })), SP_JSX.jsxs(DFL.PanelSection, { title: t("Profile Settings"), children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: compatMode, options: compatModeOptions, onChange: onSelectCompatMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Default Proton"), value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: t("Apply to New Games"), checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
                                     setAutoApplyCompat(enabled);
                                     patchSettings({ autoApplyCompat: enabled });
                                 } }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!injected && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: perGameMode, options: perGameModeOptions, onChange: onSelectPerGameMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool })] })), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
@@ -2625,10 +2689,10 @@ function DependenciesSection({ appid, eraXp }) {
         }, 500);
     };
     if (!status.available) {
-        return (SP_JSX.jsx(DFL.PanelSection, { title: t("DEPENDENCIES"), children: SP_JSX.jsx(DFL.Field, { description: t("Dependency installer (winetricks) is missing in this OS build") }) }));
+        return (SP_JSX.jsx(DFL.PanelSection, { title: t("Dependencies"), children: SP_JSX.jsx(DFL.Field, { description: t("Dependency installer (winetricks) is missing in this OS build") }) }));
     }
     if (!status.prefixFound) {
-        return (SP_JSX.jsx(DFL.PanelSection, { title: t("DEPENDENCIES"), children: SP_JSX.jsx(DFL.Field, { description: t("Game prefix not found - launch the game once first") }) }));
+        return (SP_JSX.jsx(DFL.PanelSection, { title: t("Dependencies"), children: SP_JSX.jsx(DFL.Field, { description: t("Game prefix not found - launch the game once first") }) }));
     }
     const errorText = (() => {
         switch (status.error) {
@@ -2647,7 +2711,7 @@ function DependenciesSection({ appid, eraXp }) {
         }
     })();
     const recommendedMissing = RECOMMENDED_XP_DEPS.filter((verb) => !status.installed.includes(verb));
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("DEPENDENCIES"), children: [SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Installing dependencies needs an internet connection") }), eraXp && recommendedMissing.length ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: status.busy, description: t("Recommended for Windows XP-era games"), onClick: () => install(recommendedMissing), children: t("Install recommended (DirectX 9 + VC++ 2005)") })) : null, DEPENDENCY_VERBS.map((verb) => {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Dependencies"), children: [SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Installing dependencies needs an internet connection") }), eraXp && recommendedMissing.length ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: status.busy, description: t("Recommended for Windows XP-era games"), onClick: () => install(recommendedMissing), children: t("Install recommended (DirectX 9 + VC++ 2005)") })) : null, DEPENDENCY_VERBS.map((verb) => {
                 const installed = status.installed.includes(verb.id);
                 const installing = status.busy && status.currentVerb === verb.id;
                 return (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", disabled: installed || status.busy, onClick: () => install([verb.id]), children: [verb.label, " \u2014 ", installed ? `✓ ${t("Installed")}` : installing ? t("Installing...") : t("Install")] }, verb.id));
@@ -3519,7 +3583,7 @@ function Power({ config, setConfig }) {
     };
     const underclockLevel = p.cpu_underclock || "";
     const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("EDIT POWER PROFILE"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Edit Power Profile"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Profile Settings"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] })] }));
 }
 
 function AddDeviceModal({ closeModal, onAdd }) {
@@ -3954,24 +4018,9 @@ function buildTabs(config, setConfig, qam) {
         { id: "System", icon: tabIcons.System, label: t("TabSystem"), content: SP_JSX.jsx(System, { config: config, setConfig: setConfig, qam: qam }) },
     ];
 }
-const tabTitle = (icon, label) => (SP_JSX.jsxs("div", { className: "nc-tab-title", children: [icon, SP_JSX.jsx("span", { children: label })] }));
 // Shared across both surfaces: opening the fullscreen page from a QAM tab
 // lands on that same tab (and back), instead of always resetting to Home.
 let lastTab = "Home";
-// The QAM keeps the tab bar with all 7 tabs, each showing its simplified
-// subset; the fullscreen /nebel-control page has the full controls.
-function Content() {
-    const { config, setConfig, message } = usePluginConfig();
-    const [tab, setTabState] = SP_REACT.useState(lastTab);
-    const setTab = (id) => { lastTab = id; setTabState(id); };
-    if (!config)
-        return SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) });
-    return (SP_JSX.jsxs("div", { className: "nebel-control-tabs nebel-control-root", children: [SP_JSX.jsx("style", { children: styles }), SP_JSX.jsx(DFL.Tabs, { activeTab: tab, onShowTab: setTab, tabs: buildTabs(config, setConfig, true).map((pluginTab) => ({
-                    id: pluginTab.id,
-                    title: tabTitle(pluginTab.icon, pluginTab.label),
-                    content: SP_JSX.jsx("div", { className: "nebel-control-tab-content", children: pluginTab.content }),
-                })) })] }));
-}
 // Fullscreen variant registered as the /nebel-control route: Steam-settings-
 // style layout with a vertical tab list on the left and content on the right.
 // Steam's global back (B button) pops the route, so no back affordance here.
@@ -3979,7 +4028,7 @@ function FullPage() {
     const { config, setConfig, message } = usePluginConfig();
     const [tab, setTabState] = SP_REACT.useState(lastTab);
     const setTab = (id) => { lastTab = id; setTabState(id); };
-    const pageShell = (content) => (SP_JSX.jsxs("div", { className: "nebel-control-page nebel-control-root", children: [SP_JSX.jsx("style", { children: styles }), content] }));
+    const pageShell = (content) => (SP_JSX.jsxs("div", { className: "nebel-control-page nebel-control-root", children: [SP_JSX.jsxs("style", { children: [styles, nativeSectionTitleCss(".nebel-control-page")] }), content] }));
     if (!config) {
         return pageShell(SP_JSX.jsx("div", { className: "nc-page-content", children: SP_JSX.jsx("div", { className: "nc-page-content-inner", children: SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) }) }) }));
     }
@@ -4037,56 +4086,11 @@ function useInjectedConfig() {
 }
 // The injected sections live inside Steam's own settings tree, outside
 // nebel-control-root, so the plugin stylesheet has to come along - otherwise
-// the shared widgets (slider rows, swatch grid, notes) render unstyled.
+// the shared widgets (slider rows, swatch grid, notes) render unstyled. The
+// spacing overrides align the QAM-styled PanelSection with the host page's
+// own full-width settings groups.
 function NativeStyles() {
-    return SP_JSX.jsxs("style", { children: [styles, nativeSpacingOverrides()] });
-}
-// The injected blocks reuse the QuickAccessMenu-styled PanelSection inside
-// Steam's full-page settings, whose own groups are spaced differently: no
-// side inset (rows span the full content width and pad themselves), 24px
-// margin-top between groups, plain white 36px headers instead of the QAM's
-// small grey uppercase ones. These overrides (scoped to .nebel-native) make
-// the duplicates line up with the host page's own sections. Steam ships
-// several copies of the QAM CSS module and the hashes shift between client
-// builds, so collect every module exposing the semantic keys and target all
-// of them, plus the tested client's hashes as a fallback.
-const QAM_CLASS_FALLBACK = {
-    PanelSection: "_3gY0aBuNR8_NPTpXIYfkby",
-    PanelSectionTitle: "_1IigUZ3GHaZS2Y-3V3T2rT",
-};
-function qamClasses(key) {
-    const found = new Set([QAM_CLASS_FALLBACK[key]]);
-    try {
-        for (const mod of DFL.classMap) {
-            const value = mod?.[key];
-            if (typeof value === "string" && value)
-                found.add(value);
-        }
-    }
-    catch (error) {
-    }
-    return Array.from(found);
-}
-function nativeSpacingOverrides() {
-    const selector = (key) => qamClasses(key).map((cls) => `.nebel-native .${cls}`).join(", ");
-    return `
-      ${selector("PanelSection")} {
-        padding-left: 0;
-        padding-right: 0;
-        margin: 24px 0 0;
-      }
-      ${qamClasses("PanelSection").map((cls) => `.nebel-native .${cls}:first-of-type`).join(", ")} {
-        margin: 24px 0 0;
-      }
-      ${selector("PanelSectionTitle")} {
-        padding-bottom: 0;
-        line-height: 36px;
-        color: rgb(220, 222, 223);
-        font-weight: 500;
-        letter-spacing: normal;
-        text-transform: none;
-      }
-    `;
+    return SP_JSX.jsxs("style", { children: [styles, nativeSectionSpacingCss(".nebel-native")] });
 }
 
 // The sections duplicated into Steam's own settings pages. Each one renders
@@ -4127,6 +4131,18 @@ function GameTweaksSection({ appid }) {
         return SP_JSX.jsx(MissingConfig, { message: message });
     return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Games, { config: config, setConfig: setConfig, lockedAppid: appid, injected: true })] }));
 }
+// Settings -> Cloud: Nebel sync (Syncthing pairing, folders) - the Sync tab
+// lives next to Steam Cloud since both are "sync my stuff" settings.
+function CloudSyncSection() {
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Sync, {})] }));
+}
+// Settings -> System: entry point to the fullscreen control center. The
+// plugin no longer appears in Decky's QAM plugin list (no `content`
+// returned), so this is the discoverable way in; /nebel-control stays
+// directly navigable as before.
+function ControlCenterSection() {
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.Navigate("/nebel-control"), children: t("Open Nebel Control") }) }) })] }));
+}
 
 // Duplicates Nebel Control's management UI into Steam's own settings pages
 // (Steam Settings -> Controller/Power/Display and game Properties), rendered
@@ -4149,7 +4165,7 @@ function GameTweaksSection({ appid }) {
 // behind an ErrorBoundary, so if a Steam update moves or renames the anchors
 // (no pages host, unknown routes), only the duplicate disappears - the
 // plugin itself never breaks.
-const LOG = "[Nebel Control] native-settings:";
+const LOG$1 = "[Nebel Control] native-settings:";
 // Marks a component type we already wrapped - the router re-runs route
 // patches on every render, and a fresh wrapper each time would remount the
 // whole page subtree (focus/state loss), so wrapping must be idempotent.
@@ -4169,6 +4185,16 @@ const SETTINGS_SECTIONS = [
         name: "external-display",
         match: (page) => page.route === "/settings/display",
         render: () => SP_JSX.jsx(ExternalDisplaySection, {}),
+    },
+    {
+        name: "cloud-sync",
+        match: (page) => page.route === "/settings/cloud",
+        render: () => SP_JSX.jsx(CloudSyncSection, {}),
+    },
+    {
+        name: "control-center-entry",
+        match: (page) => page.route === "/settings/system",
+        render: () => SP_JSX.jsx(ControlCenterSection, {}),
     },
 ];
 const PROPERTIES_SECTIONS = [
@@ -4223,7 +4249,7 @@ function wrapPagesInHost(host, kind) {
             node = section.render(page);
         }
         catch (error) {
-            console.warn(LOG, kind.name, section.name, "render factory failed", error);
+            console.warn(LOG$1, kind.name, section.name, "render factory failed", error);
         }
         if (!node)
             return page;
@@ -4239,7 +4265,7 @@ function wrapPagesInHost(host, kind) {
     host.props.pages = nextPages;
     if (!hostFound.has(kind.name)) {
         hostFound.add(kind.name);
-        console.log(LOG, kind.name, "injected sections:", touched.join(", "));
+        console.log(LOG$1, kind.name, "injected sections:", touched.join(", "));
     }
 }
 function isPagesHost(el, kind) {
@@ -4275,7 +4301,7 @@ function wrapComponentType(type, kind) {
                 scanTree(ret, kind, 0);
             }
             catch (error) {
-                console.warn(LOG, kind.name, "scan failed in", type.name || "component", error);
+                console.warn(LOG$1, kind.name, "scan failed in", type.name || "component", error);
             }
             return ret;
         };
@@ -4322,7 +4348,7 @@ function scanTree(node, kind, depth) {
             wrapPagesInHost(node, kind);
         }
         catch (error) {
-            console.warn(LOG, kind.name, "wrapping pages failed", error);
+            console.warn(LOG$1, kind.name, "wrapping pages failed", error);
         }
     }
     else {
@@ -4332,7 +4358,7 @@ function scanTree(node, kind, depth) {
                 node.type = nextType;
         }
         catch (error) {
-            console.warn(LOG, kind.name, "type wrap failed", error);
+            console.warn(LOG$1, kind.name, "type wrap failed", error);
         }
     }
     scanTree(props.children, kind, depth + 1);
@@ -4349,16 +4375,16 @@ function makeRoutePatch(kind) {
             if (patchedType === originalType) {
                 if (!hostMissLogged.has(`${kind.name}-type`)) {
                     hostMissLogged.add(`${kind.name}-type`);
-                    console.log(LOG, kind.name, "route child has no wrappable component type:", typeof originalType);
+                    console.log(LOG$1, kind.name, "route child has no wrappable component type:", typeof originalType);
                 }
                 return route;
             }
             const patchedChild = { ...first, type: patchedType };
             route.children = Array.isArray(child) ? [patchedChild, ...child.slice(1)] : patchedChild;
-            console.log(LOG, kind.name, "route component wrapped");
+            console.log(LOG$1, kind.name, "route component wrapped");
         }
         catch (error) {
-            console.warn(LOG, kind.name, "route patch failed", error);
+            console.warn(LOG$1, kind.name, "route patch failed", error);
         }
         return route;
     };
@@ -4367,20 +4393,20 @@ function makeRoutePatch(kind) {
 // throws - a half-broken Steam update must cost us the duplicates, not the
 // plugin.
 function installNativeSettingsSections() {
-    console.log(LOG, "installing");
+    console.log(LOG$1, "installing");
     let settingsPatch = null;
     let propertiesPatch = null;
     try {
         settingsPatch = routerHook.addPatch("/settings", makeRoutePatch(KINDS.settings));
     }
     catch (error) {
-        console.warn(LOG, "failed to register /settings patch", error);
+        console.warn(LOG$1, "failed to register /settings patch", error);
     }
     try {
         propertiesPatch = routerHook.addPatch("/app/:appid/properties", makeRoutePatch(KINDS.properties));
     }
     catch (error) {
-        console.warn(LOG, "failed to register /app/:appid/properties patch", error);
+        console.warn(LOG$1, "failed to register /app/:appid/properties patch", error);
     }
     return () => {
         try {
@@ -4391,6 +4417,201 @@ function installNativeSettingsSections() {
         }
         catch (error) {
         }
+    };
+}
+
+// One compact block appended to Steam's own Quick Access "Settings" panel
+// (the "..." menu): just the levers worth touching mid-game - stick lighting
+// on/off + brightness, the power profile, primary-display pick when an
+// external panel is connected, and a door to the fullscreen control center.
+// The plugin returns no `content` to Decky (so it no longer clutters the
+// Decky plugin list); this block is its QAM presence instead.
+// Compact external-display control: only rendered while an external panel is
+// actually connected; mirrors Display.tsx's primary-pick semantics (single
+// output per gamescope session, portrait panels pre-select a rotation).
+function QuickDisplayRows() {
+    const [state, setState] = SP_REACT.useState(null);
+    const [busy, setBusy] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        getDisplayState().then(setState).catch(() => { });
+    }, []);
+    const externals = state?.connectors.filter((c) => !c.internal && c.connected) || [];
+    if (!state || !externals.length)
+        return null;
+    const INTERNAL = "__internal__";
+    const selectPrimary = (connector) => {
+        setBusy(true);
+        const finish = (promise) => promise.then(setState).catch(() => { }).finally(() => setBusy(false));
+        if (connector === INTERNAL) {
+            finish(setDisplayConfig(false, state.connector, state.width, state.height, state.orientation));
+            return;
+        }
+        const target = externals.find((c) => c.connector === connector);
+        const previous = state.remembered[connector];
+        const [w, h] = (target?.modes[0] || "1920x1080").split("x").map(Number);
+        const width = previous?.width || w || 1920;
+        const height = previous?.height || h || 1080;
+        // Portrait panel + no rotation is rejected by the backend - pre-select one.
+        const orientation = previous?.orientation || (width < height ? "left" : "normal");
+        finish(setDisplayConfig(true, connector, width, height, orientation));
+    };
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: state.useExternal ? state.connector : INTERNAL, options: [
+                    { data: INTERNAL, label: t("Internal Screen") },
+                    ...externals.map((c) => ({ data: c.connector, label: c.name ? `${c.name} (${c.connector})` : c.connector })),
+                ], onChange: selectPrimary, disabled: busy }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => {
+                    setBusy(true);
+                    // A successful restart tears down this session (and Decky with it);
+                    // only a failure comes back here, and the button must re-enable then.
+                    restartGamescopeSession().catch(() => { }).finally(() => setBusy(false));
+                }, children: t("Apply & Restart Game Mode") })] }));
+}
+function QuickPanel() {
+    const { config, setConfig, message } = useInjectedConfig();
+    if (!config) {
+        return (SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) }));
+    }
+    const stickLed = config.stickLed?.supported ? config.stickLed : null;
+    const profile = config.power?.general?.default_profile || "balanced";
+    const profiles = Object.entries(config.power?.profiles || {}).map(([name, p]) => ({
+        data: name,
+        label: p.label || titleCase(name),
+    }));
+    // Optimistic set + immediate backend apply, rolling back on failure (same
+    // pattern as the Lighting tab).
+    const applyLighting = (patch, call) => {
+        const previous = config.stickLed;
+        setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, ...patch } } : current));
+        call()
+            .then((applied) => setConfig((current) => (current ? { ...current, stickLed: applied } : current)))
+            .catch(() => setConfig((current) => (current ? { ...current, stickLed: previous } : current)));
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Nebel Control", children: [stickLed && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Stick Lighting"), value: stickLed.enabled, onChange: (value) => applyLighting({ enabled: value }, () => setStickLedEnabled(value)) }), stickLed.enabled && !stickLed.screenLink && (SP_JSX.jsx(SliderEdit, { label: t("Max Brightness"), value: Math.round((stickLed.maxBrightness ?? 1) * 100), min: 0, max: 100, step: 5, onChange: (value) => applyLighting({ maxBrightness: value / 100 }, () => setStickLedMaxBrightness(value / 100)) }))] })), profiles.length > 0 && (SP_JSX.jsx(SelectEdit, { label: t("Power Profile"), value: profile, options: profiles, onChange: (value) => setConfig((current) => (current ? update(current, ["power", "general", "default_profile"], value) : current)) })), SP_JSX.jsx(QuickDisplayRows, {}), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => {
+                    DFL.Navigation.Navigate("/nebel-control");
+                    DFL.Navigation.CloseSideMenus();
+                }, children: t("Open Nebel Control") })] }));
+}
+const LOG = "[Nebel Control] qam-quick-panel:";
+const QUICK_ACCESS_TAB_SETTINGS = 4;
+const WRAPPED = "__nebelQamQuickPanel";
+// Appends the block to the Quick Settings tab's panel. Two entry points:
+// afterPatch on the QAM menu renderer covers Steam rebuilding the tabs array
+// on a full re-render, and an install-time in-place wrap covers the array
+// that is already live (the menu component does not re-render on open). The
+// WRAPPED field stores the original panel, so wrapping never stacks and
+// uninstall can restore it.
+function wrapTabs(tabsNode) {
+    const tabs = tabsNode?.props?.tabs;
+    if (!Array.isArray(tabs))
+        return;
+    for (const tab of tabs) {
+        if (!tab || tab[WRAPPED])
+            continue;
+        if (tab.key !== QUICK_ACCESS_TAB_SETTINGS && String(tab.key) !== String(QUICK_ACCESS_TAB_SETTINGS))
+            continue;
+        const original = tab.panel;
+        tab[WRAPPED] = original;
+        tab.panel = (SP_JSX.jsxs(SP_JSX.Fragment, { children: [original, SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(QuickPanel, {}) })] }));
+        console.log(LOG, "quick settings panel wrapped");
+    }
+}
+function unwrapTabs() {
+    try {
+        const root = DFL.getReactRoot(document.getElementById("root"));
+        const tabsNode = root &&
+            DFL.findInReactTree(root, (n) => Array.isArray(n?.memoizedProps?.tabs) && n.memoizedProps.tabs[0] && "key" in n.memoizedProps.tabs[0]);
+        for (const tab of tabsNode?.memoizedProps?.tabs || []) {
+            if (tab?.[WRAPPED]) {
+                tab.panel = tab[WRAPPED];
+                delete tab[WRAPPED];
+            }
+        }
+    }
+    catch (error) {
+    }
+}
+// Installs the patch; returns the uninstaller for onDismount. Never throws -
+// if a Steam update moves the QAM anchors, only the quick block disappears.
+function installQamQuickPanel() {
+    const patches = [];
+    try {
+        const qamModule = DFL.findModuleByExport((e) => e?.type?.toString?.()?.includes("QuickAccessMenuBrowserView"));
+        const renderers = Object.values(qamModule || {}).filter((e) => e?.type?.toString?.()?.includes("QuickAccessMenuBrowserView") || e?.type?.toString?.()?.includes("QuickAccessMenuEmbedded"));
+        if (!renderers.length) {
+            console.log(LOG, "no QAM renderer export found");
+            return () => { };
+        }
+        const handler = (_args, ret) => {
+            try {
+                const tabsNode = DFL.findInReactTree(ret, (x) => x?.props?.tabs);
+                if (tabsNode)
+                    wrapTabs(tabsNode);
+            }
+            catch (error) {
+                console.warn(LOG, "tab scan failed", error);
+            }
+            return ret;
+        };
+        for (const renderer of renderers) {
+            try {
+                patches.push(DFL.afterPatch(renderer, "type", handler));
+            }
+            catch (error) {
+                console.warn(LOG, "renderer patch failed", error);
+            }
+        }
+        // The QAM menu component is mounted (hidden) before plugins load and does
+        // NOT re-render when the menu opens - the tab contents component further
+        // down does, reading the SAME tabs array from its memoized props. So the
+        // afterPatch above only covers renders that pass through the patched
+        // renderer; but Steam also rebuilds the tabs array (a useMemo in the QAM
+        // module) on re-renders that bypass it, which silently drops the wrap.
+        // Verified on console: one-shot wrapping is not enough. So keep a light
+        // interval that re-finds the live tabs node and re-wraps whenever the
+        // marker is gone - idempotent via WRAPPED, cheap (a tree scan every 2s).
+        const ensureWrapped = () => {
+            try {
+                const root = DFL.getReactRoot(document.getElementById("root"));
+                const tabsNode = root &&
+                    DFL.findInReactTree(root, (n) => Array.isArray(n?.memoizedProps?.tabs) && n.memoizedProps.tabs[0] && "key" in n.memoizedProps.tabs[0]);
+                if (!tabsNode)
+                    return;
+                const tabs = tabsNode.memoizedProps.tabs;
+                const target = tabs.find((tab) => tab && String(tab.key) === String(QUICK_ACCESS_TAB_SETTINGS));
+                if (target && !target[WRAPPED]) {
+                    console.log(LOG, "tabs array rebuilt by Steam, re-wrapping");
+                    wrapTabs({ props: { tabs } });
+                }
+            }
+            catch (error) {
+                console.warn(LOG, "existing-tabs wrap failed", error);
+            }
+        };
+        ensureWrapped();
+        const interval = window.setInterval(ensureWrapped, 2000);
+        return () => {
+            window.clearInterval(interval);
+            for (const patch of patches) {
+                try {
+                    patch.unpatch();
+                }
+                catch (error) {
+                }
+            }
+            unwrapTabs();
+        };
+    }
+    catch (error) {
+        console.warn(LOG, "install failed", error);
+    }
+    return () => {
+        for (const patch of patches) {
+            try {
+                patch.unpatch();
+            }
+            catch (error) {
+            }
+        }
+        unwrapTabs();
     };
 }
 
@@ -4450,17 +4671,22 @@ var index = definePlugin(() => {
     bootstrap();
     routerHook.addRoute("/nebel-control", FullPage);
     const uninstallNativeSections = installNativeSettingsSections();
+    const uninstallQamQuickPanel = installQamQuickPanel();
     return {
         name: "Nebel Control",
-        content: SP_JSX.jsx(Content, {}),
+        // No `content` on purpose: Decky's plugin list only shows plugins that
+        // have one, and Nebel Control's UI now lives inside Steam's own settings
+        // pages (plus one compact block in the Quick Access settings panel and
+        // the fullscreen /nebel-control route) - the list entry just duplicated
+        // all that. The plugin still appears in Decky's plugin management.
         onDismount() {
             cancelled = true;
             unregisterDownloadWatcher();
             uninstallNativeSections();
+            uninstallQamQuickPanel();
             routerHook.removeRoute("/nebel-control");
         },
         icon: (SP_JSX.jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [SP_JSX.jsx("path", { d: "M14 17H5" }), SP_JSX.jsx("path", { d: "M19 7h-9" }), SP_JSX.jsx("circle", { cx: "17", cy: "17", r: "3" }), SP_JSX.jsx("circle", { cx: "7", cy: "7", r: "3" })] })),
-        alwaysRender: true,
     };
 });
 

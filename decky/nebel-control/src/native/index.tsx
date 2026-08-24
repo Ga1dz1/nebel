@@ -2,7 +2,7 @@ import { routerHook } from "@decky/api";
 import { ErrorBoundary } from "@decky/ui";
 import type { RoutePatch } from "@decky/api";
 import type { ReactNode } from "react";
-import { ControllerLightingSection, ExternalDisplaySection, GameTweaksSection, PowerLimitsSection } from "./sections";
+import { ControllerLightingSection, CloudSyncSection, ControlCenterSection, ExternalDisplaySection, GameTweaksSection, PowerLimitsSection } from "./sections";
 
 // Duplicates Nebel Control's management UI into Steam's own settings pages
 // (Steam Settings -> Controller/Power/Display and game Properties), rendered
@@ -60,6 +60,16 @@ const SETTINGS_SECTIONS: InjectedSection[] = [
     name: "external-display",
     match: (page) => page.route === "/settings/display",
     render: () => <ExternalDisplaySection />,
+  },
+  {
+    name: "cloud-sync",
+    match: (page) => page.route === "/settings/cloud",
+    render: () => <CloudSyncSection />,
+  },
+  {
+    name: "control-center-entry",
+    match: (page) => page.route === "/settings/system",
+    render: () => <ControlCenterSection />,
   },
 ];
 

@@ -1,8 +1,10 @@
-import { Field, PanelSection } from "@decky/ui";
+import { ButtonItem, Field, Navigation, PanelSection, PanelSectionRow } from "@decky/ui";
+import { t } from "../i18n";
 import { Display } from "../tabs/Display";
 import { Games } from "../tabs/Games";
 import { Lighting } from "../tabs/Lighting";
 import { Power } from "../tabs/Power";
+import { Sync } from "../tabs/Sync";
 import { NativeStyles, useInjectedConfig } from "./injectedConfig";
 
 // The sections duplicated into Steam's own settings pages. Each one renders
@@ -66,6 +68,36 @@ export function GameTweaksSection({ appid }: { appid: string }) {
     <div className="nebel-native">
       <NativeStyles />
       <Games config={config} setConfig={setConfig} lockedAppid={appid} injected />
+    </div>
+  );
+}
+
+// Settings -> Cloud: Nebel sync (Syncthing pairing, folders) - the Sync tab
+// lives next to Steam Cloud since both are "sync my stuff" settings.
+export function CloudSyncSection() {
+  return (
+    <div className="nebel-native">
+      <NativeStyles />
+      <Sync />
+    </div>
+  );
+}
+
+// Settings -> System: entry point to the fullscreen control center. The
+// plugin no longer appears in Decky's QAM plugin list (no `content`
+// returned), so this is the discoverable way in; /nebel-control stays
+// directly navigable as before.
+export function ControlCenterSection() {
+  return (
+    <div className="nebel-native">
+      <NativeStyles />
+      <PanelSection title="Nebel Control">
+        <PanelSectionRow>
+          <ButtonItem layout="below" onClick={() => Navigation.Navigate("/nebel-control")}>
+            {t("Open Nebel Control")}
+          </ButtonItem>
+        </PanelSectionRow>
+      </PanelSection>
     </div>
   );
 }

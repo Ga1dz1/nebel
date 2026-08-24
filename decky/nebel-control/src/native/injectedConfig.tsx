@@ -1,4 +1,3 @@
-import { classMap } from "@decky/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { getConfig, getInstalledGames, savePowerConfig, saveTweaks } from "../backend";
@@ -6,6 +5,7 @@ import { useDebouncedSave } from "../hooks/useDebouncedSave";
 import { t } from "../i18n";
 import { styles } from "../styles";
 import type { Config } from "../types";
+import { nativeSectionSpacingCss } from "./qamClasses";
 
 // Config source for the sections injected into Steam's native settings pages.
 // This mirrors Content.tsx's usePluginConfig (same backend calls, same
@@ -54,55 +54,9 @@ export function useInjectedConfig(): { config: Config | null; setConfig: Dispatc
 
 // The injected sections live inside Steam's own settings tree, outside
 // nebel-control-root, so the plugin stylesheet has to come along - otherwise
-// the shared widgets (slider rows, swatch grid, notes) render unstyled.
+// the shared widgets (slider rows, swatch grid, notes) render unstyled. The
+// spacing overrides align the QAM-styled PanelSection with the host page's
+// own full-width settings groups.
 export function NativeStyles() {
-  return <style>{styles}{nativeSpacingOverrides()}</style>;
-}
-
-// The injected blocks reuse the QuickAccessMenu-styled PanelSection inside
-// Steam's full-page settings, whose own groups are spaced differently: no
-// side inset (rows span the full content width and pad themselves), 24px
-// margin-top between groups, plain white 36px headers instead of the QAM's
-// small grey uppercase ones. These overrides (scoped to .nebel-native) make
-// the duplicates line up with the host page's own sections. Steam ships
-// several copies of the QAM CSS module and the hashes shift between client
-// builds, so collect every module exposing the semantic keys and target all
-// of them, plus the tested client's hashes as a fallback.
-const QAM_CLASS_FALLBACK: Record<string, string> = {
-  PanelSection: "_3gY0aBuNR8_NPTpXIYfkby",
-  PanelSectionTitle: "_1IigUZ3GHaZS2Y-3V3T2rT",
-};
-
-function qamClasses(key: string): string[] {
-  const found = new Set<string>([QAM_CLASS_FALLBACK[key]]);
-  try {
-    for (const mod of classMap as any[]) {
-      const value = mod?.[key];
-      if (typeof value === "string" && value) found.add(value);
-    }
-  } catch (error) {
-  }
-  return Array.from(found);
-}
-
-function nativeSpacingOverrides(): string {
-  const selector = (key: string) => qamClasses(key).map((cls) => `.nebel-native .${cls}`).join(", ");
-  return `
-      ${selector("PanelSection")} {
-        padding-left: 0;
-        padding-right: 0;
-        margin: 24px 0 0;
-      }
-      ${qamClasses("PanelSection").map((cls) => `.nebel-native .${cls}:first-of-type`).join(", ")} {
-        margin: 24px 0 0;
-      }
-      ${selector("PanelSectionTitle")} {
-        padding-bottom: 0;
-        line-height: 36px;
-        color: rgb(220, 222, 223);
-        font-weight: 500;
-        letter-spacing: normal;
-        text-transform: none;
-      }
-    `;
+  return <style>{styles}{nativeSectionSpacingCss(".nebel-native")}</style>;
 }

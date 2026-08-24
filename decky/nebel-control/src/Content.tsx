@@ -6,6 +6,7 @@ import { useDebouncedSave } from "./hooks/useDebouncedSave";
 import { t } from "./i18n";
 import { tabIcons } from "./icons";
 import { currentGame } from "./lib/games";
+import { nativeSectionTitleCss } from "./native/qamClasses";
 import { styles } from "./styles";
 import { Display } from "./tabs/Display";
 import { Games } from "./tabs/Games";
@@ -114,8 +115,10 @@ const tabTitle = (icon: ReactNode, label: string) => (
 // lands on that same tab (and back), instead of always resetting to Home.
 let lastTab = "Home";
 
-// The QAM keeps the tab bar with all 7 tabs, each showing its simplified
-// subset; the fullscreen /nebel-control page has the full controls.
+// QAM tab-bar variant of the control center. Currently UNUSED: the plugin
+// returns no `content` to Decky (see index.tsx) and its QAM presence is the
+// compact quick panel (native/quickPanel.tsx) instead. Kept because it is
+// the same one-tab-model surface if a full QAM UI is ever wanted back.
 export function Content() {
   const { config, setConfig, message } = usePluginConfig();
   const [tab, setTabState] = useState(lastTab);
@@ -146,7 +149,8 @@ export function FullPage() {
   const setTab = (id: string) => { lastTab = id; setTabState(id); };
   const pageShell = (content: ReactNode) => (
     <div className="nebel-control-page nebel-control-root">
-      <style>{styles}</style>
+      {/* Steam-settings-style section titles (plain, not QAM uppercase). */}
+      <style>{styles}{nativeSectionTitleCss(".nebel-control-page")}</style>
       {content}
     </div>
   );

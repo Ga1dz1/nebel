@@ -1,6 +1,6 @@
 import { definePlugin, routerHook } from "@decky/api";
 import { getCompatApplied, getConfig, getInstalledGames, saveCompatApplied } from "./backend";
-import { Content, FullPage } from "./Content";
+import { FullPage } from "./Content";
 import {
   configureCompatPolicy,
   handledGameAppids,
@@ -8,6 +8,7 @@ import {
   sweepInstalledGames,
 } from "./lib/steamCompat";
 import { installNativeSettingsSections } from "./native";
+import { installQamQuickPanel } from "./native/quickPanel";
 
 export default definePlugin(() => {
   let unregisterDownloadWatcher = () => {};
@@ -64,13 +65,19 @@ export default definePlugin(() => {
   bootstrap();
   routerHook.addRoute("/nebel-control", FullPage);
   const uninstallNativeSections = installNativeSettingsSections();
+  const uninstallQamQuickPanel = installQamQuickPanel();
   return {
     name: "Nebel Control",
-    content: <Content />,
+    // No `content` on purpose: Decky's plugin list only shows plugins that
+    // have one, and Nebel Control's UI now lives inside Steam's own settings
+    // pages (plus one compact block in the Quick Access settings panel and
+    // the fullscreen /nebel-control route) - the list entry just duplicated
+    // all that. The plugin still appears in Decky's plugin management.
     onDismount() {
       cancelled = true;
       unregisterDownloadWatcher();
       uninstallNativeSections();
+      uninstallQamQuickPanel();
       routerHook.removeRoute("/nebel-control");
     },
     icon: (
@@ -91,6 +98,5 @@ export default definePlugin(() => {
         <circle cx="7" cy="7" r="3" />
       </svg>
     ),
-    alwaysRender: true,
   };
 });

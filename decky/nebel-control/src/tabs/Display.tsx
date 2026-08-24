@@ -47,7 +47,7 @@ export function Display(_props: { qam?: boolean }) {
 
   if (!state) {
     return (
-      <PanelSection title={t("DISPLAY")}>
+      <PanelSection title={t("Display")}>
         <Field label={loadMessage} />
       </PanelSection>
     );
@@ -122,7 +122,7 @@ export function Display(_props: { qam?: boolean }) {
   };
 
   return (
-    <PanelSection title={t("EXTERNAL DISPLAY")}>
+    <PanelSection title={t("External Display")}>
       <SelectEdit label={t("Primary Display")} value={selectedConnector} options={primaryOptions} onChange={selectPrimary} disabled={saving} />
       {state.useExternal && (
         <>

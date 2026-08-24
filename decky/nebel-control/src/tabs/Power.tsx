@@ -51,10 +51,10 @@ export function Power({ config, setConfig }: { config: Config; setConfig: Dispat
   const supportsUnderclockPresets = !!config.power.underclocks?.[config.cpuDeviceClass];
   return (
     <>
-      <PanelSection title={t("EDIT POWER PROFILE")}>
+      <PanelSection title={t("Edit Power Profile")}>
         <SelectEdit value={profile} options={profiles} onChange={setProfile} />
       </PanelSection>
-      <PanelSection title={t("PROFILE SETTINGS")}>
+      <PanelSection title={t("Profile Settings")}>
         <SelectEdit label={t("Fan Curve")} value={p.fan_curve} options={fanCurves} onChange={(v) => setProfileValue("fan_curve", v)} />
         {supportsUnderclockPresets ? (
           <SelectEdit label={t("CPU Underclock")} value={underclockLevel} options={underclocks} onChange={(v) => setProfileValue("cpu_underclock", v)} />
