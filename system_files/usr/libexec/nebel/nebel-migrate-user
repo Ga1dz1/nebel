@@ -31,5 +31,13 @@ chown -R nebel:nebel "$new_home"
 restorecon -R "$new_home" 2>/dev/null || true
 echo 'nebel:nebel' | chpasswd
 rm -f /etc/sudoers.d/armada-user
+# Config files created while the home was still /var/home/armada keep absolute
+# paths to it (Dolphin's user-places.xbel is the visible one - its places
+# panel ends up full of dead bookmarks). Rewrite them in small text files
+# under the usual config/data dirs.
+while IFS= read -r f; do
+    sed -i "s|/var/home/armada|${new_home}|g" "$f" 2>/dev/null || true
+done < <(grep -rIl --binary-files=without-match -m1 "/var/home/armada" \
+    "$new_home/.config" "$new_home/.local/share" 2>/dev/null || true)
 # Re-apply sysusers so group memberships from the new config are in place.
 systemd-sysusers || true
