@@ -57,8 +57,8 @@ const perGameModeOptions = [
   ...compatModeOptions,
 ];
 const gameEraOptions = [
-  { data: "", label: t("Default") },
-  { data: "xp", label: t("Windows XP era (older games)") },
+  { data: "", label: t("Modern (Windows 10/11)") },
+  { data: "xp", label: t("Old-school (Windows XP)") },
 ];
 const windowsVersionOptions = [
   { data: "auto", label: t("Auto") },
