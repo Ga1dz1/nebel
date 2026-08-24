@@ -35,37 +35,46 @@ while IFS= read -r library; do
     steamapps_dirs+=("${steamapps}")
 done < <(grep -oP '"path"\s+"\K[^"]+' "${steam_root}/steamapps/libraryfolders.vdf" 2>/dev/null || true)
 
-# Register the official Proton 11.0 (ARM64) before Steam scans compatibilitytools.d.
-proton11_runner=""
-proton11_reg="${steam_root}/compatibilitytools.d/proton-11-arm64"
-for steamapps in "${steamapps_dirs[@]}"; do
-    runner="${steamapps}/common/Proton 11.0 (ARM64)"
-    flags="$(grep -oP '"StateFlags"\s+"\K[0-9]+' "${steamapps}/appmanifest_4628740.acf" 2>/dev/null || true)"
-    if [[ -n "${flags}" ]] && (( flags & 4 )) && [[ -d "${runner}" ]]; then
-        proton11_runner="${runner}"
-        break
-    fi
-done
-if [[ -n "${proton11_runner}" ]]; then
-    mkdir -p "${proton11_reg}"
-    cat > "${proton11_reg}/compatibilitytool.vdf" <<EOF
+# Register the official ARM64 Protons before Steam scans compatibilitytools.d.
+# The ARM client's catalog enumeration of Valve's ARM64 tools (4628740,
+# 4427310) is unreliable across devices - on some consoles they never show up
+# in compat pickers despite being fully installed. Our aliases point at the
+# same content and always register.
+register_arm64_proton() {
+    local appid="$1" dirname="$2" tool_id="$3" vdf_key="$4" display="$5"
+    local runner="" reg="${steam_root}/compatibilitytools.d/${tool_id}"
+    for steamapps in "${steamapps_dirs[@]}"; do
+        local candidate="${steamapps}/common/${dirname}"
+        local flags
+        flags="$(grep -oP '"StateFlags"\s+"\K[0-9]+' "${steamapps}/appmanifest_${appid}.acf" 2>/dev/null || true)"
+        if [[ -n "${flags}" ]] && (( flags & 4 )) && [[ -d "${candidate}" ]]; then
+            runner="${candidate}"
+            break
+        fi
+    done
+    if [[ -n "${runner}" ]]; then
+        mkdir -p "${reg}"
+        cat > "${reg}/compatibilitytool.vdf" <<EOF
 "compatibilitytools"
 {
   "compat_tools"
   {
-    "proton11_arm64"
+    "${vdf_key}"
     {
-      "install_path" "${proton11_runner}"
-      "display_name" "Proton 11.0 (ARM64)"
+      "install_path" "${runner}"
+      "display_name" "${display}"
       "from_oslist"  "windows"
       "to_oslist"    "linux"
     }
   }
 }
 EOF
-else
-    rm -rf "${proton11_reg}"
-fi
+    else
+        rm -rf "${reg}"
+    fi
+}
+register_arm64_proton 4628740 "Proton 11.0 (ARM64)" proton-11-arm64 proton11_arm64 "Proton 11.0 (ARM64)"
+register_arm64_proton 4427310 "Proton Experimental (ARM64)" proton-experimental-arm64 proton_experimental_arm64 "Proton Experimental (ARM64)"
 
 # The ARM client can't resolve require_tool_appid for the SLR4 Arm64 runtime (4185400)
 # even when it's installed, so Protons requiring it fail "compat tool failed". Strip it
