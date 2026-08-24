@@ -1,9 +1,11 @@
 [Unit]
 Description=Rename the legacy armada user to nebel (one-time OTA migration)
+# No ConditionPathExists: the script also does a one-time sweep of stale
+# /var/home/armada paths for boxes that migrated before the sweep existed,
+# so it must run on every boot (it exits instantly when nothing is due).
 DefaultDependencies=no
 After=local-fs.target systemd-sysusers.service
 Before=sysinit.target sddm.service display-manager.service systemd-user-sessions.service
-ConditionPathExists=/var/home/armada
 
 [Service]
 Type=oneshot
