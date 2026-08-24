@@ -1,5 +1,5 @@
 import { ButtonItem, Field, PanelSection, PanelSectionRow } from "@decky/ui";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import {
   getSystemMonitor,
@@ -8,7 +8,7 @@ import {
   setStickLedNotifyColor as applyStickLedNotifyColor,
 } from "../backend";
 import { ColorPicker } from "../components/ColorPicker";
-import { OpenFullScreenButton, ToggleRow } from "../components/widgets";
+import { Collapsible, OpenFullScreenButton, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import { showSteamKeyboard } from "../lib/osk";
 import type { Config, SystemMonitor } from "../types";
@@ -118,6 +118,41 @@ export function Home({ config, setConfig, qam }: { config: Config; setConfig: Di
           </ButtonItem>
         </PanelSectionRow>
       </PanelSection>
+      {/* Static cheat-sheet of the hotkeys that actually exist on the
+          console (nebel-game-hotkeys in game mode, nebel-desktop-hotkeys
+          in Plasma, InputPlumber QuickAccess button/chord). No rebinding -
+          reference only. Collapsed by default to keep the QAM short. */}
+      <PanelSection title={t("Hotkeys")}>
+        <PanelSectionRow>
+          <Collapsible label={t("Show hotkeys")}>
+            {HOTKEYS.map((row, index) => (
+              <Fragment key={index}>
+                {(index === 0 || HOTKEYS[index - 1].mode !== row.mode) && <Field label={t(row.mode)} />}
+                <Field label={t(row.action)} description={row.combo} />
+              </Fragment>
+            ))}
+          </Collapsible>
+        </PanelSectionRow>
+      </PanelSection>
     </>
   );
 }
+
+// Physical button names (Home/Back/D-Pad/Start/Select) stay untranslated -
+// they are what is printed on the device.
+const HOTKEYS: { mode: string; action: string; combo: string }[] = [
+  // Game mode: nebel-game-hotkeys daemon + the InputPlumber QuickAccess
+  // mapping (dedicated Back button; Guide+A chord on the Flip2, which has
+  // no such button).
+  { mode: "Game mode", action: "On-screen keyboard", combo: "Home + X" },
+  { mode: "Game mode", action: "Quick Access Menu", combo: "Back · Home + A (Flip2)" },
+  // Desktop mode: system_files/usr/libexec/nebel/nebel-desktop-hotkeys.
+  { mode: "Desktop mode", action: "On-screen keyboard", combo: "Home + X" },
+  { mode: "Desktop mode", action: "Screenshot", combo: "Home + Y" },
+  { mode: "Desktop mode", action: "Overview / activities", combo: "Home + A" },
+  { mode: "Desktop mode", action: "Escape", combo: "Home + B" },
+  { mode: "Desktop mode", action: "Volume", combo: "Home + D-Pad ↑ / ↓" },
+  { mode: "Desktop mode", action: "Brightness", combo: "Home + D-Pad ← / →" },
+  { mode: "Desktop mode", action: "F12", combo: "Home + Start" },
+  { mode: "Desktop mode", action: "Menu key", combo: "Home + Select" },
+];

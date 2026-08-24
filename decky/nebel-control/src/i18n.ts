@@ -249,6 +249,17 @@ const uk: Dictionary = {
   "Failed to add shortcut": "Не вдалося додати ярлик",
   "Keyboard": "Клавіатура",
   "On-screen keyboard": "Екранна клавіатура",
+  "Hotkeys": "Гарячі клавіші",
+  "Show hotkeys": "Показати гарячі клавіші",
+  "Game mode": "Ігровий режим",
+  "Desktop mode": "Режим робочого столу",
+  "Quick Access Menu": "Меню швидкого доступу",
+  "Screenshot": "Знімок екрана",
+  "Overview / activities": "Огляд / активності",
+  "Escape": "Escape",
+  "Volume": "Гучність",
+  "Brightness": "Яскравість",
+  "Menu key": "Клавіша меню",
 };
 
 const ru: Dictionary = {
@@ -494,6 +505,17 @@ const ru: Dictionary = {
   "Failed to add shortcut": "Не удалось добавить ярлык",
   "Keyboard": "Клавиатура",
   "On-screen keyboard": "Экранная клавиатура",
+  "Hotkeys": "Горячие клавиши",
+  "Show hotkeys": "Показать горячие клавиши",
+  "Game mode": "Игровой режим",
+  "Desktop mode": "Режим рабочего стола",
+  "Quick Access Menu": "Меню быстрого доступа",
+  "Screenshot": "Снимок экрана",
+  "Overview / activities": "Обзор / активности",
+  "Escape": "Escape",
+  "Volume": "Громкость",
+  "Brightness": "Яркость",
+  "Menu key": "Клавиша меню",
 };
 
 const es: Dictionary = {
@@ -739,6 +761,17 @@ const es: Dictionary = {
   "Failed to add shortcut": "No se pudo añadir el acceso directo",
   "Keyboard": "Teclado",
   "On-screen keyboard": "Teclado en pantalla",
+  "Hotkeys": "Atajos",
+  "Show hotkeys": "Mostrar atajos",
+  "Game mode": "Modo de juego",
+  "Desktop mode": "Modo escritorio",
+  "Quick Access Menu": "Menú de acceso rápido",
+  "Screenshot": "Captura de pantalla",
+  "Overview / activities": "Vista general / actividades",
+  "Escape": "Escape",
+  "Volume": "Volumen",
+  "Brightness": "Brillo",
+  "Menu key": "Tecla de menú",
 };
 
 const fr: Dictionary = {
@@ -984,6 +1017,17 @@ const fr: Dictionary = {
   "Failed to add shortcut": "Échec de l'ajout du raccourci",
   "Keyboard": "Clavier",
   "On-screen keyboard": "Clavier à l'écran",
+  "Hotkeys": "Raccourcis",
+  "Show hotkeys": "Afficher les raccourcis",
+  "Game mode": "Mode jeu",
+  "Desktop mode": "Mode bureau",
+  "Quick Access Menu": "Menu d'accès rapide",
+  "Screenshot": "Capture d'écran",
+  "Overview / activities": "Vue d'ensemble / activités",
+  "Escape": "Échap",
+  "Volume": "Volume",
+  "Brightness": "Luminosité",
+  "Menu key": "Touche menu",
 };
 
 const dictionaries: Partial<Record<Locale, Dictionary>> = { uk, ru, es, fr };

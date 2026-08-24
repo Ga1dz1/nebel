@@ -356,6 +356,17 @@ const uk = {
     "Failed to add shortcut": "Не вдалося додати ярлик",
     "Keyboard": "Клавіатура",
     "On-screen keyboard": "Екранна клавіатура",
+    "Hotkeys": "Гарячі клавіші",
+    "Show hotkeys": "Показати гарячі клавіші",
+    "Game mode": "Ігровий режим",
+    "Desktop mode": "Режим робочого столу",
+    "Quick Access Menu": "Меню швидкого доступу",
+    "Screenshot": "Знімок екрана",
+    "Overview / activities": "Огляд / активності",
+    "Escape": "Escape",
+    "Volume": "Гучність",
+    "Brightness": "Яскравість",
+    "Menu key": "Клавіша меню",
 };
 const ru = {
     "Loading": "Загрузка",
@@ -600,6 +611,17 @@ const ru = {
     "Failed to add shortcut": "Не удалось добавить ярлык",
     "Keyboard": "Клавиатура",
     "On-screen keyboard": "Экранная клавиатура",
+    "Hotkeys": "Горячие клавиши",
+    "Show hotkeys": "Показать горячие клавиши",
+    "Game mode": "Игровой режим",
+    "Desktop mode": "Режим рабочего стола",
+    "Quick Access Menu": "Меню быстрого доступа",
+    "Screenshot": "Снимок экрана",
+    "Overview / activities": "Обзор / активности",
+    "Escape": "Escape",
+    "Volume": "Громкость",
+    "Brightness": "Яркость",
+    "Menu key": "Клавиша меню",
 };
 const es = {
     "Loading": "Cargando",
@@ -844,6 +866,17 @@ const es = {
     "Failed to add shortcut": "No se pudo añadir el acceso directo",
     "Keyboard": "Teclado",
     "On-screen keyboard": "Teclado en pantalla",
+    "Hotkeys": "Atajos",
+    "Show hotkeys": "Mostrar atajos",
+    "Game mode": "Modo de juego",
+    "Desktop mode": "Modo escritorio",
+    "Quick Access Menu": "Menú de acceso rápido",
+    "Screenshot": "Captura de pantalla",
+    "Overview / activities": "Vista general / actividades",
+    "Escape": "Escape",
+    "Volume": "Volumen",
+    "Brightness": "Brillo",
+    "Menu key": "Tecla de menú",
 };
 const fr = {
     "Loading": "Chargement",
@@ -1088,6 +1121,17 @@ const fr = {
     "Failed to add shortcut": "Échec de l'ajout du raccourci",
     "Keyboard": "Clavier",
     "On-screen keyboard": "Clavier à l'écran",
+    "Hotkeys": "Raccourcis",
+    "Show hotkeys": "Afficher les raccourcis",
+    "Game mode": "Mode jeu",
+    "Desktop mode": "Mode bureau",
+    "Quick Access Menu": "Menu d'accès rapide",
+    "Screenshot": "Capture d'écran",
+    "Overview / activities": "Vue d'ensemble / activités",
+    "Escape": "Échap",
+    "Volume": "Volume",
+    "Brightness": "Luminosité",
+    "Menu key": "Touche menu",
 };
 const dictionaries = { uk, ru, es, fr };
 // CEF's navigator.language follows the Steam UI language in game mode, which
@@ -2850,8 +2894,26 @@ function Home({ config, setConfig, qam }) {
     ]
         .filter(Boolean)
         .join(" · ");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [qam && SP_JSX.jsx(OpenFullScreenButton, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Monitor"), children: mon && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: "CPU / GPU", description: `${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}` }), SP_JSX.jsx(DFL.Field, { label: t("Fan"), description: mon.fanPct != null ? `${mon.fanPct}%` : "—" }), SP_JSX.jsx(DFL.Field, { label: t("Battery"), description: batteryLine(mon) })] })) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Quick toggles"), children: [SP_JSX.jsx(ToggleRow, { label: t("FPS overlay (all games)"), description: t("Shows FPS in every game, incl. non-Steam. Applies after reboot."), value: !!mon?.overlayEnabled, onChange: setOverlay }), stickLed?.supported && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Notification flash"), description: t("Stick LEDs flash on notifications"), value: !!stickLed.notifyEnabled, onChange: setStickLedNotify$1 }), !qam && stickLed.notifyEnabled && (SP_JSX.jsx(ColorPicker, { label: t("Flash color"), hex: stickLed.notifyColor || "33AAFF", onChange: setStickLedNotifyColor$1 }))] }))] }), SP_JSX.jsx(DFL.PanelSection, { title: t("System"), children: SP_JSX.jsx(DFL.Field, { label: t("OS Version"), description: config.osVersion || t("unknown") }) }), SP_JSX.jsx(DFL.PanelSection, { title: t("Keyboard"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => showSteamKeyboard(), children: t("On-screen keyboard") }) }) })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [qam && SP_JSX.jsx(OpenFullScreenButton, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Monitor"), children: mon && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: "CPU / GPU", description: `${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}` }), SP_JSX.jsx(DFL.Field, { label: t("Fan"), description: mon.fanPct != null ? `${mon.fanPct}%` : "—" }), SP_JSX.jsx(DFL.Field, { label: t("Battery"), description: batteryLine(mon) })] })) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Quick toggles"), children: [SP_JSX.jsx(ToggleRow, { label: t("FPS overlay (all games)"), description: t("Shows FPS in every game, incl. non-Steam. Applies after reboot."), value: !!mon?.overlayEnabled, onChange: setOverlay }), stickLed?.supported && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Notification flash"), description: t("Stick LEDs flash on notifications"), value: !!stickLed.notifyEnabled, onChange: setStickLedNotify$1 }), !qam && stickLed.notifyEnabled && (SP_JSX.jsx(ColorPicker, { label: t("Flash color"), hex: stickLed.notifyColor || "33AAFF", onChange: setStickLedNotifyColor$1 }))] }))] }), SP_JSX.jsx(DFL.PanelSection, { title: t("System"), children: SP_JSX.jsx(DFL.Field, { label: t("OS Version"), description: config.osVersion || t("unknown") }) }), SP_JSX.jsx(DFL.PanelSection, { title: t("Keyboard"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => showSteamKeyboard(), children: t("On-screen keyboard") }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: t("Hotkeys"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(Collapsible, { label: t("Show hotkeys"), children: HOTKEYS.map((row, index) => (SP_JSX.jsxs(SP_REACT.Fragment, { children: [(index === 0 || HOTKEYS[index - 1].mode !== row.mode) && SP_JSX.jsx(DFL.Field, { label: t(row.mode) }), SP_JSX.jsx(DFL.Field, { label: t(row.action), description: row.combo })] }, index))) }) }) })] }));
 }
+// Physical button names (Home/Back/D-Pad/Start/Select) stay untranslated -
+// they are what is printed on the device.
+const HOTKEYS = [
+    // Game mode: nebel-game-hotkeys daemon + the InputPlumber QuickAccess
+    // mapping (dedicated Back button; Guide+A chord on the Flip2, which has
+    // no such button).
+    { mode: "Game mode", action: "On-screen keyboard", combo: "Home + X" },
+    { mode: "Game mode", action: "Quick Access Menu", combo: "Back · Home + A (Flip2)" },
+    // Desktop mode: system_files/usr/libexec/nebel/nebel-desktop-hotkeys.
+    { mode: "Desktop mode", action: "On-screen keyboard", combo: "Home + X" },
+    { mode: "Desktop mode", action: "Screenshot", combo: "Home + Y" },
+    { mode: "Desktop mode", action: "Overview / activities", combo: "Home + A" },
+    { mode: "Desktop mode", action: "Escape", combo: "Home + B" },
+    { mode: "Desktop mode", action: "Volume", combo: "Home + D-Pad ↑ / ↓" },
+    { mode: "Desktop mode", action: "Brightness", combo: "Home + D-Pad ← / →" },
+    { mode: "Desktop mode", action: "F12", combo: "Home + Start" },
+    { mode: "Desktop mode", action: "Menu key", combo: "Home + Select" },
+];
 
 // Small animated preview of the selected stick-lighting mode: four dots
 // arranged like the real HTR3212 LED ring (N/E/S/W, matching the actual
