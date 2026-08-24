@@ -30,6 +30,8 @@ export interface GameTweak {
   gameEra?: string;
   windowsVersion?: string;
   legacyRenderer?: string;
+  dxvkVersion?: string;
+  vkd3dVersion?: string;
   virtualDesktop?: string;
   memoryLimitMB?: number;
   gpuSpoof?: string;

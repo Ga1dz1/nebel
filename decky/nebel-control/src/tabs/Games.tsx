@@ -89,6 +89,17 @@ const gpuSpoofOptions = [
   { data: "gtx1060", label: "NVIDIA GeForce GTX 1060" },
   { data: "rx580", label: "AMD Radeon RX 580" },
 ];
+const dxvkVersionOptions = [
+  { data: "", label: t("Default (Proton's built-in)") },
+  { data: "dxvk-2.7.1", label: "DXVK 2.7.1" },
+  { data: "dxvk-sarek", label: "DXVK-Sarek" },
+  { data: "dxvk-async-1.10.3", label: "DXVK-async 1.10.3" },
+];
+const vkd3dVersionOptions = [
+  { data: "", label: t("Default (Proton's built-in)") },
+  { data: "vkd3d-2.14.1", label: "VKD3D-Proton 2.14.1" },
+  { data: "vkd3d-2.10", label: "VKD3D-Proton 2.10" },
+];
 const DEPENDENCY_VERBS = [
   { id: "d3dx9", label: "DirectX 9 Runtime" },
   { id: "physx", label: "NVIDIA PhysX" },
@@ -580,6 +591,19 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
                 options={gpuSpoofOptions}
                 onChange={(value) => patchSettings({ gpuSpoof: value || undefined })}
               />
+              <SelectEdit
+                label={t("DXVK version")}
+                value={String(values.dxvkVersion || "")}
+                options={dxvkVersionOptions}
+                onChange={(value) => patchSettings({ dxvkVersion: value || undefined })}
+              />
+              <SelectEdit
+                label={t("D3D12 (VKD3D) version")}
+                value={String(values.vkd3dVersion || "")}
+                options={vkd3dVersionOptions}
+                onChange={(value) => patchSettings({ vkd3dVersion: value || undefined })}
+              />
+              <div className="nebel-compat-note">{t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version")}</div>
               <ButtonItem layout="below" onClick={() => setShowThunks((value) => !value)}>
                 {showThunks ? t("Hide Host Thunks") : t("Host Thunks")}
               </ButtonItem>

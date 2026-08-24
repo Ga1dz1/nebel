@@ -8,6 +8,7 @@ cd /ctx/build_files
 ./20-install-kernel.sh
 ./30-install-steam-session.sh
 ./33-install-winetricks.sh
+./34-install-dxvk-versions.sh
 ./35-install-emulators.sh
 ./40-vendor-system-files.sh
 ./45-install-decky-plugins.sh

@@ -302,6 +302,130 @@ def apply_gpu_spoof(settings, env, wined3d):
         print(f"nebel-game-launch: GPU spoof skipped: {exc}", file=sys.stderr)
 
 
+# --- Per-game DXVK/VKD3D-Proton version overrides ---------------------------
+
+# nebel-control's "DXVK version"/"D3D12 (VKD3D) version" pickers: current
+# DXVK/VKD3D releases demand Vulkan features Turnip never exposes on Adreno
+# 6xx, so the image carries older/community builds under /usr/share/nebel and
+# the chosen build's dlls are copied into the game's prefix. "" (default)
+# keeps whatever Proton ships.
+GFX_LAYER_ROOT = {
+    "dxvk": pathlib.Path("/usr/share/nebel/dxvk"),
+    "vkd3d": pathlib.Path("/usr/share/nebel/vkd3d"),
+}
+GFX_STATE_NAME = ".nebel-gfx-override.json"
+GFX_ARCHES = (("x64", "system32"), ("x32", "syswow64"))
+
+
+def stock_gfx_dirs(kind):
+    """The compat tool's bundled dxvk/vkd3d dll dirs, as {"x64": ..., "x32": ...}.
+
+    Rollback source for overrides - copying these back restores exactly what
+    Proton shipped, so no in-prefix dll backups are kept. Layout differs
+    between Proton builds, so glob for the dir name under each libdir.
+    """
+    dirname = "dxvk" if kind == "dxvk" else "vkd3d-proton"
+    found = {}
+    for tool in os.environ.get("STEAM_COMPAT_TOOL_PATHS", "").split(":"):
+        files = pathlib.Path(tool) / "files" if tool else None
+        if files is None or not files.is_dir():
+            continue
+        for arch, libdir in (("x64", "lib64"), ("x32", "lib")):
+            if arch in found:
+                continue
+            candidate = files / libdir / "wine" / dirname
+            if not candidate.is_dir():
+                matches = sorted(files.glob(f"{libdir}/wine/**/{dirname}"))
+                candidate = matches[0] if matches else candidate
+            if candidate.is_dir():
+                found[arch] = candidate
+    return found
+
+
+def install_gfx_dlls(pfx, kind, sources, previous):
+    """Copy each arch's dlls into the prefix, dropping dlls only the previous
+    set carried. Missing individual dlls warn and the rest still installs."""
+    for arch, dest_name in GFX_ARCHES:
+        src = sources.get(arch)
+        dest = pfx / "drive_c" / "windows" / dest_name
+        if src is None or not src.is_dir():
+            print(f"nebel-game-launch: no {kind} {arch} dll source, skipping {dest_name}",
+                  file=sys.stderr)
+            continue
+        if not dest.is_dir():
+            print(f"nebel-game-launch: {dest} missing, skipping {kind} {arch}",
+                  file=sys.stderr)
+            continue
+        keep = {dll.name for dll in src.glob("*.dll")}
+        prev = (previous or {}).get(arch)
+        if prev is not None and prev.is_dir():
+            for old in prev.glob("*.dll"):
+                if old.name not in keep:
+                    (dest / old.name).unlink(missing_ok=True)
+        for dll in sorted(src.glob("*.dll")):
+            try:
+                shutil.copy2(dll, dest / dll.name)
+            except OSError as exc:
+                print(f"nebel-game-launch: failed to install {dll.name}: {exc}",
+                      file=sys.stderr)
+
+
+def apply_dxvk_override(pfx, settings):
+    """Install/revert per-game DXVK/VKD3D-Proton dll overrides in the prefix.
+
+    <pfx>/.nebel-gfx-override.json records {"dxvk": id|null, "vkd3d": id|null};
+    when the setting differs from the recorded state the selected build's dlls
+    are copied in (a version switch just copies the new build over), and going
+    back to default restores the compat tool's stock dlls.
+    """
+    state_path = pfx / GFX_STATE_NAME
+    try:
+        prior = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        prior = {}
+    if not isinstance(prior, dict):
+        prior = {}
+    new_state = {}
+    for kind, key in (("dxvk", "dxvkVersion"), ("vkd3d", "vkd3dVersion")):
+        wanted = settings.get(key)
+        wanted = wanted if isinstance(wanted, str) else ""
+        recorded = prior.get(kind)
+        recorded = recorded if isinstance(recorded, str) else ""
+        if wanted == recorded:
+            if wanted:
+                new_state[kind] = wanted
+            continue
+        previous = None
+        if recorded:
+            prev_root = GFX_LAYER_ROOT[kind] / recorded
+            previous = {arch: prev_root / arch for arch, _ in GFX_ARCHES}
+        if wanted:
+            root = GFX_LAYER_ROOT[kind] / wanted
+            if not root.is_dir():
+                print(f"nebel-game-launch: {kind} build '{wanted}' is not in this "
+                      f"OS image, keeping previous", file=sys.stderr)
+                if recorded:
+                    new_state[kind] = recorded
+                continue
+            sources = {arch: root / arch for arch, _ in GFX_ARCHES}
+        else:
+            sources = stock_gfx_dirs(kind)
+            if not sources:
+                print(f"nebel-game-launch: stock {kind} dlls not found in the "
+                      f"compat tool, leaving override in place", file=sys.stderr)
+                if recorded:
+                    new_state[kind] = recorded
+                continue
+        install_gfx_dlls(pfx, kind, sources, previous)
+        if wanted:
+            new_state[kind] = wanted
+    if new_state:
+        state_path.write_text(json.dumps(new_state, indent=2, sort_keys=True) + "\n",
+                              encoding="utf-8")
+    else:
+        state_path.unlink(missing_ok=True)
+
+
 def apply_memory_limit(settings):
     try:
         mb = int(settings.get("memoryLimitMB") or 0)
@@ -567,6 +691,12 @@ def main():
             sync_registry(pfx, settings, wined3d)
         except Exception as exc:
             print(f"nebel-game-launch: registry sync skipped: {exc}", file=sys.stderr)
+        if not wined3d:
+            # WineD3D replaces the whole D3D stack, so dll overrides are moot.
+            try:
+                apply_dxvk_override(pfx, settings)
+            except Exception as exc:
+                print(f"nebel-game-launch: graphics override skipped: {exc}", file=sys.stderr)
 
     try:
         apply_memory_limit(settings)

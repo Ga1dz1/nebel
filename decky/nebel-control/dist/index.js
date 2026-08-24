@@ -163,6 +163,10 @@ const uk = {
     "Memory Limit": "Обмеження пам’яті",
     "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Обмежує пам’ять, доступну грі, — останній засіб для дуже старих ігор; може спричинити збої сучасних",
     "GPU Spoof": "Підміна відеокарти",
+    "DXVK version": "Версія DXVK",
+    "D3D12 (VKD3D) version": "Версія D3D12 (VKD3D)",
+    "Default (Proton's built-in)": "Типова (вбудована в Proton)",
+    "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Старіші збірки можуть допомогти на відеокартах Adreno, де новіші DXVK/VKD3D не запускаються, — типово використовується версія, вбудована в Proton",
     "DEPENDENCIES": "ЗАЛЕЖНОСТІ",
     ".NET 3.5 (slow)": ".NET 3.5 (повільно)",
     "Install": "Встановити",
@@ -417,6 +421,10 @@ const ru = {
     "Memory Limit": "Ограничение памяти",
     "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Ограничивает память, доступную игре, — крайняя мера для очень старых игр; может ломать современные",
     "GPU Spoof": "Подмена видеокарты",
+    "DXVK version": "Версия DXVK",
+    "D3D12 (VKD3D) version": "Версия D3D12 (VKD3D)",
+    "Default (Proton's built-in)": "По умолчанию (встроенная в Proton)",
+    "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Старые сборки могут помочь на GPU Adreno, где новые DXVK/VKD3D не запускаются, — по умолчанию используется версия, встроенная в Proton",
     "DEPENDENCIES": "ЗАВИСИМОСТИ",
     ".NET 3.5 (slow)": ".NET 3.5 (медленно)",
     "Install": "Установить",
@@ -671,6 +679,10 @@ const es = {
     "Memory Limit": "Límite de memoria",
     "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Limita la memoria que el juego puede asignar: último recurso para títulos muy antiguos; puede bloquear juegos modernos",
     "GPU Spoof": "Suplantación de GPU",
+    "DXVK version": "Versión de DXVK",
+    "D3D12 (VKD3D) version": "Versión de D3D12 (VKD3D)",
+    "Default (Proton's built-in)": "Predeterminada (integrada en Proton)",
+    "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Las versiones antiguas pueden ayudar en GPU Adreno donde las nuevas DXVK/VKD3D no arrancan; la predeterminada es la integrada en Proton",
     "DEPENDENCIES": "DEPENDENCIAS",
     ".NET 3.5 (slow)": ".NET 3.5 (lento)",
     "Install": "Instalar",
@@ -925,6 +937,10 @@ const fr = {
     "Memory Limit": "Limite de mémoire",
     "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Limite la mémoire que le jeu peut allouer — dernier recours pour les très anciens titres ; peut planter les jeux modernes",
     "GPU Spoof": "Usurpation de GPU",
+    "DXVK version": "Version de DXVK",
+    "D3D12 (VKD3D) version": "Version de D3D12 (VKD3D)",
+    "Default (Proton's built-in)": "Par défaut (intégrée à Proton)",
+    "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Les versions anciennes peuvent aider sur les GPU Adreno où les DXVK/VKD3D récents refusent de démarrer ; par défaut, la version intégrée à Proton est utilisée",
     "DEPENDENCIES": "DÉPENDANCES",
     ".NET 3.5 (slow)": ".NET 3.5 (lent)",
     "Install": "Installer",
@@ -2123,6 +2139,17 @@ const gpuSpoofOptions = [
     { data: "gtx1060", label: "NVIDIA GeForce GTX 1060" },
     { data: "rx580", label: "AMD Radeon RX 580" },
 ];
+const dxvkVersionOptions = [
+    { data: "", label: t("Default (Proton's built-in)") },
+    { data: "dxvk-2.7.1", label: "DXVK 2.7.1" },
+    { data: "dxvk-sarek", label: "DXVK-Sarek" },
+    { data: "dxvk-async-1.10.3", label: "DXVK-async 1.10.3" },
+];
+const vkd3dVersionOptions = [
+    { data: "", label: t("Default (Proton's built-in)") },
+    { data: "vkd3d-2.14.1", label: "VKD3D-Proton 2.14.1" },
+    { data: "vkd3d-2.10", label: "VKD3D-Proton 2.10" },
+];
 const DEPENDENCY_VERBS = [
     { id: "d3dx9", label: "DirectX 9 Runtime" },
     { id: "physx", label: "NVIDIA PhysX" },
@@ -2520,7 +2547,7 @@ function Games({ config, setConfig, qam }) {
                                     patchSettings({ autoApplyCompat: enabled });
                                 } }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: perGameMode, options: perGameModeOptions, onChange: onSelectPerGameMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
-                                : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] }), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
+                                : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] }), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                     ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
                                     : null] }) }), !editingDefault && game?.appid ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
