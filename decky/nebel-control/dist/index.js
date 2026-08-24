@@ -2150,7 +2150,6 @@ const vkd3dVersionOptions = [
     { data: "vkd3d-3.0.1", label: "VKD3D-Proton 3.0.1" },
     { data: "vkd3d-3.0", label: "VKD3D-Proton 3.0" },
     { data: "vkd3d-2.14.1", label: "VKD3D-Proton 2.14.1" },
-    { data: "vkd3d-2.10", label: "VKD3D-Proton 2.10" },
 ];
 const DEPENDENCY_VERBS = [
     { id: "d3dx9", label: "DirectX 9 Runtime" },
