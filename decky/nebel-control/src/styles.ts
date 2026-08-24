@@ -141,7 +141,8 @@ export const styles = `
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
         pointer-events: none;
       }
-      .nebel-control-root .nebel-compat-note {
+      .nebel-control-root .nebel-compat-note,
+      .nebel-native .nebel-compat-note {
         box-sizing: border-box;
         width: 100%;
         padding: 8px 16px 8px;

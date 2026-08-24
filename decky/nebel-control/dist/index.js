@@ -1872,7 +1872,8 @@ const styles = `
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
         pointer-events: none;
       }
-      .nebel-control-root .nebel-compat-note {
+      .nebel-control-root .nebel-compat-note,
+      .nebel-native .nebel-compat-note {
         box-sizing: border-box;
         width: 100%;
         padding: 8px 16px 8px;
@@ -2218,7 +2219,7 @@ function ConfirmResetAllModal({ closeModal, onConfirm }) {
     };
     return (SP_JSX.jsxs(DFL.ModalRoot, { onCancel: closeModal, children: [SP_JSX.jsx(DFL.DialogBody, { children: t("This removes all per-game Nebel settings, resets resolution overrides, applies the default Proton where Steam selects Proton, and leaves native Linux selections with Steam.") }), SP_JSX.jsxs(DFL.DialogFooter, { children: [SP_JSX.jsx(DFL.DialogButton, { onClick: confirm, children: t("Reset All Games") }), SP_JSX.jsx(DFL.DialogButton, { onClick: closeModal, children: t("Cancel") })] })] }));
 }
-function Games({ config, setConfig, qam, lockedAppid }) {
+function Games({ config, setConfig, qam, lockedAppid, injected }) {
     const [resolution, setResolution] = SP_REACT.useState("Default");
     const [defaultResolution, setDefaultResolution] = SP_REACT.useState(getGlobalResolution());
     const [resolutionMessage, setResolutionMessage] = SP_REACT.useState("");
@@ -2233,6 +2234,10 @@ function Games({ config, setConfig, qam, lockedAppid }) {
     const games = availableGames(config);
     // lockedAppid: the injected Properties-page variant pins the editor to the
     // app whose Properties is open - no game picker, no "Default" target.
+    // injected: rendered inside Steam's own Properties -> Compatibility page,
+    // which already has Steam's compat-mode/tool pickers - so ours are hidden,
+    // and x86_64-only knobs (FEX, DXVK/VKD3D versions, thunks) appear only when
+    // the game actually resolves to an x86_64 tool.
     const selectedGame = lockedAppid
         ? gameRefFromAppid(lockedAppid)
         : config.selectedGame || runtimeGame || null;
@@ -2523,6 +2528,10 @@ function Games({ config, setConfig, qam, lockedAppid }) {
         const tool = currentTool === USE_DEFAULT_COMPAT ? globalTool : currentTool;
         return tool.toLowerCase().includes("arm64") ? "arm64" : "x86_64";
     })();
+    // Effective architecture for this game: an explicit per-game pick wins,
+    // "Follow Steam" resolves against the global default mode. Drives which
+    // knobs are meaningful in the injected view.
+    const isX86Mode = perGameMode === "x86_64" || (perGameMode === FOLLOW_STEAM_COMPAT && compatMode === "x86_64");
     const onSelectPerGameMode = async (choice) => {
         if (!game?.appid)
             return;
@@ -2574,11 +2583,11 @@ function Games({ config, setConfig, qam, lockedAppid }) {
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!lockedAppid && (SP_JSX.jsxs(DFL.PanelSection, { title: t("EDIT GAME PROFILE"), children: [SP_JSX.jsx(SelectEdit, { value: game?.appid || "", options: gameOptions, onChange: setSelectedGame }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Compatibility changes apply on next launch") })] })), SP_JSX.jsxs(DFL.PanelSection, { title: t("PROFILE SETTINGS"), children: [editingDefault ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: compatMode, options: compatModeOptions, onChange: onSelectCompatMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Default Proton"), value: globalTool, options: toolOptions, onChange: onSelectGlobalDefault }), SP_JSX.jsx(DFL.ToggleField, { label: t("Apply to New Games"), checked: tweaks.global.autoApplyCompat !== false, onChange: (enabled) => {
                                     setAutoApplyCompat(enabled);
                                     patchSettings({ autoApplyCompat: enabled });
-                                } }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: perGameMode, options: perGameModeOptions, onChange: onSelectPerGameMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
+                                } }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!injected && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: perGameMode, options: perGameModeOptions, onChange: onSelectPerGameMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool })] })), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
-                                : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] }), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
-                                    ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
-                                    : null] }) }), !editingDefault && game?.appid ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+                                : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
+                                            ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
+                                            : null] }))] }) }), !editingDefault && game?.appid ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
 // Per-game winetricks verbs ("Dependencies"): installs run in a backend
 // worker thread, so the UI polls deps_status while busy instead of blocking.
@@ -4030,15 +4039,62 @@ function useInjectedConfig() {
 // nebel-control-root, so the plugin stylesheet has to come along - otherwise
 // the shared widgets (slider rows, swatch grid, notes) render unstyled.
 function NativeStyles() {
-    return SP_JSX.jsx("style", { children: styles });
+    return SP_JSX.jsxs("style", { children: [styles, nativeSpacingOverrides()] });
+}
+// The injected blocks reuse the QuickAccessMenu-styled PanelSection inside
+// Steam's full-page settings, whose own groups are spaced differently: no
+// side inset (rows span the full content width and pad themselves), 24px
+// margin-top between groups, plain white 36px headers instead of the QAM's
+// small grey uppercase ones. These overrides (scoped to .nebel-native) make
+// the duplicates line up with the host page's own sections. Steam ships
+// several copies of the QAM CSS module and the hashes shift between client
+// builds, so collect every module exposing the semantic keys and target all
+// of them, plus the tested client's hashes as a fallback.
+const QAM_CLASS_FALLBACK = {
+    PanelSection: "_3gY0aBuNR8_NPTpXIYfkby",
+    PanelSectionTitle: "_1IigUZ3GHaZS2Y-3V3T2rT",
+};
+function qamClasses(key) {
+    const found = new Set([QAM_CLASS_FALLBACK[key]]);
+    try {
+        for (const mod of DFL.classMap) {
+            const value = mod?.[key];
+            if (typeof value === "string" && value)
+                found.add(value);
+        }
+    }
+    catch (error) {
+    }
+    return Array.from(found);
+}
+function nativeSpacingOverrides() {
+    const selector = (key) => qamClasses(key).map((cls) => `.nebel-native .${cls}`).join(", ");
+    return `
+      ${selector("PanelSection")} {
+        padding-left: 0;
+        padding-right: 0;
+        margin: 24px 0 0;
+      }
+      ${qamClasses("PanelSection").map((cls) => `.nebel-native .${cls}:first-of-type`).join(", ")} {
+        margin: 24px 0 0;
+      }
+      ${selector("PanelSectionTitle")} {
+        padding-bottom: 0;
+        line-height: 36px;
+        color: rgb(220, 222, 223);
+        font-weight: 500;
+        letter-spacing: normal;
+        text-transform: none;
+      }
+    `;
 }
 
 // The sections duplicated into Steam's own settings pages. Each one renders
 // the corresponding plugin tab as-is (same components, same python backend
 // calls - the injected UI is a pure frontend addition) inside the native
-// page's content panel. Blocks with more than a couple of controls sit in a
-// spoiler (Collapsible) so the host page stays tidy; spoilers start open so
-// the duplication is discoverable, and collapse state is per-mount.
+// page's content panel, without an extra spoiler around it: the tabs already
+// group their controls into titled PanelSections that read like the host
+// page's own groups.
 function MissingConfig({ message }) {
     return (SP_JSX.jsx(DFL.PanelSection, { title: "Nebel", children: SP_JSX.jsx(DFL.Field, { label: message }) }));
 }
@@ -4047,28 +4103,29 @@ function ControllerLightingSection() {
     const { config, setConfig, message } = useInjectedConfig();
     if (!config)
         return SP_JSX.jsx(MissingConfig, { message: message });
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Collapsible, { label: t("Nebel: Stick Lighting"), defaultOpen: true, children: SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig }) })] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig })] }));
 }
 // Settings -> Power: fan curve / CPU-GPU limits (Power tab).
 function PowerLimitsSection() {
     const { config, setConfig, message } = useInjectedConfig();
     if (!config)
         return SP_JSX.jsx(MissingConfig, { message: message });
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Collapsible, { label: t("Nebel: Power Profile"), defaultOpen: true, children: SP_JSX.jsx(Power, { config: config, setConfig: setConfig }) })] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Power, { config: config, setConfig: setConfig })] }));
 }
-// Settings -> Display: external display (Display tab). Small enough to render
-// without a spoiler of its own - it is a single titled group already.
+// Settings -> Display: external display (Display tab).
 function ExternalDisplaySection() {
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Display, {})] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Display, {})] }));
 }
 // Game page -> Properties (gear): per-game tweaks for the app whose
 // Properties page is open (Games tab locked to that appid - works for Steam
-// games and non-Steam shortcuts alike, tweaks are keyed by appid).
+// games and non-Steam shortcuts alike, tweaks are keyed by appid). The
+// injected variant hides the pickers Steam's own Compatibility page already
+// provides and shows x86_64-only knobs only when they apply.
 function GameTweaksSection({ appid }) {
     const { config, setConfig, message } = useInjectedConfig();
     if (!config)
         return SP_JSX.jsx(MissingConfig, { message: message });
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Collapsible, { label: t("Nebel: Game Tweaks"), defaultOpen: true, children: SP_JSX.jsx(Games, { config: config, setConfig: setConfig, lockedAppid: appid }) })] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Games, { config: config, setConfig: setConfig, lockedAppid: appid, injected: true })] }));
 }
 
 // Duplicates Nebel Control's management UI into Steam's own settings pages

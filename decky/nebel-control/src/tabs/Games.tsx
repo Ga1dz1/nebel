@@ -156,7 +156,7 @@ function ConfirmResetAllModal({ closeModal, onConfirm }: { closeModal?: () => vo
   );
 }
 
-export function Games({ config, setConfig, qam, lockedAppid }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>>; qam?: boolean; lockedAppid?: string }) {
+export function Games({ config, setConfig, qam, lockedAppid, injected }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>>; qam?: boolean; lockedAppid?: string; injected?: boolean }) {
   const [resolution, setResolution] = useState("Default");
   const [defaultResolution, setDefaultResolution] = useState(getGlobalResolution());
   const [resolutionMessage, setResolutionMessage] = useState("");
@@ -173,6 +173,10 @@ export function Games({ config, setConfig, qam, lockedAppid }: { config: Config;
   const games = availableGames(config);
   // lockedAppid: the injected Properties-page variant pins the editor to the
   // app whose Properties is open - no game picker, no "Default" target.
+  // injected: rendered inside Steam's own Properties -> Compatibility page,
+  // which already has Steam's compat-mode/tool pickers - so ours are hidden,
+  // and x86_64-only knobs (FEX, DXVK/VKD3D versions, thunks) appear only when
+  // the game actually resolves to an x86_64 tool.
   const selectedGame = lockedAppid
     ? gameRefFromAppid(lockedAppid)
     : config.selectedGame || runtimeGame || null;
@@ -432,6 +436,10 @@ export function Games({ config, setConfig, qam, lockedAppid }: { config: Config;
     const tool = currentTool === USE_DEFAULT_COMPAT ? globalTool : currentTool;
     return tool.toLowerCase().includes("arm64") ? "arm64" : "x86_64";
   })();
+  // Effective architecture for this game: an explicit per-game pick wins,
+  // "Follow Steam" resolves against the global default mode. Drives which
+  // knobs are meaningful in the injected view.
+  const isX86Mode = perGameMode === "x86_64" || (perGameMode === FOLLOW_STEAM_COMPAT && compatMode === "x86_64");
   const onSelectPerGameMode = async (choice: any) => {
     if (!game?.appid) return;
     const mode = String(choice);
@@ -528,8 +536,12 @@ export function Games({ config, setConfig, qam, lockedAppid }: { config: Config;
           </>
         ) : (
           <>
-            <SelectEdit labelBelow label={t("Compatibility Mode")} value={perGameMode} options={perGameModeOptions} onChange={onSelectPerGameMode} />
-            <SelectEdit labelBelow label={t("Compatibility Tool")} value={currentTool} options={perGameToolOptions} onChange={onSelectPerGameTool} />
+            {!injected && (
+              <>
+                <SelectEdit labelBelow label={t("Compatibility Mode")} value={perGameMode} options={perGameModeOptions} onChange={onSelectPerGameMode} />
+                <SelectEdit labelBelow label={t("Compatibility Tool")} value={currentTool} options={perGameToolOptions} onChange={onSelectPerGameTool} />
+              </>
+            )}
             <SelectEdit
               labelBelow
               label={t("Game Era")}
@@ -544,7 +556,7 @@ export function Games({ config, setConfig, qam, lockedAppid }: { config: Config;
           </>
         )}
         {resolutionMessage ? <Field label={t("Status")} description={resolutionMessage} /> : null}
-        {!qam && (
+        {!qam && (!injected || isX86Mode) && (
           <>
             <SelectEdit label={t("FEX Preset")} value={fexValue} options={fexOptions} onChange={onSelectFex} />
             {isCustom
@@ -565,6 +577,7 @@ export function Games({ config, setConfig, qam, lockedAppid }: { config: Config;
                 options={cpuAffinityOptions}
                 onChange={(value) => patchSettings({ cores: value || undefined })}
               />
+              {(!injected || values.gameEra === "xp") && (
               <Collapsible label={t("Old games (legacy Windows)")}>
                 <SelectEdit
                   label={t("Windows Version (reported)")}
@@ -592,12 +605,15 @@ export function Games({ config, setConfig, qam, lockedAppid }: { config: Config;
                 />
                 <div className="nebel-compat-note">{t("Caps memory the game can allocate - last resort for very old titles; can crash modern games")}</div>
               </Collapsible>
+              )}
               <SelectEdit
                 label={t("GPU Spoof")}
                 value={String(values.gpuSpoof || "")}
                 options={gpuSpoofOptions}
                 onChange={(value) => patchSettings({ gpuSpoof: value || undefined })}
               />
+              {(!injected || isX86Mode) && (
+              <>
               <SelectEdit
                 label={t("DXVK version")}
                 value={String(values.dxvkVersion || "")}
@@ -619,6 +635,8 @@ export function Games({ config, setConfig, qam, lockedAppid }: { config: Config;
                     <ToggleField key={thunk.module} label={thunk.label} checked={thunks[thunk.module] !== false} onChange={(value) => setThunk(thunk.module, value)} />
                   ))
                 : null}
+              </>
+              )}
             </Collapsible>
           </PanelSection>
           {!editingDefault && game?.appid ? (
