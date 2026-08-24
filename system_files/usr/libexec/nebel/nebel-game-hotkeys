@@ -9,9 +9,11 @@ pad's Guide+X never opens anything. This daemon watches the raw gamepad
 on-screen keyboard through the CEF remote debugging interface that
 launch-steam enables (.cef-enable-remote-debugging -> localhost:8080).
 
-The chord is deliberately NOT consumed: events still reach Steam untouched,
-and the keyboard is only opened when it is not already showing, so a working
-native chord can never be double-toggled shut by us.
+The chord is deliberately NOT consumed: events still reach Steam untouched.
+The keyboard opens on chord RELEASE (see OskChord), so by the time it shows
+up no chord button is held and nothing can leak into it; it is also only
+opened when not already showing, so a working native chord can never be
+double-toggled shut by us.
 
 Chords (Home + button), game mode only:
   X (West) -> Steam modal on-screen keyboard
@@ -34,7 +36,6 @@ INPUT_EVENT_SIZE = struct.calcsize(INPUT_EVENT_FMT)
 
 GAMEPAD_NAMES = ("Retroid Pocket Gamepad", "AYN Odin2 Gamepad")
 
-CHORD_HOLD_MS = 300
 POLL_INTERVAL_S = 0.05
 CEF_URL = "http://localhost:8080/json/list"
 
@@ -211,12 +212,55 @@ def open_steam_keyboard():
     print(f"game-hotkeys: OSK chord -> {result}", flush=True)
 
 
+class OskChord:
+    """One OSK open per full chord cycle, fired on release.
+
+    The Retroid MCU flickers: a held button can emit release/press pairs,
+    and the previous edge-triggered logic re-armed on any such flicker,
+    re-opening the keyboard a dozen times per press. This machine instead:
+
+    - engages once when Home and X are down together;
+    - fires exactly once, when the chord STARTS to disengage (either button
+      released) - by then no chord button is held anymore, so the events
+      that already leaked through to Steam did so before the keyboard
+      existed and cannot disturb it, and nothing chord-related flows
+      afterwards (which is also why no evdev grab/consume is needed);
+    - cannot re-engage until BOTH buttons are fully released, and not
+      sooner than DEBOUNCE_S after the last fire.
+    """
+
+    DEBOUNCE_S = 0.4
+
+    def __init__(self):
+        self.engaged = False       # Home+X were seen down together
+        self.was_engaged = False   # blocks re-engage until full release
+        self.cooldown_until = 0.0
+
+    def reset(self):
+        self.engaged = False
+        self.was_engaged = False
+
+    def feed(self, home_down, x_down):
+        """Returns True exactly once per chord cycle, on disengage."""
+        both = home_down and x_down
+        if both and not self.was_engaged:
+            if time.monotonic() >= self.cooldown_until:
+                self.engaged = True
+            self.was_engaged = True
+        if self.engaged and not both:
+            self.engaged = False
+            self.cooldown_until = time.monotonic() + self.DEBOUNCE_S
+            return True
+        if not home_down and not x_down:
+            self.was_engaged = False
+        return False
+
+
 class GamepadReader:
     def __init__(self):
         self.fd = None
         self.buttons = set()
-        self.home_pressed_at = None
-        self.chord_fired = False
+        self.chord = OskChord()
 
     def open(self):
         path = find_gamepad()
@@ -236,26 +280,31 @@ class GamepadReader:
                 pass
             self.fd = None
         self.buttons.clear()
-        self.home_pressed_at = None
-        self.chord_fired = False
+        self.chord.reset()
 
     def poll(self):
+        """Drains pending events; returns True when the OSK chord fired."""
+        fired = False
         if self.fd is None:
-            return
+            return False
         try:
             while select.select([self.fd], [], [], 0)[0]:
                 chunk = os.read(self.fd, INPUT_EVENT_SIZE)
                 if len(chunk) != INPUT_EVENT_SIZE:
                     break
                 _, _, ev_type, code, value = struct.unpack(INPUT_EVENT_FMT, chunk)
-                if ev_type != EV_KEY:
+                if ev_type != EV_KEY or value == 2:  # skip autorepeat
                     continue
                 if value == 1:
                     self.buttons.add(code)
-                elif value == 0:
+                else:
                     self.buttons.discard(code)
+                if code in (BTN_MODE, BTN_WEST) and self.chord.feed(
+                        BTN_MODE in self.buttons, BTN_WEST in self.buttons):
+                    fired = True
         except OSError:
             self.close()
+        return fired
 
 
 def run():
@@ -269,31 +318,11 @@ def run():
             time.sleep(POLL_INTERVAL_S)
             continue
 
-        reader.poll()
-
-        # One shot per chord press; re-arm once X is released.
-        if BTN_WEST not in reader.buttons:
-            reader.chord_fired = False
-
-        if BTN_MODE in reader.buttons and reader.home_pressed_at is None:
-            reader.home_pressed_at = time.time()
-
-        if reader.home_pressed_at is not None:
-            elapsed = (time.time() - reader.home_pressed_at) * 1000
-            chord_buttons = reader.buttons - {BTN_MODE}
-            if chord_buttons:
-                if BTN_WEST in chord_buttons and not reader.chord_fired:
-                    reader.chord_fired = True
-                    try:
-                        open_steam_keyboard()
-                    except Exception as error:
-                        print(f"game-hotkeys: OSK chord failed: {error}", flush=True)
-                reader.home_pressed_at = None
-            elif BTN_MODE not in reader.buttons:
-                reader.home_pressed_at = None
-            elif elapsed > CHORD_HOLD_MS:
-                # Home held alone too long; it belongs to Steam now.
-                reader.home_pressed_at = None
+        if reader.poll():
+            try:
+                open_steam_keyboard()
+            except Exception as error:
+                print(f"game-hotkeys: OSK chord failed: {error}", flush=True)
 
         time.sleep(POLL_INTERVAL_S)
 
