@@ -2,9 +2,12 @@
 # Game launch-option prefix wrapper ("nebel-game-launch %command%"). Applies
 # per-game settings via FEX_APP_CONFIG, the only knob every compat tool's FEX reads
 # (the on-disk FEX config files are seen only by the system FEX, not arm64ec/wow64).
+# Also patches the Wine prefix registry (Windows version, virtual desktop,
+# WineD3D GPU identity), sets renderer/memory env and CPU affinity for old games.
 import json
 import os
 import pathlib
+import resource
 import shutil
 import sys
 import time
@@ -74,14 +77,24 @@ def thunk_settings(settings, modules):
 # own SM8250 quirk profile uses (SLOW_CORES="taskset -c 0-3", FAST_CORES=
 # "taskset -c 4-7"). "big" pins emulation-heavy work off the slow cluster
 # entirely instead of leaving the scheduler free to place it anywhere.
+# "one"/"two" cap core *count* on the fast cluster: old games break from
+# too many threads (race conditions, timing loops calibrated for 1-2 cores).
 CORE_SETS = {
     "little": {0, 1, 2, 3},
     "big": {4, 5, 6, 7},
+    "one": {4},
+    "two": {4, 5},
 }
+
+
+def legacy_era(settings):
+    return settings.get("gameEra") or ""
 
 
 def apply_cpu_affinity(settings):
     cores = settings.get("cores")
+    if not cores and legacy_era(settings) == "xp":
+        cores = "two"  # era preset: old engines break on 8 threads
     core_set = CORE_SETS.get(cores)
     if not core_set:
         return
@@ -193,6 +206,294 @@ def repair_wedged_controller():
           f"({pad_sections} pad sections)", file=sys.stderr)
 
 
+# --- Old games: legacy Windows version, renderer, memory, GPU spoof ------
+
+# Wine's own version switch: ntdll answers RtlGetVersion from HKCU\Software\Wine
+# "Version" (what most games query), the HKLM NT values cover games that read
+# the registry directly. Key layout verified against a live Proton prefix
+# (system.reg/user.reg under steamapps/compatdata/<appid>/pfx).
+XP_NT_CURRENT_VERSION = {
+    "CurrentVersion": '"5.1"',
+    "ProductName": '"Microsoft Windows XP"',
+    "CurrentBuild": '"2600"',
+    "CurrentBuildNumber": '"2600"',
+    "CSDVersion": '"Service Pack 3"',
+    "CurrentMajorVersionNumber": "dword:00000005",
+    "CurrentMinorVersionNumber": "dword:00000001",
+}
+
+# (PCI vendor, PCI device, DXGI/wined3d-reported name). Steam Deck's VanGogh
+# is what Proton-on-Deck titles expect; NVIDIA/AMD presets satisfy games that
+# refuse to run on an unrecognized GPU.
+GPU_SPOOFS = {
+    "steamdeck": (0x1002, 0x163F, "AMD Custom GPU 0405 (RADV VANGOGH)"),
+    "gtx1060": (0x10DE, 0x1C03, "NVIDIA GeForce GTX 1060 6GB"),
+    "rx580": (0x1002, 0x67DF, "Radeon RX 580 Series"),
+}
+
+REG_STATE_NAME = ".nebel-registry-state.json"
+
+
+def windows_version_setting(settings):
+    value = settings.get("windowsVersion") or "auto"
+    if value == "auto":
+        return "winxp" if legacy_era(settings) == "xp" else "default"
+    return value
+
+
+def use_wined3d(settings):
+    value = settings.get("legacyRenderer") or "auto"
+    if value == "auto":
+        value = "on" if legacy_era(settings) == "xp" else "off"
+    return value == "on"
+
+
+def apply_renderer(settings, env):
+    explicit = settings.get("legacyRenderer") or "auto"
+    if use_wined3d(settings):
+        # DXVK covers D3D8-12; D3D1-7 (ddraw-era) renders wrong or not at all
+        # through it, so XP-era titles get WineD3D for everything.
+        env["PROTON_USE_WINED3D"] = "1"
+    elif explicit == "off":
+        env.pop("PROTON_USE_WINED3D", None)
+
+
+def apply_gpu_spoof(settings, env, wined3d):
+    spoof = GPU_SPOOFS.get(settings.get("gpuSpoof") or "")
+    if not spoof or wined3d or env.get("DXVK_CONFIG_FILE"):
+        return  # wined3d spoofs via the registry; a user config file wins
+    vendor, device, name = spoof
+    text = (f"dxvk.customVendorId = {vendor:x}\n"
+            f"dxvk.customDeviceId = {device:x}\n"
+            f"dxvk.customDeviceName = {name}\n")
+    # DXVK reads this inside pressure-vessel, so prefer the compatdata dir -
+    # it is bind-mounted into the container, XDG_RUNTIME_DIR is not.
+    data_path = os.environ.get("STEAM_COMPAT_DATA_PATH")
+    target_dir = pathlib.Path(data_path) if data_path else runtime_config_dir()
+    try:
+        target_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        target = target_dir / "nebel-dxvk.conf"
+        target.write_text(text, encoding="utf-8")
+        env["DXVK_CONFIG_FILE"] = str(target)
+    except OSError as exc:
+        print(f"nebel-game-launch: GPU spoof skipped: {exc}", file=sys.stderr)
+
+
+def apply_memory_limit(settings):
+    try:
+        mb = int(settings.get("memoryLimitMB") or 0)
+    except (TypeError, ValueError):
+        return
+    if mb <= 0:
+        return
+    # Wine has no knob for *reported* RAM (GlobalMemoryStatusEx comes straight
+    # from sysinfo(2)), so this caps the address space instead: old games that
+    # crash on >2GB reported RAM usually also misbehave allocating past their
+    # expectations. RLIMIT_AS counts virtual reservations - FEX/DXVK map many
+    # GB up front, so small limits can break modern titles; last-resort knob.
+    limit = mb * 1024 * 1024
+    resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+
+
+def pfx_dir():
+    data_path = os.environ.get("STEAM_COMPAT_DATA_PATH")
+    if not data_path:
+        return None
+    pfx = pathlib.Path(data_path) / "pfx"
+    return pfx if pfx.is_dir() else None
+
+
+def managed_registry_entries(settings, wined3d):
+    # (reg file, section, value name, desired text, create missing section)
+    entries = []
+    if windows_version_setting(settings) == "winxp":
+        nt = r"Software\\Microsoft\\Windows NT\\CurrentVersion"
+        for name, value in XP_NT_CURRENT_VERSION.items():
+            entries.append(("system.reg", nt, name, value, False))
+        # 0x300 = Service Pack 3; Proton reg files carry ControlSet001 only,
+        # but patch any control set that happens to exist.
+        for cs in ("ControlSet001", "ControlSet002"):
+            entries.append(("system.reg", rf"System\\{cs}\\Control\\Windows",
+                            "CSDVersion", "dword:00000300", False))
+        entries.append(("user.reg", r"Software\\Wine", "Version", '"winxp"', True))
+    desktop = settings.get("virtualDesktop") or ""
+    if desktop:
+        entries.append(("user.reg", r"Software\\Wine\\Explorer", "Desktop", '"Default"', True))
+        entries.append(("user.reg", r"Software\\Wine\\Explorer\\Desktops",
+                        "Default", f'"{desktop}"', True))
+    spoof = GPU_SPOOFS.get(settings.get("gpuSpoof") or "")
+    if spoof and wined3d:
+        vendor, device, _name = spoof
+        entries.append(("user.reg", r"Software\\Wine\\Direct3D",
+                        "VideoPciVendorID", f"dword:{vendor:08x}", True))
+        entries.append(("user.reg", r"Software\\Wine\\Direct3D",
+                        "VideoPciDeviceID", f"dword:{device:08x}", True))
+    return entries
+
+
+def section_ranges(lines):
+    ranges = []
+    start = None
+    for i, line in enumerate(lines):
+        if line.startswith("["):
+            if start is not None:
+                ranges.append((start, i))
+            start = i
+    if start is not None:
+        ranges.append((start, len(lines)))
+    return ranges
+
+
+def find_section(lines, name):
+    # header lines carry a trailing write timestamp: "[Software\\Wine] 1787473732"
+    for start, end in section_ranges(lines):
+        header = lines[start]
+        if header.startswith("[") and header[1:].split("]", 1)[0] == name:
+            return start, end
+    return None
+
+
+def sync_registry(pfx, settings, wined3d):
+    """Apply/revert managed registry values, keeping originals for rollback.
+
+    Every value we touch is recorded in <pfx>/.nebel-registry-state.json with
+    its previous line; when a setting goes back to default the next launch
+    restores the original text (or removes values/sections we created).
+    """
+    state_path = pfx / REG_STATE_NAME
+    try:
+        prior = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        prior = {}
+    wanted = {}
+    for reg_file, section, name, value, create in managed_registry_entries(settings, wined3d):
+        wanted.setdefault(reg_file, []).append((section, name, value, create))
+    new_state = {}
+    for reg_file in sorted(set(wanted) | set(prior)):
+        path = pfx / reg_file
+        try:
+            text = path.read_text(encoding="utf-8", errors="surrogateescape")
+        except FileNotFoundError:
+            continue
+        eol = "\r\n" if "\r\n" in text else "\n"
+        lines = text.splitlines()
+        old = prior.get(reg_file, {})
+        changed = False
+        # 1) roll back whatever a previous launch managed
+        for entry in old.get("entries", []):
+            if revert_reg_value(lines, entry):
+                changed = True
+        for section in old.get("created", []):
+            if drop_empty_section(lines, section):
+                changed = True
+        # 2) apply the currently wanted values
+        applied, created = [], []
+        for section, name, value, create in wanted.get(reg_file, []):
+            result = apply_reg_value(lines, section, name, value, create)
+            if result is None:
+                continue
+            entry, did_change, did_create = result
+            applied.append(entry)
+            changed = changed or did_change
+            if did_create:
+                created.append(section)
+        if not changed:
+            if applied or created:
+                new_state[reg_file] = {"entries": applied, "created": created}
+            continue
+        backup = path.with_name(path.name + ".nebel-bak")
+        if not backup.exists():
+            try:
+                backup.write_text(text, encoding="utf-8", errors="surrogateescape")
+            except OSError:
+                pass
+        tmp = path.with_name(f".{path.name}.nebel-tmp")
+        tmp.write_text(eol.join(lines) + eol, encoding="utf-8", errors="surrogateescape")
+        os.replace(tmp, path)
+        if applied or created:
+            new_state[reg_file] = {"entries": applied, "created": created}
+    if new_state:
+        state_path.write_text(json.dumps(new_state, indent=2, sort_keys=True) + "\n",
+                              encoding="utf-8")
+    else:
+        state_path.unlink(missing_ok=True)
+
+
+def apply_reg_value(lines, section, name, value_text, create):
+    """Set one value; returns (state_entry, changed, created) or None."""
+    found = find_section(lines, section)
+    created = False
+    if found is None:
+        if not create:
+            return None
+        if lines and lines[-1] != "":
+            lines.append("")
+        lines.append(f"[{section}]")
+        found = find_section(lines, section)
+        created = True
+    start, end = found
+    prefix = f'"{name}"='
+    new_line = f"{prefix}{value_text}"
+    for i in range(start + 1, end):
+        if lines[i].startswith(prefix):
+            old_line = lines[i]
+            if old_line != new_line:
+                lines[i] = new_line
+                return ({"section": section, "name": name, "had": True, "line": old_line},
+                        True, created)
+            return ({"section": section, "name": name, "had": True, "line": old_line},
+                    False, created)
+    insert = start + 1
+    if insert < end and lines[insert].startswith("#time"):
+        insert += 1
+    lines.insert(insert, new_line)
+    return ({"section": section, "name": name, "had": False, "line": None}, True, created)
+
+
+def revert_reg_value(lines, entry):
+    """Undo one managed value. Returns True when the file changed."""
+    found = find_section(lines, entry["section"])
+    if found is None:
+        return False
+    start, end = found
+    prefix = f"\"{entry['name']}\"="
+    for i in range(start + 1, end):
+        if not lines[i].startswith(prefix):
+            continue
+        if entry["had"]:
+            if lines[i] != entry["line"]:
+                lines[i] = entry["line"]
+                return True
+            return False
+        del lines[i]
+        return True
+    if entry["had"]:
+        # our value vanished on its own; put the original back
+        insert = start + 1
+        if insert < end and lines[insert].startswith("#time"):
+            insert += 1
+        lines.insert(insert, entry["line"])
+        return True
+    return False
+
+
+def drop_empty_section(lines, section):
+    """Remove a section we created once it holds no values anymore."""
+    found = find_section(lines, section)
+    if found is None:
+        return False
+    start, end = found
+    body = [line for line in lines[start + 1:end]
+            if line and not line.startswith("#time")]
+    if body:
+        return False
+    del_start = start
+    if del_start > 0 and lines[del_start - 1] == "":
+        del_start -= 1
+    del lines[del_start:end]
+    return True
+
+
 def main():
     args = sys.argv[1:]
     if not args:
@@ -225,6 +526,29 @@ def main():
         repair_wedged_controller()
     except Exception as exc:
         print(f"nebel-game-launch: controller repair skipped: {exc}", file=sys.stderr)
+
+    wined3d = use_wined3d(settings)
+    try:
+        apply_renderer(settings, os.environ)
+    except Exception as exc:
+        print(f"nebel-game-launch: renderer setting skipped: {exc}", file=sys.stderr)
+
+    try:
+        apply_gpu_spoof(settings, os.environ, wined3d)
+    except Exception as exc:
+        print(f"nebel-game-launch: GPU spoof skipped: {exc}", file=sys.stderr)
+
+    pfx = pfx_dir()
+    if pfx is not None:
+        try:
+            sync_registry(pfx, settings, wined3d)
+        except Exception as exc:
+            print(f"nebel-game-launch: registry sync skipped: {exc}", file=sys.stderr)
+
+    try:
+        apply_memory_limit(settings)
+    except (OSError, ValueError) as exc:
+        print(f"nebel-game-launch: memory limit skipped: {exc}", file=sys.stderr)
 
     try:
         os.execv(args[0], args)
