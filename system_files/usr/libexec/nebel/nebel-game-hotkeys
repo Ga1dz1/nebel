@@ -1,0 +1,305 @@
+#!/usr/bin/env python3
+"""Game-mode gamepad chord daemon for Nebel handhelds.
+
+Companion to nebel-desktop-hotkeys (which covers the Plasma desktop via KWin).
+In game mode Steam/gamescope own the input stack, and Steam's STEAM+X OSK
+chord only exists for the Steam Deck's built-in controller - a third-party
+pad's Guide+X never opens anything. This daemon watches the raw gamepad
+(InputPlumber keeps it readable via passthrough=true) and opens Steam's modal
+on-screen keyboard through the CEF remote debugging interface that
+launch-steam enables (.cef-enable-remote-debugging -> localhost:8080).
+
+The chord is deliberately NOT consumed: events still reach Steam untouched,
+and the keyboard is only opened when it is not already showing, so a working
+native chord can never be double-toggled shut by us.
+
+Chords (Home + button), game mode only:
+  X (West) -> Steam modal on-screen keyboard
+"""
+import json
+import os
+import select
+import socket
+import struct
+import time
+import urllib.request
+from pathlib import Path
+
+EV_KEY = 0x01
+BTN_MODE = 0x13C   # Home/Guide
+BTN_WEST = 0x134   # X
+
+INPUT_EVENT_FMT = "llHHi"
+INPUT_EVENT_SIZE = struct.calcsize(INPUT_EVENT_FMT)
+
+GAMEPAD_NAMES = ("Retroid Pocket Gamepad", "AYN Odin2 Gamepad")
+
+CHORD_HOLD_MS = 300
+POLL_INTERVAL_S = 0.05
+CEF_URL = "http://localhost:8080/json/list"
+
+# Opens Steam's modal OSK via the VirtualKeyboardManager of the active UI
+# window (verified against the Aug 2026 steamui build; the manager lives on
+# the SteamUIStore export found by its m_WindowStore marker). The store lookup
+# is cached on window because scanning every webpack module is expensive.
+OPEN_KEYBOARD_JS = r"""
+(function(){
+  try {
+    let sus = window.__nebelSteamUIStore;
+    if (!sus || !sus.m_WindowStore) {
+      let req;
+      window.webpackChunksteamui.push([["nebelosk"], {}, (r) => { req = r; }]);
+      outer:
+      for (const id of Object.keys(req.m)) {
+        let mod;
+        try { mod = req(id); } catch (e) { continue; }
+        for (const exp of [mod && mod.default, mod]) {
+          if (!exp || typeof exp !== "object") continue;
+          for (const key in exp) {
+            try { if (exp[key] && exp[key].m_WindowStore) { sus = exp[key]; break outer; } } catch (e) {}
+          }
+        }
+      }
+      window.__nebelSteamUIStore = sus;
+    }
+    const vkm = sus && sus.ActiveWindowInstance && sus.ActiveWindowInstance.m_VirtualKeyboardManager;
+    if (!vkm) return "no-vkm";
+    if (vkm.m_bIsVirtualKeyboardShowing && vkm.m_bIsVirtualKeyboardShowing.m_currentValue) return "already-showing";
+    const ref = vkm.CreateVirtualKeyboardRef({ onTextEntered: function(key){
+      const input = window.SteamClient && window.SteamClient.Input;
+      if (!input || !input.ControllerKeyboardSendText) return;
+      if (key === "Backspace") input.ControllerKeyboardSendText("\b");
+      else if (key === "Enter") input.ControllerKeyboardSendText("\n");
+      else if (key === "Tab") input.ControllerKeyboardSendText("\t");
+      else if (key && key.length === 1) input.ControllerKeyboardSendText(key);
+    }});
+    ref.ShowModalKeyboard();
+    return "opened";
+  } catch (e) { return "error: " + e; }
+})()
+"""
+
+
+def find_gamepad():
+    for ev in Path("/sys/class/input").glob("event*"):
+        try:
+            name = (ev / "device" / "name").read_text().strip()
+        except OSError:
+            continue
+        if name in GAMEPAD_NAMES:
+            return Path("/dev/input") / ev.name
+    return None
+
+
+def is_game_mode_active():
+    """True while a gamescope session owns the screen (no Plasma desktop)."""
+    try:
+        procs = set()
+        for pid in filter(str.isdigit, os.listdir("/proc")):
+            try:
+                with open(f"/proc/{pid}/comm") as f:
+                    procs.add(f.read().strip())
+            except OSError:
+                continue
+    except OSError:
+        return False
+    has_gamescope = any(p.startswith("gamescope") for p in procs)
+    return has_gamescope and "plasmashell" not in procs
+
+
+# --- Minimal RFC 6455 client (client-masked frames), enough for DevTools ---
+
+def _ws_connect(ws_url):
+    rest = ws_url[len("ws://"):]
+    hostport, path = rest.split("/", 1)
+    host, port = hostport.split(":")
+    sock = socket.create_connection((host, int(port)), timeout=5)
+    key = os.urandom(16)
+    import base64
+    request = (
+        f"GET /{path} HTTP/1.1\r\nHost: {hostport}\r\nUpgrade: websocket\r\n"
+        f"Connection: Upgrade\r\nSec-WebSocket-Key: {base64.b64encode(key).decode()}\r\n"
+        "Sec-WebSocket-Version: 13\r\n\r\n"
+    )
+    sock.sendall(request.encode())
+    response = b""
+    while b"\r\n\r\n" not in response:
+        chunk = sock.recv(4096)
+        if not chunk:
+            break
+        response += chunk
+    if b" 101" not in response.split(b"\r\n", 1)[0]:
+        raise ConnectionError("websocket handshake failed")
+    return sock
+
+
+def _ws_send(sock, payload):
+    data = payload.encode()
+    mask = os.urandom(4)
+    header = bytearray([0x81])
+    length = len(data)
+    if length < 126:
+        header.append(0x80 | length)
+    elif length < 65536:
+        header.append(0x80 | 126)
+        header += struct.pack(">H", length)
+    else:
+        header.append(0x80 | 127)
+        header += struct.pack(">Q", length)
+    sock.sendall(bytes(header) + mask + bytes(b ^ mask[i % 4] for i, b in enumerate(data)))
+
+
+def _ws_recv(sock):
+    def read_exact(count):
+        buf = b""
+        while len(buf) < count:
+            chunk = sock.recv(count - len(buf))
+            if not chunk:
+                raise ConnectionError("websocket closed")
+            buf += chunk
+        return buf
+
+    while True:
+        b1, b2 = read_exact(2)
+        opcode = b1 & 0x0F
+        length = b2 & 0x7F
+        if length == 126:
+            length = struct.unpack(">H", read_exact(2))[0]
+        elif length == 127:
+            length = struct.unpack(">Q", read_exact(8))[0]
+        mask = read_exact(4) if b2 & 0x80 else b""
+        data = read_exact(length)
+        if mask:
+            data = bytes(b ^ mask[i % 4] for i, b in enumerate(data))
+        if opcode == 0x1:
+            return data.decode()
+        if opcode == 0x8:
+            raise ConnectionError("websocket closed by peer")
+        # ping/pong/binary frames are not used by DevTools here; skip them
+
+
+def cef_evaluate(page_title, expression):
+    """Evaluate JS in the named CEF page; returns the JSON result value."""
+    with urllib.request.urlopen(CEF_URL, timeout=5) as resp:
+        pages = json.load(resp)
+    page = next((p for p in pages if p.get("title") == page_title), None)
+    if page is None:
+        # SharedJSContext's URL lives on steamloopback.host; title is stable,
+        # but fall back to the URL in case the title ever changes.
+        page = next((p for p in pages if "steamloopback.host" in p.get("url", "")), None)
+    if page is None:
+        raise RuntimeError("no steamui page exposed over CEF")
+    sock = _ws_connect(page["webSocketDebuggerUrl"])
+    try:
+        _ws_send(sock, json.dumps({
+            "id": 1,
+            "method": "Runtime.evaluate",
+            "params": {"expression": expression, "returnByValue": True},
+        }))
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            message = json.loads(_ws_recv(sock))
+            if message.get("id") == 1:
+                return message.get("result", {}).get("result", {}).get("value")
+        raise TimeoutError("CEF evaluate timed out")
+    finally:
+        sock.close()
+
+
+def open_steam_keyboard():
+    result = cef_evaluate("SharedJSContext", OPEN_KEYBOARD_JS)
+    print(f"game-hotkeys: OSK chord -> {result}", flush=True)
+
+
+class GamepadReader:
+    def __init__(self):
+        self.fd = None
+        self.buttons = set()
+        self.home_pressed_at = None
+        self.chord_fired = False
+
+    def open(self):
+        path = find_gamepad()
+        if path is None:
+            return False
+        try:
+            self.fd = os.open(str(path), os.O_RDONLY | os.O_NONBLOCK)
+        except OSError:
+            return False
+        return True
+
+    def close(self):
+        if self.fd is not None:
+            try:
+                os.close(self.fd)
+            except OSError:
+                pass
+            self.fd = None
+        self.buttons.clear()
+        self.home_pressed_at = None
+        self.chord_fired = False
+
+    def poll(self):
+        if self.fd is None:
+            return
+        try:
+            while select.select([self.fd], [], [], 0)[0]:
+                chunk = os.read(self.fd, INPUT_EVENT_SIZE)
+                if len(chunk) != INPUT_EVENT_SIZE:
+                    break
+                _, _, ev_type, code, value = struct.unpack(INPUT_EVENT_FMT, chunk)
+                if ev_type != EV_KEY:
+                    continue
+                if value == 1:
+                    self.buttons.add(code)
+                elif value == 0:
+                    self.buttons.discard(code)
+        except OSError:
+            self.close()
+
+
+def run():
+    reader = GamepadReader()
+    while True:
+        if not is_game_mode_active():
+            reader.close()
+            time.sleep(POLL_INTERVAL_S)
+            continue
+        if reader.fd is None and not reader.open():
+            time.sleep(POLL_INTERVAL_S)
+            continue
+
+        reader.poll()
+
+        # One shot per chord press; re-arm once X is released.
+        if BTN_WEST not in reader.buttons:
+            reader.chord_fired = False
+
+        if BTN_MODE in reader.buttons and reader.home_pressed_at is None:
+            reader.home_pressed_at = time.time()
+
+        if reader.home_pressed_at is not None:
+            elapsed = (time.time() - reader.home_pressed_at) * 1000
+            chord_buttons = reader.buttons - {BTN_MODE}
+            if chord_buttons:
+                if BTN_WEST in chord_buttons and not reader.chord_fired:
+                    reader.chord_fired = True
+                    try:
+                        open_steam_keyboard()
+                    except Exception as error:
+                        print(f"game-hotkeys: OSK chord failed: {error}", flush=True)
+                reader.home_pressed_at = None
+            elif BTN_MODE not in reader.buttons:
+                reader.home_pressed_at = None
+            elif elapsed > CHORD_HOLD_MS:
+                # Home held alone too long; it belongs to Steam now.
+                reader.home_pressed_at = None
+
+        time.sleep(POLL_INTERVAL_S)
+
+
+if __name__ == "__main__":
+    try:
+        run()
+    except KeyboardInterrupt:
+        pass

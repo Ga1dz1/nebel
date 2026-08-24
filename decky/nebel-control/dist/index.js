@@ -354,6 +354,8 @@ const uk = {
     "Stick LEDs flash on notifications": "Підсвітка стіків спалахує на сповіщення",
     "Flash color": "Колір спалаху",
     "Failed to add shortcut": "Не вдалося додати ярлик",
+    "Keyboard": "Клавіатура",
+    "On-screen keyboard": "Екранна клавіатура",
 };
 const ru = {
     "Loading": "Загрузка",
@@ -596,6 +598,8 @@ const ru = {
     "Stick LEDs flash on notifications": "Подсветка стиков вспыхивает при уведомлениях",
     "Flash color": "Цвет вспышки",
     "Failed to add shortcut": "Не удалось добавить ярлык",
+    "Keyboard": "Клавиатура",
+    "On-screen keyboard": "Экранная клавиатура",
 };
 const es = {
     "Loading": "Cargando",
@@ -838,6 +842,8 @@ const es = {
     "Stick LEDs flash on notifications": "Los sticks parpadean con las notificaciones",
     "Flash color": "Color del destello",
     "Failed to add shortcut": "No se pudo añadir el acceso directo",
+    "Keyboard": "Teclado",
+    "On-screen keyboard": "Teclado en pantalla",
 };
 const fr = {
     "Loading": "Chargement",
@@ -1080,6 +1086,8 @@ const fr = {
     "Stick LEDs flash on notifications": "Les sticks clignotent aux notifications",
     "Flash color": "Couleur du flash",
     "Failed to add shortcut": "Échec de l'ajout du raccourci",
+    "Keyboard": "Clavier",
+    "On-screen keyboard": "Clavier à l'écran",
 };
 const dictionaries = { uk, ru, es, fr };
 // CEF's navigator.language follows the Steam UI language in game mode, which
@@ -2727,6 +2735,57 @@ function ColorPicker({ label, hex, onChange }) {
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-preview-row", children: [label !== undefined && SP_JSX.jsx("span", { className: "nebel-color-preview-label", children: label }), SP_JSX.jsx("div", { className: "nebel-color-swatch", style: { backgroundColor: `#${hex}` } }), SP_JSX.jsxs("span", { className: "nebel-color-preview-hex", children: ["#", hex] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-picker", children: [SP_JSX.jsxs("div", { className: "nebel-color-sv-wrap", style: { width: SV_WIDTH, height: SV_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: svCanvasRef, width: SV_WIDTH, height: SV_HEIGHT, className: "nebel-color-sv-canvas", onPointerDown: handleSvPointer, onPointerMove: (event) => event.buttons === 1 && handleSvPointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-cursor", style: { left: svCursorX, top: svCursorY, backgroundColor: `#${hex}` } })] }), SP_JSX.jsxs("div", { className: "nebel-color-hue-wrap", style: { width: SV_WIDTH, height: HUE_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: hueCanvasRef, width: SV_WIDTH, height: HUE_HEIGHT, className: "nebel-color-hue-canvas", onPointerDown: handleHuePointer, onPointerMove: (event) => event.buttons === 1 && handleHuePointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-hue-cursor", style: { left: hueCursorX } })] })] }) })] }));
 }
 
+// Opens Steam's own modal on-screen keyboard (the one STEAM+X shows on a
+// Steam Deck). Current Steam builds keep a VirtualKeyboardManager on the
+// active UI window instance; there is no public SteamClient API for this
+// anymore (SteamClient.System.UI.ShowVirtualKeyboard is gone), so the
+// manager is looked up in the steamui webpack modules - the same approach
+// other keyboard plugins use. Verified live against the steamui build
+// shipped in Aug 2026 (module exporting SteamUIStore with m_WindowStore ->
+// ActiveWindowInstance.m_VirtualKeyboardManager; ref.ShowModalKeyboard()).
+
+let cachedVkm;
+function virtualKeyboardManager() {
+    if (cachedVkm === undefined) {
+        const store = DFL.findModuleExport((e) => e?.m_WindowStore && e?.ActiveWindowInstance?.m_VirtualKeyboardManager);
+        cachedVkm = store?.ActiveWindowInstance?.m_VirtualKeyboardManager ?? null;
+        if (!cachedVkm)
+            console.warn("nebel-control: VirtualKeyboardManager not found in steamui modules");
+    }
+    return cachedVkm;
+}
+// What the native OSK does with typed keys: feed them into Steam Input's
+// controller-keyboard text channel so they land in whatever has focus.
+function forwardKey(key) {
+    const input = window.SteamClient?.Input;
+    if (!input?.ControllerKeyboardSendText)
+        return;
+    if (key === "Backspace")
+        input.ControllerKeyboardSendText("\b");
+    else if (key === "Enter")
+        input.ControllerKeyboardSendText("\n");
+    else if (key === "Tab")
+        input.ControllerKeyboardSendText("\t");
+    else if (key?.length === 1)
+        input.ControllerKeyboardSendText(key);
+}
+function showSteamKeyboard() {
+    try {
+        const vkm = virtualKeyboardManager();
+        if (!vkm)
+            return false;
+        if (vkm.m_bIsVirtualKeyboardShowing?.m_currentValue)
+            return true; // already open
+        const ref = vkm.CreateVirtualKeyboardRef({ onTextEntered: forwardKey });
+        ref.ShowModalKeyboard();
+        return true;
+    }
+    catch (error) {
+        console.warn("nebel-control: failed to open on-screen keyboard", error);
+        return false;
+    }
+}
+
 function Home({ config, setConfig, qam }) {
     const [mon, setMon] = SP_REACT.useState(null);
     SP_REACT.useEffect(() => {
@@ -2791,7 +2850,7 @@ function Home({ config, setConfig, qam }) {
     ]
         .filter(Boolean)
         .join(" · ");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [qam && SP_JSX.jsx(OpenFullScreenButton, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Monitor"), children: mon && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: "CPU / GPU", description: `${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}` }), SP_JSX.jsx(DFL.Field, { label: t("Fan"), description: mon.fanPct != null ? `${mon.fanPct}%` : "—" }), SP_JSX.jsx(DFL.Field, { label: t("Battery"), description: batteryLine(mon) })] })) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Quick toggles"), children: [SP_JSX.jsx(ToggleRow, { label: t("FPS overlay (all games)"), description: t("Shows FPS in every game, incl. non-Steam. Applies after reboot."), value: !!mon?.overlayEnabled, onChange: setOverlay }), stickLed?.supported && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Notification flash"), description: t("Stick LEDs flash on notifications"), value: !!stickLed.notifyEnabled, onChange: setStickLedNotify$1 }), !qam && stickLed.notifyEnabled && (SP_JSX.jsx(ColorPicker, { label: t("Flash color"), hex: stickLed.notifyColor || "33AAFF", onChange: setStickLedNotifyColor$1 }))] }))] }), SP_JSX.jsx(DFL.PanelSection, { title: t("System"), children: SP_JSX.jsx(DFL.Field, { label: t("OS Version"), description: config.osVersion || t("unknown") }) })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [qam && SP_JSX.jsx(OpenFullScreenButton, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Monitor"), children: mon && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: "CPU / GPU", description: `${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}` }), SP_JSX.jsx(DFL.Field, { label: t("Fan"), description: mon.fanPct != null ? `${mon.fanPct}%` : "—" }), SP_JSX.jsx(DFL.Field, { label: t("Battery"), description: batteryLine(mon) })] })) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Quick toggles"), children: [SP_JSX.jsx(ToggleRow, { label: t("FPS overlay (all games)"), description: t("Shows FPS in every game, incl. non-Steam. Applies after reboot."), value: !!mon?.overlayEnabled, onChange: setOverlay }), stickLed?.supported && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Notification flash"), description: t("Stick LEDs flash on notifications"), value: !!stickLed.notifyEnabled, onChange: setStickLedNotify$1 }), !qam && stickLed.notifyEnabled && (SP_JSX.jsx(ColorPicker, { label: t("Flash color"), hex: stickLed.notifyColor || "33AAFF", onChange: setStickLedNotifyColor$1 }))] }))] }), SP_JSX.jsx(DFL.PanelSection, { title: t("System"), children: SP_JSX.jsx(DFL.Field, { label: t("OS Version"), description: config.osVersion || t("unknown") }) }), SP_JSX.jsx(DFL.PanelSection, { title: t("Keyboard"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => showSteamKeyboard(), children: t("On-screen keyboard") }) }) })] }));
 }
 
 // Small animated preview of the selected stick-lighting mode: four dots

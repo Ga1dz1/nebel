@@ -247,6 +247,8 @@ const uk: Dictionary = {
   "Stick LEDs flash on notifications": "Підсвітка стіків спалахує на сповіщення",
   "Flash color": "Колір спалаху",
   "Failed to add shortcut": "Не вдалося додати ярлик",
+  "Keyboard": "Клавіатура",
+  "On-screen keyboard": "Екранна клавіатура",
 };
 
 const ru: Dictionary = {
@@ -490,6 +492,8 @@ const ru: Dictionary = {
   "Stick LEDs flash on notifications": "Подсветка стиков вспыхивает при уведомлениях",
   "Flash color": "Цвет вспышки",
   "Failed to add shortcut": "Не удалось добавить ярлык",
+  "Keyboard": "Клавиатура",
+  "On-screen keyboard": "Экранная клавиатура",
 };
 
 const es: Dictionary = {
@@ -733,6 +737,8 @@ const es: Dictionary = {
   "Stick LEDs flash on notifications": "Los sticks parpadean con las notificaciones",
   "Flash color": "Color del destello",
   "Failed to add shortcut": "No se pudo añadir el acceso directo",
+  "Keyboard": "Teclado",
+  "On-screen keyboard": "Teclado en pantalla",
 };
 
 const fr: Dictionary = {
@@ -976,6 +982,8 @@ const fr: Dictionary = {
   "Stick LEDs flash on notifications": "Les sticks clignotent aux notifications",
   "Flash color": "Couleur du flash",
   "Failed to add shortcut": "Échec de l'ajout du raccourci",
+  "Keyboard": "Clavier",
+  "On-screen keyboard": "Clavier à l'écran",
 };
 
 const dictionaries: Partial<Record<Locale, Dictionary>> = { uk, ru, es, fr };

@@ -1,0 +1,12 @@
+[Unit]
+Description=Nebel game-mode gamepad hotkey daemon (Guide+X opens Steam OSK)
+After=inputplumber.service
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/nebel/nebel-game-hotkeys
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
