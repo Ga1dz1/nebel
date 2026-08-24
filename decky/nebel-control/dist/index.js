@@ -41,6 +41,8 @@ const setSshEnabled = (enabled) => call("set_ssh_enabled", enabled);
 const setControllerType = (value) => call("set_controller_type", value);
 const setSharedStorageEnabled = (enabled) => call("set_shared_storage_enabled", enabled);
 const listDir = (path) => call("list_dir", path);
+const getDepsStatus = (appid) => call("deps_status", appid);
+const installDeps = (appid, verbs) => call("deps_install", appid, verbs);
 const setStickLedColor = (side, value) => call("set_stick_led_color", side, value);
 const setStickLedMode = (side, mode) => call("set_stick_led_mode", side, mode);
 const setStickLedScreenLink = (enabled) => call("set_stick_led_screen_link", enabled);
@@ -160,6 +162,19 @@ const uk = {
     "Memory Limit": "Обмеження пам’яті",
     "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Обмежує пам’ять, доступну грі, — останній засіб для дуже старих ігор; може спричинити збої сучасних",
     "GPU Spoof": "Підміна відеокарти",
+    "DEPENDENCIES": "ЗАЛЕЖНОСТІ",
+    ".NET 3.5 (slow)": ".NET 3.5 (повільно)",
+    "Install": "Встановити",
+    "Installed": "Встановлено",
+    "Installing...": "Встановлення...",
+    "Install recommended (DirectX 9 + VC++ 2005)": "Встановити рекомендовані (DirectX 9 + VC++ 2005)",
+    "Recommended for Windows XP-era games": "Рекомендовано для ігор епохи Windows XP",
+    "Installing dependencies needs an internet connection": "Для встановлення залежностей потрібне з’єднання з інтернетом",
+    "Game prefix not found - launch the game once first": "Префікс гри не знайдено — спочатку запустіть гру хоча раз",
+    "Dependency installer (winetricks) is missing in this OS build": "У цій збірці ОС немає інсталятора залежностей (winetricks)",
+    "Another installation is already running": "Інше встановлення уже триває",
+    "Installation timed out": "Час встановлення минув",
+    "Installation failed - check the network connection": "Не вдалося встановити — перевірте з’єднання з мережею",
     "Host Thunks": "Проміжний шар хоста (thunks)",
     "Hide Host Thunks": "Сховати проміжний шар хоста",
     "Reset All Games": "Скинути всі ігри",
@@ -384,6 +399,19 @@ const ru = {
     "Memory Limit": "Ограничение памяти",
     "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Ограничивает память, доступную игре, — крайняя мера для очень старых игр; может ломать современные",
     "GPU Spoof": "Подмена видеокарты",
+    "DEPENDENCIES": "ЗАВИСИМОСТИ",
+    ".NET 3.5 (slow)": ".NET 3.5 (медленно)",
+    "Install": "Установить",
+    "Installed": "Установлено",
+    "Installing...": "Установка...",
+    "Install recommended (DirectX 9 + VC++ 2005)": "Установить рекомендованные (DirectX 9 + VC++ 2005)",
+    "Recommended for Windows XP-era games": "Рекомендовано для игр эпохи Windows XP",
+    "Installing dependencies needs an internet connection": "Для установки зависимостей нужно подключение к интернету",
+    "Game prefix not found - launch the game once first": "Префикс игры не найден — сначала запустите игру хотя бы раз",
+    "Dependency installer (winetricks) is missing in this OS build": "В этой сборке ОС нет установщика зависимостей (winetricks)",
+    "Another installation is already running": "Другая установка уже идёт",
+    "Installation timed out": "Время установки истекло",
+    "Installation failed - check the network connection": "Не удалось установить — проверьте подключение к сети",
     "Host Thunks": "Прослойки хоста (thunks)",
     "Hide Host Thunks": "Скрыть прослойки хоста",
     "Reset All Games": "Сбросить все игры",
@@ -608,6 +636,19 @@ const es = {
     "Memory Limit": "Límite de memoria",
     "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Limita la memoria que el juego puede asignar: último recurso para títulos muy antiguos; puede bloquear juegos modernos",
     "GPU Spoof": "Suplantación de GPU",
+    "DEPENDENCIES": "DEPENDENCIAS",
+    ".NET 3.5 (slow)": ".NET 3.5 (lento)",
+    "Install": "Instalar",
+    "Installed": "Instalado",
+    "Installing...": "Instalando...",
+    "Install recommended (DirectX 9 + VC++ 2005)": "Instalar recomendados (DirectX 9 + VC++ 2005)",
+    "Recommended for Windows XP-era games": "Recomendado para juegos de la época de Windows XP",
+    "Installing dependencies needs an internet connection": "La instalación de dependencias necesita conexión a internet",
+    "Game prefix not found - launch the game once first": "No se encontró el prefijo del juego: ejecútalo una vez primero",
+    "Dependency installer (winetricks) is missing in this OS build": "El instalador de dependencias (winetricks) no está en esta versión del SO",
+    "Another installation is already running": "Ya hay otra instalación en curso",
+    "Installation timed out": "La instalación agotó el tiempo de espera",
+    "Installation failed - check the network connection": "Error de instalación: comprueba la conexión de red",
     "Host Thunks": "Thunks del host",
     "Hide Host Thunks": "Ocultar thunks del host",
     "Reset All Games": "Restablecer todos los juegos",
@@ -832,6 +873,19 @@ const fr = {
     "Memory Limit": "Limite de mémoire",
     "Caps memory the game can allocate - last resort for very old titles; can crash modern games": "Limite la mémoire que le jeu peut allouer — dernier recours pour les très anciens titres ; peut planter les jeux modernes",
     "GPU Spoof": "Usurpation de GPU",
+    "DEPENDENCIES": "DÉPENDANCES",
+    ".NET 3.5 (slow)": ".NET 3.5 (lent)",
+    "Install": "Installer",
+    "Installed": "Installé",
+    "Installing...": "Installation...",
+    "Install recommended (DirectX 9 + VC++ 2005)": "Installer les recommandés (DirectX 9 + VC++ 2005)",
+    "Recommended for Windows XP-era games": "Recommandé pour les jeux de l'époque Windows XP",
+    "Installing dependencies needs an internet connection": "L'installation des dépendances nécessite une connexion internet",
+    "Game prefix not found - launch the game once first": "Préfixe du jeu introuvable — lancez le jeu une fois d'abord",
+    "Dependency installer (winetricks) is missing in this OS build": "L'installateur de dépendances (winetricks) est absent de cette version de l'OS",
+    "Another installation is already running": "Une autre installation est déjà en cours",
+    "Installation timed out": "L'installation a dépassé le délai imparti",
+    "Installation failed - check the network connection": "Échec de l'installation — vérifiez la connexion réseau",
     "Host Thunks": "Thunks hôte",
     "Hide Host Thunks": "Masquer les thunks hôte",
     "Reset All Games": "Réinitialiser tous les jeux",
@@ -2000,6 +2054,17 @@ const gpuSpoofOptions = [
     { data: "gtx1060", label: "NVIDIA GeForce GTX 1060" },
     { data: "rx580", label: "AMD Radeon RX 580" },
 ];
+const DEPENDENCY_VERBS = [
+    { id: "d3dx9", label: "DirectX 9 Runtime" },
+    { id: "physx", label: "NVIDIA PhysX" },
+    { id: "vcrun2005", label: "Visual C++ 2005" },
+    { id: "vcrun2008", label: "Visual C++ 2008" },
+    { id: "vcrun2010", label: "Visual C++ 2010" },
+    { id: "xna40", label: "XNA Framework 4.0" },
+    { id: "dotnet35", label: t(".NET 3.5 (slow)") },
+    { id: "flash", label: "Flash Player" },
+];
+const RECOMMENDED_XP_DEPS = ["d3dx9", "vcrun2005"];
 // SM8250's cpu0-3 are the 1.8GHz LITTLE cluster, cpu4-7 the 2.4-2.84GHz
 // big+prime cluster - same split ROCKNIX's own SM8250 profile uses.
 const cpuAffinityOptions = [
@@ -2388,7 +2453,71 @@ function Games({ config, setConfig, qam }) {
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
                                 : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(Collapsible, { label: t("ADVANCED"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] }), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                     ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
-                                    : null] }) }), !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+                                    : null] }) }), !editingDefault && game?.appid ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+}
+// Per-game winetricks verbs ("Dependencies"): installs run in a backend
+// worker thread, so the UI polls deps_status while busy instead of blocking.
+function DependenciesSection({ appid, eraXp }) {
+    const [status, setStatus] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        let timer;
+        const load = async () => {
+            try {
+                const next = await getDepsStatus(appid);
+                if (cancelled)
+                    return;
+                setStatus(next);
+                if (next.busy)
+                    timer = window.setTimeout(load, 1500);
+            }
+            catch (error) {
+            }
+        };
+        load();
+        return () => {
+            cancelled = true;
+            if (timer !== undefined)
+                window.clearTimeout(timer);
+        };
+    }, [appid]);
+    if (!status)
+        return null;
+    const install = (verbs) => {
+        installDeps(appid, verbs).then(setStatus).catch(() => { });
+        // Start polling right away - deps_install returns before the worker flips busy.
+        window.setTimeout(() => {
+            getDepsStatus(appid).then(setStatus).catch(() => { });
+        }, 500);
+    };
+    if (!status.available) {
+        return (SP_JSX.jsx(DFL.PanelSection, { title: t("DEPENDENCIES"), children: SP_JSX.jsx(DFL.Field, { description: t("Dependency installer (winetricks) is missing in this OS build") }) }));
+    }
+    if (!status.prefixFound) {
+        return (SP_JSX.jsx(DFL.PanelSection, { title: t("DEPENDENCIES"), children: SP_JSX.jsx(DFL.Field, { description: t("Game prefix not found - launch the game once first") }) }));
+    }
+    const errorText = (() => {
+        switch (status.error) {
+            case "":
+                return "";
+            case "busy":
+                return t("Another installation is already running");
+            case "timeout":
+                return t("Installation timed out");
+            case "no-prefix":
+                return t("Game prefix not found - launch the game once first");
+            case "unavailable":
+                return t("Dependency installer (winetricks) is missing in this OS build");
+            default:
+                return t("Installation failed - check the network connection");
+        }
+    })();
+    const recommendedMissing = RECOMMENDED_XP_DEPS.filter((verb) => !status.installed.includes(verb));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("DEPENDENCIES"), children: [SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Installing dependencies needs an internet connection") }), eraXp && recommendedMissing.length ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: status.busy, description: t("Recommended for Windows XP-era games"), onClick: () => install(recommendedMissing), children: t("Install recommended (DirectX 9 + VC++ 2005)") })) : null, DEPENDENCY_VERBS.map((verb) => {
+                const installed = status.installed.includes(verb.id);
+                const installing = status.busy && status.currentVerb === verb.id;
+                return (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", disabled: installed || status.busy, onClick: () => install([verb.id]), children: [verb.label, " \u2014 ", installed ? `✓ ${t("Installed")}` : installing ? t("Installing...") : t("Install")] }, verb.id));
+            }), errorText ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: errorText }) : null] }));
 }
 // The stock "Browse..." button in Steam's Add Non-Steam Game dialog is broken
 // in the ARM64 client (OpenFileDialog fails before reaching the portal), and

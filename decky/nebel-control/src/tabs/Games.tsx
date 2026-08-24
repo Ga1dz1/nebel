@@ -11,8 +11,8 @@ import {
 } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { saveCompatApplied, listDir } from "../backend";
-import type { DirListing } from "../backend";
+import { saveCompatApplied, listDir, getDepsStatus, installDeps } from "../backend";
+import type { DepsStatus, DirListing } from "../backend";
 import { Collapsible, OpenFullScreenButton, SelectEdit } from "../components/widgets";
 import { t } from "../i18n";
 import { getGlobalResolution, setGlobalResolution } from "../lib/steamSettings";
@@ -89,6 +89,17 @@ const gpuSpoofOptions = [
   { data: "gtx1060", label: "NVIDIA GeForce GTX 1060" },
   { data: "rx580", label: "AMD Radeon RX 580" },
 ];
+const DEPENDENCY_VERBS = [
+  { id: "d3dx9", label: "DirectX 9 Runtime" },
+  { id: "physx", label: "NVIDIA PhysX" },
+  { id: "vcrun2005", label: "Visual C++ 2005" },
+  { id: "vcrun2008", label: "Visual C++ 2008" },
+  { id: "vcrun2010", label: "Visual C++ 2010" },
+  { id: "xna40", label: "XNA Framework 4.0" },
+  { id: "dotnet35", label: t(".NET 3.5 (slow)") },
+  { id: "flash", label: "Flash Player" },
+];
+const RECOMMENDED_XP_DEPS = ["d3dx9", "vcrun2005"];
 // SM8250's cpu0-3 are the 1.8GHz LITTLE cluster, cpu4-7 the 2.4-2.84GHz
 // big+prime cluster - same split ROCKNIX's own SM8250 profile uses.
 const cpuAffinityOptions = [
@@ -579,6 +590,9 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
                 : null}
             </Collapsible>
           </PanelSection>
+          {!editingDefault && game?.appid ? (
+            <DependenciesSection appid={game.appid} eraXp={values.gameEra === "xp"} />
+          ) : null}
           {!editingDefault ? (
             <PanelSection>
               <ButtonItem layout="below" onClick={resetGame}>
@@ -597,6 +611,94 @@ export function Games({ config, setConfig, qam }: { config: Config; setConfig: D
       <AddGameSection />
       {qam && <OpenFullScreenButton />}
     </>
+  );
+}
+
+// Per-game winetricks verbs ("Dependencies"): installs run in a backend
+// worker thread, so the UI polls deps_status while busy instead of blocking.
+function DependenciesSection({ appid, eraXp }: { appid: string; eraXp: boolean }) {
+  const [status, setStatus] = useState<DepsStatus | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    let timer: number | undefined;
+    const load = async () => {
+      try {
+        const next = await getDepsStatus(appid);
+        if (cancelled) return;
+        setStatus(next);
+        if (next.busy) timer = window.setTimeout(load, 1500);
+      } catch (error) {
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [appid]);
+  if (!status) return null;
+  const install = (verbs: string[]) => {
+    installDeps(appid, verbs).then(setStatus).catch(() => {});
+    // Start polling right away - deps_install returns before the worker flips busy.
+    window.setTimeout(() => {
+      getDepsStatus(appid).then(setStatus).catch(() => {});
+    }, 500);
+  };
+  if (!status.available) {
+    return (
+      <PanelSection title={t("DEPENDENCIES")}>
+        <Field description={t("Dependency installer (winetricks) is missing in this OS build")} />
+      </PanelSection>
+    );
+  }
+  if (!status.prefixFound) {
+    return (
+      <PanelSection title={t("DEPENDENCIES")}>
+        <Field description={t("Game prefix not found - launch the game once first")} />
+      </PanelSection>
+    );
+  }
+  const errorText = (() => {
+    switch (status.error) {
+      case "":
+        return "";
+      case "busy":
+        return t("Another installation is already running");
+      case "timeout":
+        return t("Installation timed out");
+      case "no-prefix":
+        return t("Game prefix not found - launch the game once first");
+      case "unavailable":
+        return t("Dependency installer (winetricks) is missing in this OS build");
+      default:
+        return t("Installation failed - check the network connection");
+    }
+  })();
+  const recommendedMissing = RECOMMENDED_XP_DEPS.filter((verb) => !status.installed.includes(verb));
+  return (
+    <PanelSection title={t("DEPENDENCIES")}>
+      <div className="nebel-compat-note">{t("Installing dependencies needs an internet connection")}</div>
+      {eraXp && recommendedMissing.length ? (
+        <ButtonItem
+          layout="below"
+          disabled={status.busy}
+          description={t("Recommended for Windows XP-era games")}
+          onClick={() => install(recommendedMissing)}
+        >
+          {t("Install recommended (DirectX 9 + VC++ 2005)")}
+        </ButtonItem>
+      ) : null}
+      {DEPENDENCY_VERBS.map((verb) => {
+        const installed = status.installed.includes(verb.id);
+        const installing = status.busy && status.currentVerb === verb.id;
+        return (
+          <ButtonItem key={verb.id} layout="below" disabled={installed || status.busy} onClick={() => install([verb.id])}>
+            {verb.label} — {installed ? `✓ ${t("Installed")}` : installing ? t("Installing...") : t("Install")}
+          </ButtonItem>
+        );
+      })}
+      {errorText ? <Field label={t("Status")} description={errorText} /> : null}
+    </PanelSection>
   );
 }
 

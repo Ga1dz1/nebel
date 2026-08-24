@@ -26,6 +26,19 @@ export interface DirListing {
   shortcuts: { id: string; label: string; path: string }[];
 }
 export const listDir = (path: string) => call<[string], DirListing>("list_dir", path);
+export interface DepsStatus {
+  appid: string;
+  available: boolean;
+  prefixFound: boolean;
+  installed: string[];
+  busy: boolean;
+  currentVerb: string;
+  error: string;
+  logTail: string;
+}
+export const getDepsStatus = (appid: string) => call<[string], DepsStatus>("deps_status", appid);
+export const installDeps = (appid: string, verbs: string[]) =>
+  call<[string, string[]], DepsStatus>("deps_install", appid, verbs);
 export const setStickLedColor = (side: "l" | "r", value: string) =>
   call<[string, string], StickLedState>("set_stick_led_color", side, value);
 export const setStickLedMode = (side: "l" | "r", mode: string) =>
