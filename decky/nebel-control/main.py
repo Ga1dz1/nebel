@@ -39,6 +39,7 @@ from nebel_control.sync import (
     accept_pending_folder,
     add_custom_folder,
     add_device,
+    discovered_devices,
     dismiss_pending_device,
     dismiss_pending_folder,
     remove_custom_folder,
@@ -104,6 +105,9 @@ class Plugin:
 
     async def sync_add_device(self, device_id, name):
         return await asyncio.to_thread(add_device, device_id, name)
+
+    async def sync_discovered_devices(self):
+        return await asyncio.to_thread(discovered_devices)
 
     async def sync_remove_device(self, device_id):
         return await asyncio.to_thread(remove_device, device_id)

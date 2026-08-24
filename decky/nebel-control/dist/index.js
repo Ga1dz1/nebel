@@ -74,6 +74,7 @@ const setInternalTouchpad = (enabled) => call("set_internal_touchpad", enabled);
 const getSyncState = () => call("get_sync_state");
 const setSyncServiceEnabled = (enabled) => call("set_sync_service_enabled", enabled);
 const syncAddDevice = (deviceId, name) => call("sync_add_device", deviceId, name);
+const syncDiscoveredDevices = () => call("sync_discovered_devices");
 const syncRemoveDevice = (deviceId) => call("sync_remove_device", deviceId);
 const syncSetFolderEnabled = (presetId, enabled) => call("sync_set_folder_enabled", presetId, enabled);
 const syncAddCustomFolder = (path, label) => call("sync_add_custom_folder", path, label);
@@ -310,6 +311,11 @@ const uk = {
     "Add folder": "Додати папку",
     "Add custom folder": "Додати власну папку",
     "Device ID of the other console (shown on its Sync tab)": "ID іншої консолі (показано на її вкладці «Синхронізація»)",
+    "Devices found on this network": "Пристрої в цій мережі",
+    "Scanning...": "Сканування...",
+    "Nothing found - check Sync is on at the other console": "Нічого не знайдено — перевірте, що синхронізацію ввімкнено на іншій консолі",
+    "Rescan": "Сканувати ще раз",
+    "Or enter the Device ID by hand (shown on its Sync tab)": "Або введіть ID пристрою вручну (показано на його вкладці «Синхронізація»)",
     "Name (e.g. Mini V2)": "Назва (напр., Mini V2)",
     "Folder to sync (under ~ or /run/media)": "Папка для синхронізації (у ~ або /run/media)",
     "Label (optional)": "Назва (необов’язково)",
@@ -547,6 +553,11 @@ const ru = {
     "Add folder": "Добавить папку",
     "Add custom folder": "Добавить свою папку",
     "Device ID of the other console (shown on its Sync tab)": "ID другой консоли (показан на её вкладке «Синхронизация»)",
+    "Devices found on this network": "Устройства в этой сети",
+    "Scanning...": "Сканирование...",
+    "Nothing found - check Sync is on at the other console": "Ничего не найдено — проверьте, что синхронизация включена на другой консоли",
+    "Rescan": "Сканировать ещё раз",
+    "Or enter the Device ID by hand (shown on its Sync tab)": "Или введите ID устройства вручную (показан на его вкладке «Синхронизация»)",
     "Name (e.g. Mini V2)": "Имя (напр., Mini V2)",
     "Folder to sync (under ~ or /run/media)": "Папка для синхронизации (в ~ или /run/media)",
     "Label (optional)": "Метка (необязательно)",
@@ -784,6 +795,11 @@ const es = {
     "Add folder": "Añadir carpeta",
     "Add custom folder": "Añadir carpeta personalizada",
     "Device ID of the other console (shown on its Sync tab)": "ID de la otra consola (se muestra en su pestaña Sincronización)",
+    "Devices found on this network": "Dispositivos en esta red",
+    "Scanning...": "Buscando...",
+    "Nothing found - check Sync is on at the other console": "No se encontró nada: comprueba que la sincronización esté activada en la otra consola",
+    "Rescan": "Buscar de nuevo",
+    "Or enter the Device ID by hand (shown on its Sync tab)": "O introduce el ID del dispositivo a mano (se muestra en su pestaña Sincronización)",
     "Name (e.g. Mini V2)": "Nombre (p. ej., Mini V2)",
     "Folder to sync (under ~ or /run/media)": "Carpeta a sincronizar (bajo ~ o /run/media)",
     "Label (optional)": "Etiqueta (opcional)",
@@ -1021,6 +1037,11 @@ const fr = {
     "Add folder": "Ajouter un dossier",
     "Add custom folder": "Ajouter un dossier personnalisé",
     "Device ID of the other console (shown on its Sync tab)": "ID de l'autre console (affiché sur son onglet Synchronisation)",
+    "Devices found on this network": "Appareils détectés sur ce réseau",
+    "Scanning...": "Recherche...",
+    "Nothing found - check Sync is on at the other console": "Rien trouvé — vérifiez que la synchronisation est activée sur l'autre console",
+    "Rescan": "Relancer la recherche",
+    "Or enter the Device ID by hand (shown on its Sync tab)": "Ou saisissez l'ID de l'appareil à la main (affiché sur son onglet Synchronisation)",
     "Name (e.g. Mini V2)": "Nom (p. ex. Mini V2)",
     "Folder to sync (under ~ or /run/media)": "Dossier à synchroniser (sous ~ ou /run/media)",
     "Label (optional)": "Libellé (facultatif)",
@@ -3376,6 +3397,12 @@ function AddDeviceModal({ closeModal, onAdd }) {
     const [deviceId, setDeviceId] = SP_REACT.useState("");
     const [name, setName] = SP_REACT.useState("");
     const [busy, setBusy] = SP_REACT.useState(false);
+    const [found, setFound] = SP_REACT.useState(null);
+    const scan = () => {
+        setFound(null);
+        syncDiscoveredDevices().then(setFound).catch(() => setFound([]));
+    };
+    SP_REACT.useEffect(scan, []);
     const inputStyle = {
         width: "100%",
         padding: "10px",
@@ -3386,7 +3413,13 @@ function AddDeviceModal({ closeModal, onAdd }) {
         color: "inherit",
         fontSize: "14px",
     };
-    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: t("Device ID of the other console (shown on its Sync tab)") }), SP_JSX.jsx("input", { type: "text", placeholder: "XXXXXXX-XXXXXXX-...", value: deviceId, onChange: (e) => setDeviceId(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: t("Name (e.g. Mini V2)"), value: name, onChange: (e) => setName(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || deviceId.trim().length < 20, onClick: () => {
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, children: SP_JSX.jsxs(DFL.DialogBody, { children: [SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: t("Devices found on this network") }), found === null && (SP_JSX.jsx("div", { style: { marginBottom: "10px", fontSize: "13px", opacity: 0.7 }, children: t("Scanning...") })), found !== null && found.length === 0 && (SP_JSX.jsx("div", { style: { marginBottom: "10px", fontSize: "13px", opacity: 0.7 }, children: t("Nothing found - check Sync is on at the other console") })), found !== null && found.map((d) => (SP_JSX.jsx(DFL.DialogButton, { style: { width: "100%", marginBottom: "8px", textAlign: "left" }, disabled: busy, onClick: () => {
+                        setBusy(true);
+                        void onAdd(d.deviceID, name || d.short).finally(() => {
+                            setBusy(false);
+                            closeModal?.();
+                        });
+                    }, children: `${d.short}  ${d.addresses.join(", ")}` }, d.deviceID))), SP_JSX.jsx(DFL.DialogButton, { style: { marginBottom: "14px" }, disabled: found === null, onClick: scan, children: t("Rescan") }), SP_JSX.jsx("div", { style: { marginBottom: "6px", fontSize: "13px", opacity: 0.8 }, children: t("Or enter the Device ID by hand (shown on its Sync tab)") }), SP_JSX.jsx("input", { type: "text", placeholder: "XXXXXXX-XXXXXXX-...", value: deviceId, onChange: (e) => setDeviceId(e.target.value), style: inputStyle }), SP_JSX.jsx("input", { type: "text", placeholder: t("Name (e.g. Mini V2)"), value: name, onChange: (e) => setName(e.target.value), style: inputStyle }), SP_JSX.jsx(DFL.DialogFooter, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy || deviceId.trim().length < 20, onClick: () => {
                             setBusy(true);
                             void onAdd(deviceId, name).finally(() => {
                                 setBusy(false);

@@ -262,6 +262,35 @@ def _validate_device_id(device_id):
     return "-".join(parts)
 
 
+def discovered_devices():
+    """Unpaired devices visible via Syncthing's LAN discovery.
+
+    Returns short id + IPs so the UI can offer tap-to-pair instead of
+    typing the full device id. The remote side still gets the usual
+    pending-device prompt to confirm.
+    """
+    try:
+        found = rest("GET", "/rest/system/discovery", timeout=4) or {}
+    except Exception:
+        return []
+    if not isinstance(found, dict):
+        return []
+    known = {d["deviceID"] for d in _remote_devices()}
+    out = []
+    for dev_id, info in found.items():
+        if not isinstance(dev_id, str) or dev_id in known:
+            continue
+        addresses = info.get("addresses") if isinstance(info, dict) else None
+        ips = sorted({
+            m.group(1)
+            for addr in (addresses or []) if isinstance(addr, str)
+            for m in [re.match(r"\w+://(\[[0-9a-fA-F:]+\]|[0-9.]+)", addr)]
+            if m
+        })
+        out.append({"deviceID": dev_id, "short": dev_id[:7], "addresses": ips})
+    return out
+
+
 def add_device(device_id, name):
     dev_id = _validate_device_id(device_id)
     existing = {d["deviceID"] for d in _remote_devices()}

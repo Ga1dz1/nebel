@@ -15,12 +15,14 @@ import {
   syncAcceptFolder,
   syncAddCustomFolder,
   syncAddDevice,
+  syncDiscoveredDevices,
   syncDismissDevice,
   syncDismissFolder,
   syncRemoveCustomFolder,
   syncRemoveDevice,
   syncSetFolderEnabled,
 } from "../backend";
+import type { DiscoveredDevice } from "../backend";
 import { OpenFullScreenButton, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { SyncState } from "../types";
@@ -32,6 +34,12 @@ function AddDeviceModal({ closeModal, onAdd }: {
   const [deviceId, setDeviceId] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [found, setFound] = useState<DiscoveredDevice[] | null>(null);
+  const scan = () => {
+    setFound(null);
+    syncDiscoveredDevices().then(setFound).catch(() => setFound([]));
+  };
+  useEffect(scan, []);
   const inputStyle = {
     width: "100%",
     padding: "10px",
@@ -46,7 +54,35 @@ function AddDeviceModal({ closeModal, onAdd }: {
     <ModalRoot onCancel={closeModal}>
       <DialogBody>
         <div style={{ marginBottom: "6px", fontSize: "13px", opacity: 0.8 }}>
-          {t("Device ID of the other console (shown on its Sync tab)")}
+          {t("Devices found on this network")}
+        </div>
+        {found === null && (
+          <div style={{ marginBottom: "10px", fontSize: "13px", opacity: 0.7 }}>{t("Scanning...")}</div>
+        )}
+        {found !== null && found.length === 0 && (
+          <div style={{ marginBottom: "10px", fontSize: "13px", opacity: 0.7 }}>{t("Nothing found - check Sync is on at the other console")}</div>
+        )}
+        {found !== null && found.map((d) => (
+          <DialogButton
+            key={d.deviceID}
+            style={{ width: "100%", marginBottom: "8px", textAlign: "left" }}
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              void onAdd(d.deviceID, name || d.short).finally(() => {
+                setBusy(false);
+                closeModal?.();
+              });
+            }}
+          >
+            {`${d.short}  ${d.addresses.join(", ")}`}
+          </DialogButton>
+        ))}
+        <DialogButton style={{ marginBottom: "14px" }} disabled={found === null} onClick={scan}>
+          {t("Rescan")}
+        </DialogButton>
+        <div style={{ marginBottom: "6px", fontSize: "13px", opacity: 0.8 }}>
+          {t("Or enter the Device ID by hand (shown on its Sync tab)")}
         </div>
         <input
           type="text"

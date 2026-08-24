@@ -89,6 +89,8 @@ export const setSyncServiceEnabled = (enabled: boolean) =>
   call<[boolean], { enabled: boolean; active: boolean }>("set_sync_service_enabled", enabled);
 export const syncAddDevice = (deviceId: string, name: string) =>
   call<[string, string], SyncState>("sync_add_device", deviceId, name);
+export interface DiscoveredDevice { deviceID: string; short: string; addresses: string[] }
+export const syncDiscoveredDevices = () => call<[], DiscoveredDevice[]>("sync_discovered_devices");
 export const syncRemoveDevice = (deviceId: string) => call<[string], SyncState>("sync_remove_device", deviceId);
 export const syncSetFolderEnabled = (presetId: string, enabled: boolean) =>
   call<[string, boolean], SyncState>("sync_set_folder_enabled", presetId, enabled);
