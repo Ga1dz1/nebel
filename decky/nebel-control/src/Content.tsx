@@ -110,11 +110,16 @@ const tabTitle = (icon: ReactNode, label: string) => (
   <div className="nc-tab-title">{icon}<span>{label}</span></div>
 );
 
+// Shared across both surfaces: opening the fullscreen page from a QAM tab
+// lands on that same tab (and back), instead of always resetting to Home.
+let lastTab = "Home";
+
 // The QAM keeps the tab bar with all 7 tabs, each showing its simplified
 // subset; the fullscreen /nebel-control page has the full controls.
 export function Content() {
   const { config, setConfig, message } = usePluginConfig();
-  const [tab, setTab] = useState("Home");
+  const [tab, setTabState] = useState(lastTab);
+  const setTab = (id: string) => { lastTab = id; setTabState(id); };
   if (!config) return <PanelSection title="Nebel Control"><Field label={message} /></PanelSection>;
   return (
     <div className="nebel-control-tabs nebel-control-root">
@@ -137,7 +142,8 @@ export function Content() {
 // Steam's global back (B button) pops the route, so no back affordance here.
 export function FullPage() {
   const { config, setConfig, message } = usePluginConfig();
-  const [tab, setTab] = useState("Home");
+  const [tab, setTabState] = useState(lastTab);
+  const setTab = (id: string) => { lastTab = id; setTabState(id); };
   const pageShell = (content: ReactNode) => (
     <div className="nebel-control-page nebel-control-root">
       <style>{styles}</style>

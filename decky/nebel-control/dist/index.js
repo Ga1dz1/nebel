@@ -3918,11 +3918,15 @@ function buildTabs(config, setConfig, qam) {
     ];
 }
 const tabTitle = (icon, label) => (SP_JSX.jsxs("div", { className: "nc-tab-title", children: [icon, SP_JSX.jsx("span", { children: label })] }));
+// Shared across both surfaces: opening the fullscreen page from a QAM tab
+// lands on that same tab (and back), instead of always resetting to Home.
+let lastTab = "Home";
 // The QAM keeps the tab bar with all 7 tabs, each showing its simplified
 // subset; the fullscreen /nebel-control page has the full controls.
 function Content() {
     const { config, setConfig, message } = usePluginConfig();
-    const [tab, setTab] = SP_REACT.useState("Home");
+    const [tab, setTabState] = SP_REACT.useState(lastTab);
+    const setTab = (id) => { lastTab = id; setTabState(id); };
     if (!config)
         return SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) });
     return (SP_JSX.jsxs("div", { className: "nebel-control-tabs nebel-control-root", children: [SP_JSX.jsx("style", { children: styles }), SP_JSX.jsx(DFL.Tabs, { activeTab: tab, onShowTab: setTab, tabs: buildTabs(config, setConfig, true).map((pluginTab) => ({
@@ -3936,7 +3940,8 @@ function Content() {
 // Steam's global back (B button) pops the route, so no back affordance here.
 function FullPage() {
     const { config, setConfig, message } = usePluginConfig();
-    const [tab, setTab] = SP_REACT.useState("Home");
+    const [tab, setTabState] = SP_REACT.useState(lastTab);
+    const setTab = (id) => { lastTab = id; setTabState(id); };
     const pageShell = (content) => (SP_JSX.jsxs("div", { className: "nebel-control-page nebel-control-root", children: [SP_JSX.jsx("style", { children: styles }), content] }));
     if (!config) {
         return pageShell(SP_JSX.jsx("div", { className: "nc-page-content", children: SP_JSX.jsx("div", { className: "nc-page-content-inner", children: SP_JSX.jsx(DFL.PanelSection, { title: "Nebel Control", children: SP_JSX.jsx(DFL.Field, { label: message }) }) }) }));
