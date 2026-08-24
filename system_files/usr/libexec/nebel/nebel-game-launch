@@ -102,10 +102,31 @@ def apply_cpu_affinity(settings):
 
 
 def runtime_config_dir():
+    # pressure-vessel gives the container a private /tmp and only bind-mounts
+    # selected paths, so a config meant for FEX inside the container must live
+    # somewhere that is guaranteed to be mounted: the compatdata dir. XDG
+    # runtime dir is NOT mounted there (nor is /tmp).
+    data_path = os.environ.get("STEAM_COMPAT_DATA_PATH")
+    if data_path:
+        return pathlib.Path(data_path) / "nebel-fex"
     runtime = os.environ.get("XDG_RUNTIME_DIR")
     if runtime:
         return pathlib.Path(runtime) / "nebel-fex"
     return pathlib.Path("/tmp") / f"nebel-fex-{os.getuid()}"
+
+
+# FEX inside pressure-vessel sees the container's own /usr, so absolute /usr
+# paths in the config (RootFS, thunk dirs) are dead ends there; the host fs is
+# reachable under /run/host instead. Non-container launches keep host paths.
+CONTAINER_PATH_KEYS = ("RootFS", "ThunkGuestLibs", "ThunkHostLibs")
+
+
+def containerize_config_paths(config):
+    cfg = config.get("Config", {})
+    for key in CONTAINER_PATH_KEYS:
+        value = cfg.get(key)
+        if isinstance(value, str) and value.startswith("/usr/"):
+            cfg[key] = "/run/host" + value
 
 
 def resolve_fex_config(settings, profiles):
@@ -125,6 +146,8 @@ def apply_fex(settings, game_id, profiles, env):
     fex_config = resolve_fex_config(settings, profiles)
     config.setdefault("Config", {}).update({k: v for k, v in fex_config.items() if k in allowed})
     config["ThunksDB"] = thunk_settings(settings, config.get("ThunksDB", {}).keys())
+    if os.environ.get("STEAM_COMPAT_DATA_PATH"):
+        containerize_config_paths(config)
 
     config_dir = runtime_config_dir()
     config_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
