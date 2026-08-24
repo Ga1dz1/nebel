@@ -4117,12 +4117,9 @@ const SETTINGS_SECTIONS = [
 const PROPERTIES_SECTIONS = [
     {
         name: "game-tweaks",
-        // Steam games land on /properties/general, non-Steam shortcuts get
-        // /properties/shortcut instead - cover both so every game gets the block.
-        match: (page) => {
-            const route = String(page.route || "");
-            return route.endsWith("/properties/general") || route.endsWith("/properties/shortcut");
-        },
+        // Compatibility is the natural home for per-game tweaks (Steam games and
+        // non-Steam shortcuts both get a Compatibility page).
+        match: (page) => String(page.route || "").endsWith("/properties/compatibility"),
         render: (page) => {
             const appid = String(page.link || "").match(/\/app\/(\d+)\//)?.[1] || "";
             return appid ? SP_JSX.jsx(GameTweaksSection, { appid: appid }) : null;
