@@ -1,4 +1,4 @@
-import { ButtonItem, Field, PanelSection, PanelSectionRow } from "@decky/ui";
+import { Field, PanelSection, PanelSectionRow } from "@decky/ui";
 import { Fragment, useEffect, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import {
@@ -10,7 +10,6 @@ import {
 import { ColorPicker } from "../components/ColorPicker";
 import { Collapsible, OpenFullScreenButton, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
-import { showSteamKeyboard } from "../lib/osk";
 import type { Config, SystemMonitor } from "../types";
 
 export function Home({ config, setConfig, qam }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>>; qam?: boolean }) {
@@ -108,20 +107,10 @@ export function Home({ config, setConfig, qam }: { config: Config; setConfig: Di
       <PanelSection title={t("System")}>
         <Field label={t("OS Version")} description={config.osVersion || t("unknown")} />
       </PanelSection>
-      {/* Game mode has no working Guide+X OSK chord for third-party
-          controllers, so give the keyboard a visible entry point too.
-          Rendered in QAM as well - that is where it is needed most. */}
-      <PanelSection title={t("Keyboard")}>
-        <PanelSectionRow>
-          <ButtonItem layout="below" onClick={() => showSteamKeyboard()}>
-            {t("On-screen keyboard")}
-          </ButtonItem>
-        </PanelSectionRow>
-      </PanelSection>
       {/* Static cheat-sheet of the hotkeys that actually exist on the
-          console (nebel-game-hotkeys in game mode, nebel-desktop-hotkeys
-          in Plasma, InputPlumber QuickAccess button/chord). No rebinding -
-          reference only. Collapsed by default to keep the QAM short. */}
+          console (nebel-desktop-hotkeys in Plasma, InputPlumber
+          QuickAccess button/chord). No rebinding - reference only.
+          Collapsed by default to keep the QAM short. */}
       <PanelSection title={t("Hotkeys")}>
         <PanelSectionRow>
           <Collapsible label={t("Show hotkeys")}>
@@ -141,10 +130,8 @@ export function Home({ config, setConfig, qam }: { config: Config; setConfig: Di
 // Physical button names (Home/Back/D-Pad/Start/Select) stay untranslated -
 // they are what is printed on the device.
 const HOTKEYS: { mode: string; action: string; combo: string }[] = [
-  // Game mode: nebel-game-hotkeys daemon + the InputPlumber QuickAccess
-  // mapping (dedicated Back button; Guide+A chord on the Flip2, which has
-  // no such button).
-  { mode: "Game mode", action: "On-screen keyboard", combo: "Home + X" },
+  // Game mode: the InputPlumber QuickAccess mapping (dedicated Back
+  // button; Guide+A chord on the Flip2, which has no such button).
   { mode: "Game mode", action: "Quick Access Menu", combo: "Back · Home + A (Flip2)" },
   // Desktop mode: system_files/usr/libexec/nebel/nebel-desktop-hotkeys.
   { mode: "Desktop mode", action: "On-screen keyboard", combo: "Home + X" },

@@ -43,7 +43,6 @@ systemctl enable nebel-audio-resume.service
 systemctl enable nebel-audio-heal.service
 systemctl enable nebel-abl-update.service
 systemctl enable nebel-desktop-hotkeys.service
-systemctl enable nebel-game-hotkeys.service
 systemctl enable nebel-led-notify.service
 # Disabled - see git history: suspected of causing a full, unrecoverable
 # system hang (not just gamescope) on Desktop <-> Gaming Mode transitions.
