@@ -9,6 +9,7 @@ from nebel_control.calibration import (
 )
 from nebel_control.config import build_config
 from nebel_control.controller import set_controller_type
+from nebel_control.deps import get_status as deps_status, install_verbs as deps_install
 from nebel_control.display import display_state, restart_gamescope_session, set_display_config, set_internal_touchpad
 from nebel_control.filepick import list_dir
 from nebel_control.lighting import (
@@ -83,6 +84,17 @@ class Plugin:
 
     async def list_dir(self, path):
         return await asyncio.to_thread(list_dir, path)
+
+    async def deps_status(self, appid):
+        return await asyncio.to_thread(deps_status, appid)
+
+    async def deps_install(self, appid, verbs):
+        # Returns immediately with the current state; the winetricks worker
+        # runs in a thread and the frontend polls deps_status for progress.
+        try:
+            return await asyncio.to_thread(deps_install, appid, verbs)
+        except (RuntimeError, ValueError) as exc:
+            return {**await asyncio.to_thread(deps_status, appid), "error": str(exc)}
 
     async def get_sync_state(self):
         return await asyncio.to_thread(sync_state)
