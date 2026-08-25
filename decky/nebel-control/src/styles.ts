@@ -92,21 +92,6 @@ export const styles = `
         gap: 8px;
         align-items: center;
       }
-      .nebel-control-root .nebel-color-picker-flex,
-      .nebel-native .nebel-color-picker-flex {
-        display: flex;
-        gap: 14px;
-        align-items: flex-start;
-        width: 100%;
-      }
-      .nebel-control-root .nebel-color-hsb-col,
-      .nebel-native .nebel-color-hsb-col {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        min-width: 0;
-      }
       .nebel-control-root .nebel-color-sv-wrap,
       .nebel-control-root .nebel-color-hue-wrap {
         position: relative;
