@@ -92,3 +92,22 @@ if [[ "${NEBEL_DEVICE_ID:-}" == "retroid-pocket-flip2" ]]; then
     param=/sys/module/retroid/parameters/home_pulse_stretch_ms
     [[ -w "$param" ]] && echo 400 >"$param"
 fi
+
+# RP6 (SM8550): the battery fuel gauge and Qualcomm battery-manager psy
+# devices keep their wake IRQs armed, and on charger they fire on every
+# charge-status tick, bouncing the console out of deep suspend seconds
+# after entry. Confirmed on hardware via /var/log/nebel-suspend cycle logs:
+# every instant-wake cycle had +1..3 `battery` wakeups, pwrkey none; with
+# these disabled the console sleeps on charger normally. Their wake buys us
+# nothing (the PMIC handles low-battery protection in hardware), so turn it
+# off. ucsi-source-psy stays enabled: plugging the charger in during sleep
+# still wakes the console to show charging.
+if [[ "${NEBEL_DEVICE_ID:-}" == "retroid-pocket-6" ]]; then
+    for w in /sys/class/wakeup/wakeup*; do
+        case "$(cat "$w/name" 2>/dev/null)" in
+            battery | qcom-battmgr-usb | qcom-battmgr-wls)
+                [[ -w "$w/device/power/wakeup" ]] && echo disabled >"$w/device/power/wakeup"
+                ;;
+        esac
+    done
+fi
