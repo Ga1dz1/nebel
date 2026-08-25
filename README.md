@@ -299,6 +299,14 @@ Choose an update channel and trigger the update from Steam's system settings:
   PipeWire's graph quantum post-resume); not yet confirmed to cover every
   device or every case.
 
+## ☕ Support the Project
+
+Nebel is completely free and open-source. If you enjoy this custom OS and want to support further development (or just buy me a coffee for the late-night coding sessions), feel free to drop a tip!
+
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gaidzi)
+
+Huge thanks to everyone who helps keep the project moving forward!
+
 ---
 
 **Nebel OS** — операційна система для ARM-портативок у дусі SteamOS, збудована
@@ -612,6 +620,15 @@ Nebel вміє оновлюватися на місці — без перепр�
   SM8250 (Retroid Pocket Mini V2, 5, Flip2) має цільове виправлення (підкидання
   кванту графа PipeWire після пробудження); ще не підтверджено, що воно
   покриває кожен пристрій і кожен випадок.
+
+  ## ☕ Підтримати проєкт
+
+Nebel — це абсолютно безкоштовна прошивка з відкритим кодом. Якщо вам зайшла ця ОС і є бажання підтримати її розвиток (або просто закинути на каву за нічні посиденьки над кодом) — буду дуже вдячний!
+
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gaidzi)
+
+Величезне дякую всім, хто допомагає проєкту рухатися далі!
+
 
 ## Спільнота
 
