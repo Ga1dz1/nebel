@@ -14,7 +14,7 @@ Includes:
 * Over-the-air updates (signed and verified on-device)
 * Install to internal storage (alongside Android)
 * Power and fan control in the Steam UI
-* Per-game compatibility and Proton settings (Decky plugin)
+* Per-game compatibility and Proton settings built into Steam
 * External display management from game mode
 * RGB stick lighting studio with notification cascade
 * Save & settings sync between devices
@@ -202,7 +202,7 @@ partition over `fastboot` to force it back to the SD card.
 x86/x86_64 emulation and CachyOS Proton 11 are set up out of the box, so for
 most games you can just install from Steam and press play, with no extra setup. The
 rest of Nebel works like SteamOS, and the Nebel-specific controls live in
-**Nebel Control**, a Decky plugin in the Quick Access Menu, for tuning and the
+**Nebel Control**, built into Steam's own menus, for tuning and the
 occasional game that needs it.
 
 ### Quick Access Menu and Nebel Control
@@ -316,7 +316,7 @@ Choose an update channel and trigger the update from Steam's system settings:
 * Оновлення «по повітрю» (підписані, перевіряються на пристрої)
 * Встановлення у внутрішню пам'ять — поруч із Android
 * Керування живленням і вентилятором просто в інтерфейсі Steam
-* Повігорні налаштування сумісності й Proton (плаґін Decky)
+* Повігорні налаштування сумісності й Proton, вбудовані в Steam
 * Керування зовнішнім екраном із ігрового режиму
 * Студія RGB-підсвітки стіків із каскадом сповіщень
 * Синхронізація збережень і налаштувань між пристроями
@@ -509,7 +509,7 @@ SD-картою: поки Nebel встановлений внутрішньо, �
 Емуляція x86/x86_64 і CachyOS Proton 11 налаштовані з коробки, тож для
 більшості ігор достатньо встановити гру в Steam і натиснути «грати», без
 жодного додаткового налаштування. Решта Nebel працює як SteamOS, а
-специфічні для Nebel регулятори живуть у **Nebel Control** — плаґіні Decky в
+специфічні для Nebel регулятори живуть у **Nebel Control** — вбудованому в
 меню швидкого доступу — для тонкого налаштування й поодиноких ігор, які цього
 потребують.
 
