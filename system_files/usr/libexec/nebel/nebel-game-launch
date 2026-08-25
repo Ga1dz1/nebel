@@ -426,21 +426,34 @@ def apply_dxvk_override(pfx, settings):
         state_path.unlink(missing_ok=True)
 
 
-# Named launch-flag presets (the "Launch flags" toggles in nebel-control):
-# each enabled entry lands in the game's environment - the managed, toggleable
-# equivalent of Steam's free-form launch options line (VKD3D_FEATURE_LEVEL=
-# 12_1 %command% and friends). Boolean on/off knobs only; anything taking a
-# value belongs in a dedicated picker.
+# Named launch-flag presets (the "Launch flags" toggles in nebel-control),
+# aimed at games that fail to launch or hang at startup - the managed,
+# toggleable equivalent of Steam's launch options line. The set mirrors what
+# ProtonDB reports actually reach for: VKD3D_FEATURE_LEVEL for DX12 titles
+# that black-screen (Subnautica 2, WoW-era DX12), PROTON_NO_D3D12 /
+# PROTON_USE_WINED3D as renderer fallbacks, PROTON_NO_FSYNC/NO_ESYNC for
+# startup hangs and anticheat-init failures (Doom Eternal et al),
+# PROTON_OLD_GL_STRING for old OpenGL games, PROTON_FORCE_LARGE_ADDRESS_AWARE
+# for 32-bit-era titles crashing on big-memory hosts, and the winhttp DLL
+# override that mod loaders and third-party launchers need.
+# Boolean on/off knobs only; anything taking a value belongs in a picker.
 PRESET_ENV = {
     "dx12Fl121": {"VKD3D_FEATURE_LEVEL": "12_1"},
-    "dxvkHud": {"DXVK_HUD": "fps"},
-    "noWineLog": {"WINEDEBUG": "-all"},
+    "noD3d12": {"PROTON_NO_D3D12": "1"},
+    "wineD3d": {"PROTON_USE_WINED3D": "1"},
+    "oldGlString": {"PROTON_OLD_GL_STRING": "1"},
+    "largeAddress": {"PROTON_FORCE_LARGE_ADDRESS_AWARE": "1"},
+    "winhttpOverride": {"WINEDLLOVERRIDES": "winhttp.dll=n,b"},
     "noFsync": {"PROTON_NO_FSYNC": "1"},
     "noEsync": {"PROTON_NO_ESYNC": "1"},
 }
 
 
 def apply_env_presets(settings, env):
+    # DXVK-async builds ship in the image but only engage when DXVK_ASYNC=1
+    # is set; turn it on automatically when the user picks an async build.
+    if "async" in str(settings.get("dxvkVersion") or "").lower():
+        env.setdefault("DXVK_ASYNC", "1")
     presets = settings.get("envPresets")
     if not isinstance(presets, dict):
         return

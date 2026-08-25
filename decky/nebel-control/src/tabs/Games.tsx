@@ -646,11 +646,14 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
               )}
             </Collapsible>
             <Collapsible label={t("Launch flags")}>
-              <ToggleField label={t("D3D12 feature level 12_1")} checked={envPresets.dx12Fl121 === true} onChange={(value) => setEnvPreset("dx12Fl121", value)} />
-              <ToggleField label={t("DXVK on-screen FPS")} checked={envPresets.dxvkHud === true} onChange={(value) => setEnvPreset("dxvkHud", value)} />
-              <ToggleField label={t("Disable Wine debug logging")} checked={envPresets.noWineLog === true} onChange={(value) => setEnvPreset("noWineLog", value)} />
-              <ToggleField label={t("Disable fsync")} checked={envPresets.noFsync === true} onChange={(value) => setEnvPreset("noFsync", value)} />
-              <ToggleField label={t("Disable esync")} checked={envPresets.noEsync === true} onChange={(value) => setEnvPreset("noEsync", value)} />
+              <ToggleField label={t("D3D12 feature level 12_1")} description={t("For DirectX 12 games that black-screen or refuse to start")} checked={envPresets.dx12Fl121 === true} onChange={(value) => setEnvPreset("dx12Fl121", value)} />
+              <ToggleField label={t("Disable DirectX 12")} description={t("For games whose DirectX 12 mode crashes - they fall back to DX11")} checked={envPresets.noD3d12 === true} onChange={(value) => setEnvPreset("noD3d12", value)} />
+              <ToggleField label={t("WineD3D instead of DXVK")} description={t("For old DirectX 9-11 games that won't start on DXVK")} checked={envPresets.wineD3d === true} onChange={(value) => setEnvPreset("wineD3d", value)} />
+              <ToggleField label={t("Old OpenGL compatibility")} description={t("For old OpenGL games that misdetect the graphics driver")} checked={envPresets.oldGlString === true} onChange={(value) => setEnvPreset("oldGlString", value)} />
+              <ToggleField label={t("Large address aware (32-bit games)")} description={t("For 32-bit era games crashing with out-of-memory errors")} checked={envPresets.largeAddress === true} onChange={(value) => setEnvPreset("largeAddress", value)} />
+              <ToggleField label={t("Mod/launcher DLL override")} description={t("Needed by mod loaders and third-party launchers (winhttp)")} checked={envPresets.winhttpOverride === true} onChange={(value) => setEnvPreset("winhttpOverride", value)} />
+              <ToggleField label={t("Disable fsync")} description={t("For games that hang at startup or in anti-cheat init")} checked={envPresets.noFsync === true} onChange={(value) => setEnvPreset("noFsync", value)} />
+              <ToggleField label={t("Disable esync")} description={t("For games that hang at startup or in anti-cheat init")} checked={envPresets.noEsync === true} onChange={(value) => setEnvPreset("noEsync", value)} />
               <div className="nebel-compat-note">{t("Launch switches applied to the game's environment - the managed equivalent of Steam's launch options line")}</div>
             </Collapsible>
           </PanelSection>
