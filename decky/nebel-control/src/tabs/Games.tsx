@@ -282,6 +282,13 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
       return next;
     });
   };
+  const envPresets: Record<string, boolean> = values.envPresets || {};
+  const setEnvPreset = (key: string, on: boolean) => {
+    const next = { ...envPresets };
+    if (on) next[key] = true;
+    else delete next[key];
+    patchSettings({ envPresets: Object.keys(next).length ? next : undefined });
+  };
   const resetGame = async () => {
     if (!game?.appid) return;
     const appid = game.appid;
@@ -637,6 +644,14 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
                 : null}
               </>
               )}
+            </Collapsible>
+            <Collapsible label={t("Launch flags")}>
+              <ToggleField label={t("D3D12 feature level 12_1")} checked={envPresets.dx12Fl121 === true} onChange={(value) => setEnvPreset("dx12Fl121", value)} />
+              <ToggleField label={t("DXVK on-screen FPS")} checked={envPresets.dxvkHud === true} onChange={(value) => setEnvPreset("dxvkHud", value)} />
+              <ToggleField label={t("Disable Wine debug logging")} checked={envPresets.noWineLog === true} onChange={(value) => setEnvPreset("noWineLog", value)} />
+              <ToggleField label={t("Disable fsync")} checked={envPresets.noFsync === true} onChange={(value) => setEnvPreset("noFsync", value)} />
+              <ToggleField label={t("Disable esync")} checked={envPresets.noEsync === true} onChange={(value) => setEnvPreset("noEsync", value)} />
+              <div className="nebel-compat-note">{t("Launch switches applied to the game's environment - the managed equivalent of Steam's launch options line")}</div>
             </Collapsible>
           </PanelSection>
           {!editingDefault && game?.appid ? (

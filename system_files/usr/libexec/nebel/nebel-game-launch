@@ -426,6 +426,29 @@ def apply_dxvk_override(pfx, settings):
         state_path.unlink(missing_ok=True)
 
 
+# Named launch-flag presets (the "Launch flags" toggles in nebel-control):
+# each enabled entry lands in the game's environment - the managed, toggleable
+# equivalent of Steam's free-form launch options line (VKD3D_FEATURE_LEVEL=
+# 12_1 %command% and friends). Boolean on/off knobs only; anything taking a
+# value belongs in a dedicated picker.
+PRESET_ENV = {
+    "dx12Fl121": {"VKD3D_FEATURE_LEVEL": "12_1"},
+    "dxvkHud": {"DXVK_HUD": "fps"},
+    "noWineLog": {"WINEDEBUG": "-all"},
+    "noFsync": {"PROTON_NO_FSYNC": "1"},
+    "noEsync": {"PROTON_NO_ESYNC": "1"},
+}
+
+
+def apply_env_presets(settings, env):
+    presets = settings.get("envPresets")
+    if not isinstance(presets, dict):
+        return
+    for key, envvars in PRESET_ENV.items():
+        if presets.get(key):
+            env.update(envvars)
+
+
 def apply_memory_limit(settings):
     try:
         mb = int(settings.get("memoryLimitMB") or 0)
@@ -679,6 +702,11 @@ def main():
         apply_renderer(settings, os.environ)
     except Exception as exc:
         print(f"nebel-game-launch: renderer setting skipped: {exc}", file=sys.stderr)
+
+    try:
+        apply_env_presets(settings, os.environ)
+    except Exception as exc:
+        print(f"nebel-game-launch: launch flags skipped: {exc}", file=sys.stderr)
 
     try:
         apply_gpu_spoof(settings, os.environ, wined3d)

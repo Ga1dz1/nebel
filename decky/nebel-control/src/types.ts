@@ -35,6 +35,7 @@ export interface GameTweak {
   virtualDesktop?: string;
   memoryLimitMB?: number;
   gpuSpoof?: string;
+  envPresets?: Record<string, boolean>;
   [key: string]: any;
 }
 
