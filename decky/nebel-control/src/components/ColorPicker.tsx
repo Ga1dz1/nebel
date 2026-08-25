@@ -1,4 +1,4 @@
-import { PanelSectionRow } from "@decky/ui";
+import { PanelSectionRow, TextField } from "@decky/ui";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useCallback, useEffect, useRef } from "react";
 import { hexToHsb, hsbToHex, hsbToRgb } from "../lib/color";
@@ -106,6 +106,21 @@ export function ColorPicker({ label, hex, onChange }: {
   const svCursorY = clamp((1 - v / 100) * SV_HEIGHT, CURSOR_RADIUS, SV_HEIGHT - CURSOR_RADIUS);
   const hueCursorX = clamp((h / 360) * SV_WIDTH, 0, SV_WIDTH);
 
+  // Numeric HSB entry beside the square (the picker only fills half the row
+  // anyway) - for dialing in an exact color instead of hunting for it.
+  const applyHsb = (which: "h" | "s" | "b", raw: string) => {
+    const parsed = Math.round(Number(raw));
+    if (raw === "" || Number.isNaN(parsed)) return;
+    const [nh, ns, nv] =
+      which === "h" ? [clamp(parsed, 0, 359), s, v] : which === "s" ? [h, clamp(parsed, 0, 100), v] : [h, s, clamp(parsed, 0, 100)];
+    onChange(hsbToHex(nh, ns, nv));
+  };
+  const hsbFields: { channel: "h" | "s" | "b"; label: string; value: number; max: number }[] = [
+    { channel: "h", label: "H", value: Math.round(h), max: 359 },
+    { channel: "s", label: "S", value: Math.round(s), max: 100 },
+    { channel: "b", label: "B", value: Math.round(v), max: 100 },
+  ];
+
   return (
     <>
       <PanelSectionRow>
@@ -116,31 +131,46 @@ export function ColorPicker({ label, hex, onChange }: {
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
-        <div className="nebel-color-picker">
-          <div className="nebel-color-sv-wrap" style={{ width: SV_WIDTH, height: SV_HEIGHT }}>
-            <canvas
-              ref={svCanvasRef}
-              width={SV_WIDTH}
-              height={SV_HEIGHT}
-              className="nebel-color-sv-canvas"
-              onPointerDown={handleSvPointer}
-              onPointerMove={(event) => event.buttons === 1 && handleSvPointer(event)}
-            />
-            <div
-              className="nebel-color-cursor"
-              style={{ left: svCursorX, top: svCursorY, backgroundColor: `#${hex}` }}
-            />
+        <div className="nebel-color-picker-flex">
+          <div className="nebel-color-picker">
+            <div className="nebel-color-sv-wrap" style={{ width: SV_WIDTH, height: SV_HEIGHT }}>
+              <canvas
+                ref={svCanvasRef}
+                width={SV_WIDTH}
+                height={SV_HEIGHT}
+                className="nebel-color-sv-canvas"
+                onPointerDown={handleSvPointer}
+                onPointerMove={(event) => event.buttons === 1 && handleSvPointer(event)}
+              />
+              <div
+                className="nebel-color-cursor"
+                style={{ left: svCursorX, top: svCursorY, backgroundColor: `#${hex}` }}
+              />
+            </div>
+            <div className="nebel-color-hue-wrap" style={{ width: SV_WIDTH, height: HUE_HEIGHT }}>
+              <canvas
+                ref={hueCanvasRef}
+                width={SV_WIDTH}
+                height={HUE_HEIGHT}
+                className="nebel-color-hue-canvas"
+                onPointerDown={handleHuePointer}
+                onPointerMove={(event) => event.buttons === 1 && handleHuePointer(event)}
+              />
+              <div className="nebel-color-hue-cursor" style={{ left: hueCursorX }} />
+            </div>
           </div>
-          <div className="nebel-color-hue-wrap" style={{ width: SV_WIDTH, height: HUE_HEIGHT }}>
-            <canvas
-              ref={hueCanvasRef}
-              width={SV_WIDTH}
-              height={HUE_HEIGHT}
-              className="nebel-color-hue-canvas"
-              onPointerDown={handleHuePointer}
-              onPointerMove={(event) => event.buttons === 1 && handleHuePointer(event)}
-            />
-            <div className="nebel-color-hue-cursor" style={{ left: hueCursorX }} />
+          <div className="nebel-color-hsb-col">
+            {hsbFields.map((field) => (
+              <TextField
+                key={field.channel}
+                label={field.label}
+                value={String(field.value)}
+                mustBeNumeric
+                rangeMin={0}
+                rangeMax={field.max}
+                onChange={(event) => applyHsb(field.channel, event.target.value)}
+              />
+            ))}
           </div>
         </div>
       </PanelSectionRow>

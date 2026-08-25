@@ -1958,7 +1958,21 @@ const styles = `
         flex-direction: column;
         gap: 8px;
         align-items: center;
+      }
+      .nebel-control-root .nebel-color-picker-flex,
+      .nebel-native .nebel-color-picker-flex {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
         width: 100%;
+      }
+      .nebel-control-root .nebel-color-hsb-col,
+      .nebel-native .nebel-color-hsb-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
       }
       .nebel-control-root .nebel-color-sv-wrap,
       .nebel-control-root .nebel-color-hue-wrap {
@@ -2972,7 +2986,21 @@ function ColorPicker({ label, hex, onChange }) {
     const svCursorX = clamp((s / 100) * SV_WIDTH, CURSOR_RADIUS, SV_WIDTH - CURSOR_RADIUS);
     const svCursorY = clamp((1 - v / 100) * SV_HEIGHT, CURSOR_RADIUS, SV_HEIGHT - CURSOR_RADIUS);
     const hueCursorX = clamp((h / 360) * SV_WIDTH, 0, SV_WIDTH);
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-preview-row", children: [label !== undefined && SP_JSX.jsx("span", { className: "nebel-color-preview-label", children: label }), SP_JSX.jsx("div", { className: "nebel-color-swatch", style: { backgroundColor: `#${hex}` } }), SP_JSX.jsxs("span", { className: "nebel-color-preview-hex", children: ["#", hex] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-picker", children: [SP_JSX.jsxs("div", { className: "nebel-color-sv-wrap", style: { width: SV_WIDTH, height: SV_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: svCanvasRef, width: SV_WIDTH, height: SV_HEIGHT, className: "nebel-color-sv-canvas", onPointerDown: handleSvPointer, onPointerMove: (event) => event.buttons === 1 && handleSvPointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-cursor", style: { left: svCursorX, top: svCursorY, backgroundColor: `#${hex}` } })] }), SP_JSX.jsxs("div", { className: "nebel-color-hue-wrap", style: { width: SV_WIDTH, height: HUE_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: hueCanvasRef, width: SV_WIDTH, height: HUE_HEIGHT, className: "nebel-color-hue-canvas", onPointerDown: handleHuePointer, onPointerMove: (event) => event.buttons === 1 && handleHuePointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-hue-cursor", style: { left: hueCursorX } })] })] }) })] }));
+    // Numeric HSB entry beside the square (the picker only fills half the row
+    // anyway) - for dialing in an exact color instead of hunting for it.
+    const applyHsb = (which, raw) => {
+        const parsed = Math.round(Number(raw));
+        if (raw === "" || Number.isNaN(parsed))
+            return;
+        const [nh, ns, nv] = which === "h" ? [clamp(parsed, 0, 359), s, v] : which === "s" ? [h, clamp(parsed, 0, 100), v] : [h, s, clamp(parsed, 0, 100)];
+        onChange(hsbToHex(nh, ns, nv));
+    };
+    const hsbFields = [
+        { channel: "h", label: "H", value: Math.round(h), max: 359 },
+        { channel: "s", label: "S", value: Math.round(s), max: 100 },
+        { channel: "b", label: "B", value: Math.round(v), max: 100 },
+    ];
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-preview-row", children: [label !== undefined && SP_JSX.jsx("span", { className: "nebel-color-preview-label", children: label }), SP_JSX.jsx("div", { className: "nebel-color-swatch", style: { backgroundColor: `#${hex}` } }), SP_JSX.jsxs("span", { className: "nebel-color-preview-hex", children: ["#", hex] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-picker-flex", children: [SP_JSX.jsxs("div", { className: "nebel-color-picker", children: [SP_JSX.jsxs("div", { className: "nebel-color-sv-wrap", style: { width: SV_WIDTH, height: SV_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: svCanvasRef, width: SV_WIDTH, height: SV_HEIGHT, className: "nebel-color-sv-canvas", onPointerDown: handleSvPointer, onPointerMove: (event) => event.buttons === 1 && handleSvPointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-cursor", style: { left: svCursorX, top: svCursorY, backgroundColor: `#${hex}` } })] }), SP_JSX.jsxs("div", { className: "nebel-color-hue-wrap", style: { width: SV_WIDTH, height: HUE_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: hueCanvasRef, width: SV_WIDTH, height: HUE_HEIGHT, className: "nebel-color-hue-canvas", onPointerDown: handleHuePointer, onPointerMove: (event) => event.buttons === 1 && handleHuePointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-hue-cursor", style: { left: hueCursorX } })] })] }), SP_JSX.jsx("div", { className: "nebel-color-hsb-col", children: hsbFields.map((field) => (SP_JSX.jsx(DFL.TextField, { label: field.label, value: String(field.value), mustBeNumeric: true, rangeMin: 0, rangeMax: field.max, onChange: (event) => applyHsb(field.channel, event.target.value) }, field.channel))) })] }) })] }));
 }
 
 const fmtTemp = (v) => (v == null ? "—" : `${v.toFixed(1)} °C`);
