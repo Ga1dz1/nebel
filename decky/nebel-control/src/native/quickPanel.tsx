@@ -1,4 +1,4 @@
-import { ButtonItem, ErrorBoundary, PanelSection, afterPatch, findInReactTree, findModuleByExport, getReactRoot } from "@decky/ui";
+import { ButtonItem, DropdownItemInternal, ErrorBoundary, PanelSection, afterPatch, findInReactTree, findModuleByExport, getReactRoot } from "@decky/ui";
 import { useEffect, useState } from "react";
 import type { Patch } from "@decky/ui";
 import { getDisplayState, restartGamescopeSession, setDisplayConfig, setStickLedEnabled, setStickLedMaxBrightness } from "../backend";
@@ -260,10 +260,26 @@ function QuickPowerProfileDropdown() {
   );
 }
 
+// Matches the native perf-profile dropdown element whether its type is the
+// raw Steam component or our own wrapped copy of it. cascadeWrapTypes swaps
+// element types for wrapped versions, so a strict === against
+// nativePerfProfileType can never fire once the cascade has passed; the
+// wrapper forwards toString to the original source, so the token survives.
+const isNativePerfProfileEl = (el: any): boolean => {
+  const t = el?.type;
+  if (!t || !nativePerfProfileType) return false;
+  if (t === nativePerfProfileType) return true;
+  try {
+    return typeof t.toString === "function" && t.toString().includes("PlatformPerformanceProfile_Label");
+  } catch {
+    return false;
+  }
+};
+
 function replaceNativePerfProfile(node: any, depth: number): boolean {
   if (!node || typeof node !== "object" || depth > 8) return false;
   // Single-child case: <Row><SG/></Row> reached via props.children.
-  if (node.props?.children?.type === nativePerfProfileType) {
+  if (isNativePerfProfileEl(node.props?.children)) {
     node.props.children = (
       <ErrorBoundary>
         <QuickPowerProfileDropdown />
@@ -276,7 +292,7 @@ function replaceNativePerfProfile(node: any, depth: number): boolean {
   for (let i = 0; i < arr.length; i++) {
     const child = arr[i];
     if (!child || typeof child !== "object") continue;
-    if (child.type === nativePerfProfileType || child.props?.children?.type === nativePerfProfileType) {
+    if (isNativePerfProfileEl(child) || isNativePerfProfileEl(child.props?.children)) {
       arr[i] = (
         <ErrorBoundary key="nebel-power">
           <QuickPowerProfileRow />
@@ -314,8 +330,15 @@ function visitPerf(ret: any): any {
       </PanelSection>
     );
   }
+  // Search BEFORE cascading: the cascade swaps element types for wrapped
+  // copies, which would hide the raw native type from the matcher at this
+  // level. If the dropdown lives deeper, the cascade wraps those levels and
+  // their own visitPerf call repeats the search-first dance there.
+  if (replaceNativePerfProfile(ret?.props?.children ?? ret, 0)) {
+    console.log(LOG, "native perf profile dropdown replaced");
+    return null;
+  }
   cascadeWrapTypes(ret, 0);
-  replaceNativePerfProfile(ret?.props?.children ?? ret, 0);
   return null;
 }
 
