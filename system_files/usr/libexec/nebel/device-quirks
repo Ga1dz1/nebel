@@ -69,8 +69,10 @@ fi
 # V2 (unverified on real hardware, but the DTS nodes match). Retroid Pocket
 # 6 is confirmed on real hardware to have the identical /sys/class/leds/l:r1
 # etc. zone layout, despite being a different SoC (SM8550) and gamepad MCU.
+# Mini V1 shares the SM8250 platform and MCU with V2 - included on the same
+# DTS-match basis as RP5/Flip2 (unverified on real hardware).
 case "${NEBEL_DEVICE_ID:-}" in
-    retroid-pocket-mini-v2 | retroid-pocket-5 | retroid-pocket-flip2 | retroid-pocket-6)
+    retroid-pocket-mini | retroid-pocket-mini-v2 | retroid-pocket-5 | retroid-pocket-flip2 | retroid-pocket-6)
         /usr/libexec/nebel/stick-led-color apply || true
         ;;
 esac

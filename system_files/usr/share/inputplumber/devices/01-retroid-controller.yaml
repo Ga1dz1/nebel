@@ -19,6 +19,11 @@ matches:
       sys_path: /sys/firmware/devicetree/base
       attributes:
         - name: model
+          value: Retroid Pocket Mini
+  - udev:
+      sys_path: /sys/firmware/devicetree/base
+      attributes:
+        - name: model
           value: Retroid Pocket Mini V2
   - udev:
       sys_path: /sys/firmware/devicetree/base
