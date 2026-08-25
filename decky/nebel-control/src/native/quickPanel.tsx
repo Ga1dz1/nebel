@@ -1,4 +1,4 @@
-import { ButtonItem, ErrorBoundary, Field, PanelSection, afterPatch, findInReactTree, findModuleByExport, getReactRoot } from "@decky/ui";
+import { ButtonItem, ErrorBoundary, PanelSection, afterPatch, findInReactTree, findModuleByExport, getReactRoot } from "@decky/ui";
 import { useEffect, useState } from "react";
 import type { Patch } from "@decky/ui";
 import { getDisplayState, restartGamescopeSession, setDisplayConfig, setStickLedEnabled, setStickLedMaxBrightness } from "../backend";
@@ -8,26 +8,44 @@ import { titleCase, update } from "../lib/util";
 import type { DisplayState } from "../types";
 import { useInjectedConfig } from "./injectedConfig";
 
-// One compact block appended to Steam's own Quick Access "Settings" panel
-// (the "..." menu): just the levers worth touching mid-game - stick lighting
-// on/off + brightness, the power profile, and the primary-display pick when
-// an external panel is connected. Deliberately UNBRANDED (no section title,
-// no "Nebel Control" anywhere): it must read as stock quick settings, not a
-// plugin ad. The plugin returns no `content` to Decky (so it no longer
-// clutters the Decky plugin list); this block is its QAM presence instead,
-// and the fullscreen control center is reached from Settings -> System.
+// Nebel's quick levers, spliced into Steam's own Quick Access tabs so they
+// read as stock UI (no branding, no separate panel):
+// - Quick Settings (tab 4): stick lighting on/off + brightness go INTO the
+//   native "Other" toggles section, next to Wi-Fi/Bluetooth/Night mode; the
+//   external-display pick follows as its own small section (only while an
+//   external panel is connected).
+// - Performance (tab 5): our power-profile select REPLACES Steam's native
+//   "Performance Profile" dropdown. That dropdown is dead on this hardware:
+//   it writes the steamos_platform_performance_profile client setting, which
+//   on a real Deck is consumed by the platform perf layer - here Perf state
+//   is empty, sysfs never changes, and the value isn't even persisted, so
+//   the control only pretended to work. Our select drives the nebel power
+//   daemon instead, keeping an actual working profile switch in its place.
+// The plugin returns no `content` to Decky; these splices are its QAM
+// presence, and the fullscreen control center is reached from Settings ->
+// System.
 
 // Compact external-display control: only rendered while an external panel is
 // actually connected; mirrors Display.tsx's primary-pick semantics (single
 // output per gamescope session, portrait panels pre-select a rotation).
 function QuickDisplayRows() {
   const [state, setState] = useState<DisplayState | null>(null);
-  const [busy, setBusy] = useState(false);
   useEffect(() => {
     getDisplayState().then(setState).catch(() => {});
   }, []);
   const externals = state?.connectors.filter((c) => !c.internal && c.connected) || [];
   if (!state || !externals.length) return null;
+  // Own section (renders only while an external panel is connected): the
+  // select + restart button don't belong inside the native toggles group.
+  return (
+    <PanelSection>
+      <QuickDisplayRowsInner state={state} setState={setState} externals={externals} />
+    </PanelSection>
+  );
+}
+
+function QuickDisplayRowsInner({ state, setState, externals }: { state: DisplayState; setState: (s: DisplayState) => void; externals: DisplayState["connectors"] }) {
+  const [busy, setBusy] = useState(false);
   const INTERNAL = "__internal__";
   const selectPrimary = (connector: string) => {
     setBusy(true);
@@ -74,21 +92,13 @@ function QuickDisplayRows() {
   );
 }
 
-function QuickPanel() {
-  const { config, setConfig, message } = useInjectedConfig();
-  if (!config) {
-    return (
-      <PanelSection>
-        <Field label={message} />
-      </PanelSection>
-    );
-  }
-  const stickLed = config.stickLed?.supported ? config.stickLed : null;
-  const profile = config.power?.general?.default_profile || "balanced";
-  const profiles = Object.entries(config.power?.profiles || {}).map(([name, p]) => ({
-    data: name,
-    label: p.label || titleCase(name),
-  }));
+// Stick lighting toggle + brightness, rendered WITHOUT a section wrapper:
+// they are appended into the native "Other" toggles section so they sit in
+// the same visual group as Wi-Fi/Bluetooth/Night mode.
+function QuickLightingRows() {
+  const { config, setConfig } = useInjectedConfig();
+  const stickLed = config?.stickLed?.supported ? config.stickLed : null;
+  if (!config || !stickLed) return null;
   // Optimistic set + immediate backend apply, rolling back on failure (same
   // pattern as the Lighting tab).
   const applyLighting = (patch: Partial<{ enabled: boolean; maxBrightness: number }>, call: () => Promise<any>) => {
@@ -99,66 +109,236 @@ function QuickPanel() {
       .catch(() => setConfig((current) => (current ? { ...current, stickLed: previous } : current)));
   };
   return (
-    <PanelSection>
-      {stickLed && (
-        <>
-          <ToggleRow
-            label={t("Stick Lighting")}
-            value={stickLed.enabled}
-            onChange={(value) => applyLighting({ enabled: value }, () => setStickLedEnabled(value))}
-          />
-          {stickLed.enabled && !stickLed.screenLink && (
-            <SliderEdit
-              label={t("Max Brightness")}
-              value={Math.round((stickLed.maxBrightness ?? 1) * 100)}
-              min={0}
-              max={100}
-              step={5}
-              onChange={(value) => applyLighting({ maxBrightness: value / 100 }, () => setStickLedMaxBrightness(value / 100))}
-            />
-          )}
-        </>
-      )}
-      {profiles.length > 0 && (
-        <SelectEdit
-          label={t("Power Profile")}
-          value={profile}
-          options={profiles}
-          onChange={(value) => setConfig((current) => (current ? update(current, ["power", "general", "default_profile"], value) : current))}
+    <>
+      <ToggleRow
+        label={t("Stick Lighting")}
+        value={stickLed.enabled}
+        onChange={(value) => applyLighting({ enabled: value }, () => setStickLedEnabled(value))}
+      />
+      {stickLed.enabled && !stickLed.screenLink && (
+        <SliderEdit
+          label={t("Max Brightness")}
+          value={Math.round((stickLed.maxBrightness ?? 1) * 100)}
+          min={0}
+          max={100}
+          step={5}
+          onChange={(value) => applyLighting({ maxBrightness: value / 100 }, () => setStickLedMaxBrightness(value / 100))}
         />
       )}
-      <QuickDisplayRows />
-    </PanelSection>
+    </>
+  );
+}
+
+// Power-profile pick only (no editing - that stays in Settings -> Power).
+// Takes the place of Steam's dead native profile dropdown in the Perf tab.
+function QuickPowerProfileRow() {
+  const { config, setConfig } = useInjectedConfig();
+  if (!config) return null;
+  const profile = config.power?.general?.default_profile || "balanced";
+  const profiles = Object.entries(config.power?.profiles || {}).map(([name, p]) => ({
+    data: name,
+    label: p.label || titleCase(name),
+  }));
+  if (!profiles.length) return null;
+  return (
+    <SelectEdit
+      label={t("Power Profile")}
+      value={profile}
+      options={profiles}
+      onChange={(value) => setConfig((current) => (current ? update(current, ["power", "general", "default_profile"], value) : current))}
+    />
   );
 }
 
 const LOG = "[Nebel Control] qam-quick-panel:";
 const QUICK_ACCESS_TAB_SETTINGS = 4;
+const QUICK_ACCESS_TAB_PERFORMANCE = 5;
 const WRAPPED = "__nebelQamQuickPanel";
+const WRAPPED_TYPE = "__nebelQamTypeWrapped";
 
-// Appends the block to the Quick Settings tab's panel. Two entry points:
-// afterPatch on the QAM menu renderer covers Steam rebuilding the tabs array
-// on a full re-render, and an install-time in-place wrap covers the array
-// that is already live (the menu component does not re-render on open). The
-// WRAPPED field stores the original panel, so wrapping never stacks and
-// uninstall can restore it.
+// Steam's native Perf-tab "Performance Profile" dropdown component (the
+// dead-on-this-hardware one). Found once at install time by its unique
+// localization token; null means "couldn't identify" (fallback path).
+let nativePerfProfileType: any = null;
+
+// Wraps a function component type so its render output can be visited (and
+// mutated) before React commits it. Cached per original type - a fresh
+// wrapper per wrap would remount the subtree every time Steam rebuilds the
+// tabs array. Idempotent: already-wrapped types pass through.
+const wrapTypeCache = new WeakMap<any, any>();
+function wrapRenderType(type: any, visit: (ret: any) => any): any {
+  if (!type || typeof type !== "function" || type.prototype?.isReactComponent || type[WRAPPED_TYPE]) return type;
+  const cached = wrapTypeCache.get(type);
+  if (cached) return cached;
+  const wrapped = (props: any) => {
+    const ret = type(props);
+    let extra: any = null;
+    try {
+      extra = visit(ret);
+    } catch (error) {
+      console.warn(LOG, "visit failed", error);
+    }
+    return extra ? (<>{ret}{extra}</>) : ret;
+  };
+  Object.assign(wrapped, type);
+  wrapped.toString = () => type.toString();
+  (wrapped as any)[WRAPPED_TYPE] = true;
+  wrapTypeCache.set(type, wrapped);
+  return wrapped;
+}
+
+// The Quick Settings panel (De) returns its sections as direct children of a
+// Fragment. Find the native "Other" section by its localized title and
+// append the lighting rows into it; if Steam ever moves/renames it, fall
+// back to a small section of our own so the controls don't vanish.
+function visitQuickSettings(ret: any): any {
+  let merged = false;
+  try {
+    // Steam hands the section the raw localization TOKEN as its title (not
+    // the localized string) - match both so locale never breaks the merge.
+    const otherToken = "#QuickAccess_Tab_Settings_Section_Other_Title";
+    const otherTitle = (window as any).LocalizationManager?.LocalizeString?.(otherToken);
+    const kids = ret?.props?.children;
+    const arr = Array.isArray(kids) ? kids : [kids];
+    const section = arr.find((el: any) => el?.props?.title && (el.props.title === otherToken || el.props.title === otherTitle));
+    if (section) {
+      const sc = section.props.children;
+      section.props.children = [
+        ...(Array.isArray(sc) ? sc : [sc]),
+        <ErrorBoundary key="nebel-lighting">
+          <QuickLightingRows />
+        </ErrorBoundary>,
+      ];
+      merged = true;
+      console.log(LOG, "lighting rows merged into native Other section");
+    }
+  } catch (error) {
+    console.warn(LOG, "quick settings merge failed", error);
+  }
+  if (!merged) console.log(LOG, "native Other section not found, using own panel");
+  return (
+    <>
+      {!merged && (
+        <PanelSection>
+          <ErrorBoundary>
+            <QuickLightingRows />
+          </ErrorBoundary>
+        </PanelSection>
+      )}
+      <ErrorBoundary>
+        <QuickDisplayRows />
+      </ErrorBoundary>
+    </>
+  );
+}
+
+// The Perf panel (F) only chooses between sub-components (VR / non-VR /
+// on-frame), so the visitor cascades one level: wrap every function
+// component in its output, and at the level whose returned tree contains
+// the native profile dropdown, swap that dropdown for our power-profile row.
+// The dropdown sits as `<Row><SG/></Row>` inside a children array (Steam's
+// PanelSectionRow), so both the element itself and its one-child row wrapper
+// are replaced; the single-child fallback swaps the dropdown in place with a
+// bare dropdown (already inside a row).
+function QuickPowerProfileDropdown() {
+  const { config, setConfig } = useInjectedConfig();
+  if (!config) return null;
+  const profile = config.power?.general?.default_profile || "balanced";
+  const profiles = Object.entries(config.power?.profiles || {}).map(([name, p]) => ({
+    data: name,
+    label: p.label || titleCase(name),
+  }));
+  if (!profiles.length) return null;
+  return (
+    <DropdownItemInternal
+      label={t("Power Profile")}
+      childrenContainerWidth="max"
+      selectedOption={profile}
+      rgOptions={profiles}
+      onChange={(option) => setConfig((current) => (current ? update(current, ["power", "general", "default_profile"], option.data) : current))}
+    />
+  );
+}
+
+function replaceNativePerfProfile(node: any, depth: number): boolean {
+  if (!node || typeof node !== "object" || depth > 8) return false;
+  // Single-child case: <Row><SG/></Row> reached via props.children.
+  if (node.props?.children?.type === nativePerfProfileType) {
+    node.props.children = (
+      <ErrorBoundary>
+        <QuickPowerProfileDropdown />
+      </ErrorBoundary>
+    );
+    return true;
+  }
+  const kids = node.props?.children;
+  const arr = Array.isArray(kids) ? kids : kids ? [kids] : [];
+  for (let i = 0; i < arr.length; i++) {
+    const child = arr[i];
+    if (!child || typeof child !== "object") continue;
+    if (child.type === nativePerfProfileType || child.props?.children?.type === nativePerfProfileType) {
+      arr[i] = (
+        <ErrorBoundary key="nebel-power">
+          <QuickPowerProfileRow />
+        </ErrorBoundary>
+      );
+      if (Array.isArray(kids)) node.props.children = arr;
+      else node.props.children = arr[0];
+      return true;
+    }
+    if (replaceNativePerfProfile(child, depth + 1)) return true;
+  }
+  return false;
+}
+
+function cascadeWrapTypes(node: any, depth: number) {
+  if (!node || typeof node !== "object" || depth > 4) return;
+  if (Array.isArray(node)) {
+    for (const child of node) cascadeWrapTypes(child, depth);
+    return;
+  }
+  const nextType = wrapRenderType(node.type, visitPerf);
+  if (nextType !== node.type) node.type = nextType;
+  cascadeWrapTypes(node.props?.children, depth + 1);
+}
+
+function visitPerf(ret: any): any {
+  if (!nativePerfProfileType) {
+    // Couldn't identify the native dropdown - append ours so the feature
+    // isn't lost, leaving Steam's control alone.
+    return (
+      <PanelSection>
+        <ErrorBoundary>
+          <QuickPowerProfileRow />
+        </ErrorBoundary>
+      </PanelSection>
+    );
+  }
+  cascadeWrapTypes(ret, 0);
+  replaceNativePerfProfile(ret?.props?.children ?? ret, 0);
+  return null;
+}
+
+// Splices our rows into the Quick Settings and Performance tab panels.
+// Two entry points: afterPatch on the QAM menu renderer covers Steam
+// rebuilding the tabs array on a full re-render, and an install-time
+// in-place wrap covers the array that is already live (the menu component
+// does not re-render on open). The WRAPPED field stores the original panel,
+// so wrapping never stacks and uninstall can restore it.
 function wrapTabs(tabsNode: any) {
   const tabs = tabsNode?.props?.tabs;
   if (!Array.isArray(tabs)) return;
   for (const tab of tabs) {
-    if (!tab || tab[WRAPPED]) continue;
-    if (tab.key !== QUICK_ACCESS_TAB_SETTINGS && String(tab.key) !== String(QUICK_ACCESS_TAB_SETTINGS)) continue;
+    if (!tab || tab[WRAPPED] || !tab.panel) continue;
+    const key = String(tab.key);
+    const visit = key === String(QUICK_ACCESS_TAB_SETTINGS) ? visitQuickSettings : key === String(QUICK_ACCESS_TAB_PERFORMANCE) ? visitPerf : null;
+    if (!visit) continue;
     const original = tab.panel;
+    const wrappedType = wrapRenderType(original.type, visit);
+    if (wrappedType === original.type) continue;
     tab[WRAPPED] = original;
-    tab.panel = (
-      <>
-        {original}
-        <ErrorBoundary>
-          <QuickPanel />
-        </ErrorBoundary>
-      </>
-    );
-    console.log(LOG, "quick settings panel wrapped");
+    tab.panel = { ...original, type: wrappedType };
+    console.log(LOG, key === String(QUICK_ACCESS_TAB_SETTINGS) ? "quick settings panel wrapped" : "performance panel wrapped");
   }
 }
 
@@ -190,6 +370,22 @@ export function installQamQuickPanel(): () => void {
     if (!renderers.length) {
       console.log(LOG, "no QAM renderer export found");
       return () => {};
+    }
+    // Steam's native Perf-tab "Performance Profile" dropdown - identified by
+    // its unique localization token (module 38747's SG export at the time of
+    // writing). Null means we couldn't find it: visitPerf then appends our
+    // power-profile row instead of replacing, leaving Steam's control alone.
+    try {
+      const perfModule = findModuleByExport(
+        (e: any) => typeof e === "function" && !e.prototype?.isReactComponent && e.toString().includes("PlatformPerformanceProfile_Label"),
+      );
+      nativePerfProfileType =
+        Object.values(perfModule || {}).find(
+          (e: any) => typeof e === "function" && e.toString().includes("PlatformPerformanceProfile_Label"),
+        ) || null;
+      console.log(LOG, nativePerfProfileType ? "native perf profile dropdown found" : "native perf profile dropdown NOT found");
+    } catch (error) {
+      console.warn(LOG, "perf profile lookup failed", error);
     }
     const handler = (_args: any[], ret: any) => {
       try {
@@ -224,8 +420,13 @@ export function installQamQuickPanel(): () => void {
           findInReactTree(root, (n: any) => Array.isArray(n?.memoizedProps?.tabs) && n.memoizedProps.tabs[0] && "key" in n.memoizedProps.tabs[0]);
         if (!tabsNode) return;
         const tabs = tabsNode.memoizedProps.tabs;
-        const target = tabs.find((tab: any) => tab && String(tab.key) === String(QUICK_ACCESS_TAB_SETTINGS));
-        if (target && !target[WRAPPED]) {
+        const needsWrap = tabs.some(
+          (tab: any) =>
+            tab &&
+            !tab[WRAPPED] &&
+            (String(tab.key) === String(QUICK_ACCESS_TAB_SETTINGS) || String(tab.key) === String(QUICK_ACCESS_TAB_PERFORMANCE)),
+        );
+        if (needsWrap) {
           console.log(LOG, "tabs array rebuilt by Steam, re-wrapping");
           wrapTabs({ props: { tabs } });
         }

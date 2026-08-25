@@ -506,31 +506,30 @@ export function Lighting({ config, setConfig, qam }: {
       {separate && (
         <SelectEdit label={t("Stick")} value={selectedSide} options={SIDE_OPTIONS} onChange={(value) => setSelectedSide(value as "l" | "r")} />
       )}
-      <Collapsible label={t("Advanced")}>
-        {mode === "reactive" && (
-          <>
-            <SelectEdit label={t("Button")} value={flashButton} options={FLASH_BUTTON_OPTIONS} onChange={setFlashButton} />
-            <PresetSwatchGrid
-              colors={PRESET_COLORS}
-              selected={stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR}
-              onSelect={setStickLedFlashColor}
-            />
-            <ColorPicker
-              hex={stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR}
-              onChange={setStickLedFlashColor}
-            />
-          </>
-        )}
-        {/* No reliable device-model detection exists for the upside-down left
-            ring (config's controllerType is the input emulation type, not the
-            hardware model), so this stays a plain toggle in Advanced. */}
-        <ToggleRow
-          label={t("Flip stick ring")}
-          description={t("Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down")}
-          value={!!stickLed.sides.l.flip}
-          onChange={setStickLedFlip}
-        />
-      </Collapsible>
+      {/* No reliable device-model detection exists for the upside-down left
+          ring (config's controllerType is the input emulation type, not the
+          hardware model), so this stays a plain row among the other rare
+          settings - no spoiler of its own. */}
+      <ToggleRow
+        label={t("Flip stick ring")}
+        description={t("Rotate the left stick's LED ring 180° - on some units the left ring is wired upside-down")}
+        value={!!stickLed.sides.l.flip}
+        onChange={setStickLedFlip}
+      />
+      {mode === "reactive" && (
+        <Collapsible label={t("Advanced")}>
+          <SelectEdit label={t("Button")} value={flashButton} options={FLASH_BUTTON_OPTIONS} onChange={setFlashButton} />
+          <PresetSwatchGrid
+            colors={PRESET_COLORS}
+            selected={stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR}
+            onSelect={setStickLedFlashColor}
+          />
+          <ColorPicker
+            hex={stickLed.flashColors[flashButton] ?? DEFAULT_FLASH_COLOR}
+            onChange={setStickLedFlashColor}
+          />
+        </Collapsible>
+      )}
         </>
       )}
         </>
