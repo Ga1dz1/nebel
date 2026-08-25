@@ -6,10 +6,39 @@ import { OpenFullScreenButton, SelectEdit, ToggleRow } from "../components/widge
 import { t } from "../i18n";
 import type { Config } from "../types";
 
-export function System({ config, setConfig, qam }: {
+export function ControllerExtras({ config, setConfig, showEmulation = true }: {
   config: Config;
   setConfig: Dispatch<SetStateAction<Config | null>>;
-  qam?: boolean;
+  showEmulation?: boolean;
+}) {
+  const setControllerType = async (value: string) => {
+    const previous = config.controllerType || "deck-uhid";
+    setConfig((current) => (current ? { ...current, controllerType: value } : current));
+    try {
+      const applied = await applyControllerType(value);
+      setConfig((current) => (current ? { ...current, controllerType: applied } : current));
+    } catch (error) {
+      setConfig((current) => (current ? { ...current, controllerType: previous } : current));
+    }
+  };
+  return (
+    <PanelSection title={t("Controller")}>
+      {showEmulation && (
+        <SelectEdit
+          label={t("Emulation")}
+          value={config.controllerType || "deck-uhid"}
+          options={config.controllerTypes || []}
+          onChange={setControllerType}
+        />
+      )}
+      <ButtonItem layout="below" onClick={openCalibration}>{t("Launch Calibration")}</ButtonItem>
+    </PanelSection>
+  );
+}
+
+export function SshRow({ config, setConfig }: {
+  config: Config;
+  setConfig: Dispatch<SetStateAction<Config | null>>;
 }) {
   const setSshEnabled = async (enabled: boolean) => {
     if (enabled === !!config.sshEnabled) {
@@ -23,16 +52,13 @@ export function System({ config, setConfig, qam }: {
       setConfig((current) => (current ? { ...current, sshEnabled: !enabled } : current));
     }
   };
-  const setControllerType = async (value: string) => {
-    const previous = config.controllerType || "deck-uhid";
-    setConfig((current) => (current ? { ...current, controllerType: value } : current));
-    try {
-      const applied = await applyControllerType(value);
-      setConfig((current) => (current ? { ...current, controllerType: applied } : current));
-    } catch (error) {
-      setConfig((current) => (current ? { ...current, controllerType: previous } : current));
-    }
-  };
+  return <ToggleRow label={t("Enable SSH")} value={!!config.sshEnabled} onChange={setSshEnabled} />;
+}
+
+export function SharedStorageRow({ config, setConfig }: {
+  config: Config;
+  setConfig: Dispatch<SetStateAction<Config | null>>;
+}) {
   const setSharedStorageEnabled = async (enabled: boolean) => {
     if (enabled === !!config.sharedStorageEnabled) {
       return;
@@ -46,29 +72,37 @@ export function System({ config, setConfig, qam }: {
     }
   };
   return (
+    <ToggleRow
+      label={t("Mount shared storage")}
+      description={t("Mount NEBEL_SHARED partition at ~/Shared")}
+      value={!!config.sharedStorageEnabled}
+      onChange={setSharedStorageEnabled}
+    />
+  );
+}
+
+export function SystemExtras({ config, setConfig, showStorage = true }: {
+  config: Config;
+  setConfig: Dispatch<SetStateAction<Config | null>>;
+  showStorage?: boolean;
+}) {
+  return (
+    <PanelSection title={t("System")}>
+      <SshRow config={config} setConfig={setConfig} />
+      {showStorage && <SharedStorageRow config={config} setConfig={setConfig} />}
+    </PanelSection>
+  );
+}
+
+export function System({ config, setConfig, qam }: {
+  config: Config;
+  setConfig: Dispatch<SetStateAction<Config | null>>;
+  qam?: boolean;
+}) {
+  return (
     <>
-      <PanelSection title={t("Controller")}>
-        {!qam && (
-          <SelectEdit
-            label={t("Emulation")}
-            value={config.controllerType || "deck-uhid"}
-            options={config.controllerTypes || []}
-            onChange={setControllerType}
-          />
-        )}
-        <ButtonItem layout="below" onClick={openCalibration}>{t("Launch Calibration")}</ButtonItem>
-      </PanelSection>
-      <PanelSection title={t("System")}>
-        <ToggleRow label={t("Enable SSH")} value={!!config.sshEnabled} onChange={setSshEnabled} />
-        {!qam && (
-          <ToggleRow
-            label={t("Mount shared storage")}
-            description={t("Mount NEBEL_SHARED partition at ~/Shared")}
-            value={!!config.sharedStorageEnabled}
-            onChange={setSharedStorageEnabled}
-          />
-        )}
-      </PanelSection>
+      <ControllerExtras config={config} setConfig={setConfig} showEmulation={!qam} />
+      <SystemExtras config={config} setConfig={setConfig} showStorage={!qam} />
       {qam && <OpenFullScreenButton />}
     </>
   );

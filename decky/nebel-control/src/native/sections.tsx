@@ -2,9 +2,11 @@ import { ButtonItem, Field, Navigation, PanelSection, PanelSectionRow } from "@d
 import { t } from "../i18n";
 import { Display } from "../tabs/Display";
 import { AddGameSection, Games } from "../tabs/Games";
+import { MonitorRows, NotifyFlashRows, OverlayToggleRow } from "../tabs/Home";
 import { Lighting } from "../tabs/Lighting";
 import { Power } from "../tabs/Power";
 import { Sync } from "../tabs/Sync";
+import { ControllerExtras, SharedStorageRow, SshRow } from "../tabs/System";
 import { NativeStyles, useInjectedConfig } from "./injectedConfig";
 
 // The sections duplicated into Steam's own settings pages. Each one renders
@@ -22,13 +24,15 @@ function MissingConfig({ message }: { message: string }) {
   );
 }
 
-// Settings -> Controller: stick lighting (full Lighting tab).
+// Settings -> Controller: controller-type emulation + calibration first
+// (they concern the gamepad itself), then the full Lighting tab.
 export function ControllerLightingSection() {
   const { config, setConfig, message } = useInjectedConfig();
   if (!config) return <MissingConfig message={message} />;
   return (
     <div className="nebel-native">
       <NativeStyles />
+      <ControllerExtras config={config} setConfig={setConfig} />
       <Lighting config={config} setConfig={setConfig} />
     </div>
   );
@@ -83,14 +87,12 @@ export function CloudSyncSection() {
   );
 }
 
-// Settings -> System: entry point to the fullscreen control center, plus the
-// "Add non-Steam game" picker (Steam's own Browse dialog is broken in the
-// ARM64 client, so this is the working way to register shortcuts - it belongs
-// in native settings now that the plugin no longer shows in the QAM list).
-// Neutrally labeled ("Control Center", not "Nebel Control") so the settings
-// page keeps a stock look - the brand only shows on the fullscreen page
-// itself, where it belongs.
+// Settings -> System: entry point to the fullscreen control center, plus
+// shared-storage mounting. Neutrally labeled ("Control Center", not "Nebel
+// Control") so the settings page keeps a stock look - the brand only shows
+// on the fullscreen page itself, where it belongs.
 export function ControlCenterSection() {
+  const { config, setConfig } = useInjectedConfig();
   return (
     <div className="nebel-native">
       <NativeStyles />
@@ -101,7 +103,64 @@ export function ControlCenterSection() {
           </ButtonItem>
         </PanelSectionRow>
       </PanelSection>
+      {config && (
+        <PanelSection title={t("Storage")}>
+          <SharedStorageRow config={config} setConfig={setConfig} />
+        </PanelSection>
+      )}
+    </div>
+  );
+}
+
+// Settings -> Library: the working "Add non-Steam game" picker (Steam's own
+// Browse dialog is broken in the ARM64 client).
+export function LibraryAddGameSection() {
+  return (
+    <div className="nebel-native">
+      <NativeStyles />
       <AddGameSection />
+    </div>
+  );
+}
+
+// Settings -> Internet: SSH access toggle.
+export function SshSection() {
+  const { config, setConfig, message } = useInjectedConfig();
+  if (!config) return <MissingConfig message={message} />;
+  return (
+    <div className="nebel-native">
+      <NativeStyles />
+      <PanelSection title={t("SSH")}>
+        <SshRow config={config} setConfig={setConfig} />
+      </PanelSection>
+    </div>
+  );
+}
+
+// Settings -> In Game: gamescope FPS overlay for all games (next to Steam's
+// own FPS counter options).
+export function InGameOverlaySection() {
+  return (
+    <div className="nebel-native">
+      <NativeStyles />
+      <PanelSection title={t("Overlay")}>
+        <OverlayToggleRow />
+      </PanelSection>
+    </div>
+  );
+}
+
+// Settings -> Notifications: stick-LED flash on notifications + flash color.
+export function NotificationFlashSection() {
+  const { config, setConfig, message } = useInjectedConfig();
+  if (!config) return <MissingConfig message={message} />;
+  if (!config.stickLed?.supported) return null;
+  return (
+    <div className="nebel-native">
+      <NativeStyles />
+      <PanelSection title={t("Stick Lighting")}>
+        <NotifyFlashRows config={config} setConfig={setConfig} />
+      </PanelSection>
     </div>
   );
 }

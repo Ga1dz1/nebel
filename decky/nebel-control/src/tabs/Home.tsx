@@ -12,7 +12,19 @@ import { Collapsible, OpenFullScreenButton, ToggleRow } from "../components/widg
 import { t } from "../i18n";
 import type { Config, SystemMonitor } from "../types";
 
-export function Home({ config, setConfig, qam }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>>; qam?: boolean }) {
+const fmtTemp = (v: number | null | undefined) => (v == null ? "—" : `${v.toFixed(1)} °C`);
+const batteryLine = (m: SystemMonitor) =>
+  [
+    m.batteryPct != null ? `${m.batteryPct}%` : "—",
+    t(m.batteryStatus || "Unknown"),
+    m.batteryWatts != null ? `${m.batteryWatts} W` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+// Self-contained monitor rows (CPU/GPU temps, fan, battery) - reused by the
+// Home tab, the QAM Performance tab and anywhere else a live readout helps.
+export function MonitorRows() {
   const [mon, setMon] = useState<SystemMonitor | null>(null);
   useEffect(() => {
     let alive = true;
@@ -29,15 +41,51 @@ export function Home({ config, setConfig, qam }: { config: Config; setConfig: Di
       window.clearInterval(timer);
     };
   }, []);
-  const setOverlay = async (enabled: boolean) => {
-    setMon((current) => (current ? { ...current, overlayEnabled: enabled } : current));
+  if (!mon) return null;
+  return (
+    <>
+      <Field label="CPU / GPU" description={`${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}`} />
+      <Field label={t("Fan")} description={mon.fanPct != null ? `${mon.fanPct}%` : "—"} />
+      <Field label={t("Battery")} description={batteryLine(mon)} />
+    </>
+  );
+}
+
+// Self-contained gamescope FPS-overlay toggle - reused by Home's quick
+// toggles and the native Settings -> In Game page.
+export function OverlayToggleRow() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    getSystemMonitor()
+      .then((m) => setEnabled(!!m.overlayEnabled))
+      .catch(() => {});
+  }, []);
+  const setOverlay = async (value: boolean) => {
+    setEnabled(value);
     try {
-      const applied = await setOverlayEnabled(enabled);
-      setMon((current) => (current ? { ...current, overlayEnabled: applied } : current));
+      setEnabled(!!(await setOverlayEnabled(value)));
     } catch {
-      setMon((current) => (current ? { ...current, overlayEnabled: !enabled } : current));
+      setEnabled(!value);
     }
   };
+  return (
+    <ToggleRow
+      label={t("FPS overlay (all games)")}
+      description={t("Shows FPS in every game, incl. non-Steam. Applies after reboot.")}
+      value={!!enabled}
+      onChange={setOverlay}
+    />
+  );
+}
+
+// Notification flash toggle + flash color (color under a spoiler - it's a
+// set-once preference, not quick-toggle material). Reused by Home and the
+// native Settings -> Notifications page.
+export function NotifyFlashRows({ config, setConfig, showColor = true }: {
+  config: Config;
+  setConfig: Dispatch<SetStateAction<Config | null>>;
+  showColor?: boolean;
+}) {
   const stickLed = config.stickLed;
   const setStickLedNotify = async (value: boolean) => {
     if (!stickLed) return;
@@ -61,48 +109,36 @@ export function Home({ config, setConfig, qam }: { config: Config; setConfig: Di
       setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: previous } } : current));
     }
   };
-  const fmtTemp = (v: number | null | undefined) => (v == null ? "—" : `${v.toFixed(1)} °C`);
-  const batteryLine = (m: SystemMonitor) =>
-    [
-      m.batteryPct != null ? `${m.batteryPct}%` : "—",
-      t(m.batteryStatus || "Unknown"),
-      m.batteryWatts != null ? `${m.batteryWatts} W` : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
+  if (!stickLed?.supported) return null;
+  return (
+    <>
+      <ToggleRow
+        label={t("Notification flash")}
+        description={t("Stick LEDs flash on notifications")}
+        value={!!stickLed.notifyEnabled}
+        onChange={setStickLedNotify}
+      />
+      {showColor && stickLed.notifyEnabled && (
+        <PanelSectionRow>
+          <Collapsible label={t("Flash color")}>
+            <ColorPicker label={t("Flash color")} hex={stickLed.notifyColor || "33AAFF"} onChange={setStickLedNotifyColor} />
+          </Collapsible>
+        </PanelSectionRow>
+      )}
+    </>
+  );
+}
+
+export function Home({ config, setConfig, qam }: { config: Config; setConfig: Dispatch<SetStateAction<Config | null>>; qam?: boolean }) {
   return (
     <>
       {qam && <OpenFullScreenButton />}
       <PanelSection title={t("Monitor")}>
-        {mon && (
-          <>
-            <Field label="CPU / GPU" description={`${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}`} />
-            <Field label={t("Fan")} description={mon.fanPct != null ? `${mon.fanPct}%` : "—"} />
-            <Field label={t("Battery")} description={batteryLine(mon)} />
-          </>
-        )}
+        <MonitorRows />
       </PanelSection>
       <PanelSection title={t("Quick toggles")}>
-        <ToggleRow
-          label={t("FPS overlay (all games)")}
-          description={t("Shows FPS in every game, incl. non-Steam. Applies after reboot.")}
-          value={!!mon?.overlayEnabled}
-          onChange={setOverlay}
-        />
-        {stickLed?.supported && (
-          <>
-            <ToggleRow
-              label={t("Notification flash")}
-              description={t("Stick LEDs flash on notifications")}
-              value={!!stickLed.notifyEnabled}
-              onChange={setStickLedNotify}
-            />
-            {/* The flash color picker is fullscreen-only - not quick-toggle material. */}
-            {!qam && stickLed.notifyEnabled && (
-              <ColorPicker label={t("Flash color")} hex={stickLed.notifyColor || "33AAFF"} onChange={setStickLedNotifyColor} />
-            )}
-          </>
-        )}
+        <OverlayToggleRow />
+        <NotifyFlashRows config={config} setConfig={setConfig} showColor={!qam} />
       </PanelSection>
       <PanelSection title={t("System")}>
         <Field label={t("OS Version")} description={config.osVersion || t("unknown")} />

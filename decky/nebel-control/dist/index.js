@@ -357,6 +357,9 @@ const uk = {
     "Quick toggles": "Швидкі перемикачі",
     "Open full screen": "Відкрити на весь екран",
     "Control Center": "Центр керування",
+    "Storage": "Сховище",
+    "SSH": "SSH",
+    "Overlay": "Оверлей",
     "Open Control Center": "Відкрити центр керування",
     "Power Profile": "Профіль живлення",
     "Add non-Steam game": "Додати сторонню гру",
@@ -635,6 +638,9 @@ const ru = {
     "Quick toggles": "Быстрые переключатели",
     "Open full screen": "Открыть на весь экран",
     "Control Center": "Центр управления",
+    "Storage": "Хранилище",
+    "SSH": "SSH",
+    "Overlay": "Оверлей",
     "Open Control Center": "Открыть центр управления",
     "Power Profile": "Профиль питания",
     "Add non-Steam game": "Добавить стороннюю игру",
@@ -913,6 +919,9 @@ const es = {
     "Quick toggles": "Interruptores rápidos",
     "Open full screen": "Abrir a pantalla completa",
     "Control Center": "Centro de control",
+    "Storage": "Almacenamiento",
+    "SSH": "SSH",
+    "Overlay": "Superposición",
     "Open Control Center": "Abrir el centro de control",
     "Power Profile": "Perfil de energía",
     "Add non-Steam game": "Añadir juego externo",
@@ -1191,6 +1200,9 @@ const fr = {
     "Quick toggles": "Raccourcis rapides",
     "Open full screen": "Ouvrir en plein écran",
     "Control Center": "Centre de contrôle",
+    "Storage": "Stockage",
+    "SSH": "SSH",
+    "Overlay": "Surimpression",
     "Open Control Center": "Ouvrir le centre de contrôle",
     "Power Profile": "Profil d'alimentation",
     "Add non-Steam game": "Ajouter un jeu externe",
@@ -2963,7 +2975,17 @@ function ColorPicker({ label, hex, onChange }) {
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-preview-row", children: [label !== undefined && SP_JSX.jsx("span", { className: "nebel-color-preview-label", children: label }), SP_JSX.jsx("div", { className: "nebel-color-swatch", style: { backgroundColor: `#${hex}` } }), SP_JSX.jsxs("span", { className: "nebel-color-preview-hex", children: ["#", hex] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { className: "nebel-color-picker", children: [SP_JSX.jsxs("div", { className: "nebel-color-sv-wrap", style: { width: SV_WIDTH, height: SV_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: svCanvasRef, width: SV_WIDTH, height: SV_HEIGHT, className: "nebel-color-sv-canvas", onPointerDown: handleSvPointer, onPointerMove: (event) => event.buttons === 1 && handleSvPointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-cursor", style: { left: svCursorX, top: svCursorY, backgroundColor: `#${hex}` } })] }), SP_JSX.jsxs("div", { className: "nebel-color-hue-wrap", style: { width: SV_WIDTH, height: HUE_HEIGHT }, children: [SP_JSX.jsx("canvas", { ref: hueCanvasRef, width: SV_WIDTH, height: HUE_HEIGHT, className: "nebel-color-hue-canvas", onPointerDown: handleHuePointer, onPointerMove: (event) => event.buttons === 1 && handleHuePointer(event) }), SP_JSX.jsx("div", { className: "nebel-color-hue-cursor", style: { left: hueCursorX } })] })] }) })] }));
 }
 
-function Home({ config, setConfig, qam }) {
+const fmtTemp = (v) => (v == null ? "—" : `${v.toFixed(1)} °C`);
+const batteryLine = (m) => [
+    m.batteryPct != null ? `${m.batteryPct}%` : "—",
+    t(m.batteryStatus || "Unknown"),
+    m.batteryWatts != null ? `${m.batteryWatts} W` : "",
+]
+    .filter(Boolean)
+    .join(" · ");
+// Self-contained monitor rows (CPU/GPU temps, fan, battery) - reused by the
+// Home tab, the QAM Performance tab and anywhere else a live readout helps.
+function MonitorRows() {
     const [mon, setMon] = SP_REACT.useState(null);
     SP_REACT.useEffect(() => {
         let alive = true;
@@ -2982,16 +3004,34 @@ function Home({ config, setConfig, qam }) {
             window.clearInterval(timer);
         };
     }, []);
-    const setOverlay = async (enabled) => {
-        setMon((current) => (current ? { ...current, overlayEnabled: enabled } : current));
+    if (!mon)
+        return null;
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: "CPU / GPU", description: `${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}` }), SP_JSX.jsx(DFL.Field, { label: t("Fan"), description: mon.fanPct != null ? `${mon.fanPct}%` : "—" }), SP_JSX.jsx(DFL.Field, { label: t("Battery"), description: batteryLine(mon) })] }));
+}
+// Self-contained gamescope FPS-overlay toggle - reused by Home's quick
+// toggles and the native Settings -> In Game page.
+function OverlayToggleRow() {
+    const [enabled, setEnabled] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        getSystemMonitor()
+            .then((m) => setEnabled(!!m.overlayEnabled))
+            .catch(() => { });
+    }, []);
+    const setOverlay = async (value) => {
+        setEnabled(value);
         try {
-            const applied = await setOverlayEnabled(enabled);
-            setMon((current) => (current ? { ...current, overlayEnabled: applied } : current));
+            setEnabled(!!(await setOverlayEnabled(value)));
         }
         catch {
-            setMon((current) => (current ? { ...current, overlayEnabled: !enabled } : current));
+            setEnabled(!value);
         }
     };
+    return (SP_JSX.jsx(ToggleRow, { label: t("FPS overlay (all games)"), description: t("Shows FPS in every game, incl. non-Steam. Applies after reboot."), value: !!enabled, onChange: setOverlay }));
+}
+// Notification flash toggle + flash color (color under a spoiler - it's a
+// set-once preference, not quick-toggle material). Reused by Home and the
+// native Settings -> Notifications page.
+function NotifyFlashRows({ config, setConfig, showColor = true }) {
     const stickLed = config.stickLed;
     const setStickLedNotify$1 = async (value) => {
         if (!stickLed)
@@ -3019,15 +3059,12 @@ function Home({ config, setConfig, qam }) {
             setConfig((current) => (current ? { ...current, stickLed: { ...current.stickLed, notifyColor: previous } } : current));
         }
     };
-    const fmtTemp = (v) => (v == null ? "—" : `${v.toFixed(1)} °C`);
-    const batteryLine = (m) => [
-        m.batteryPct != null ? `${m.batteryPct}%` : "—",
-        t(m.batteryStatus || "Unknown"),
-        m.batteryWatts != null ? `${m.batteryWatts} W` : "",
-    ]
-        .filter(Boolean)
-        .join(" · ");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [qam && SP_JSX.jsx(OpenFullScreenButton, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Monitor"), children: mon && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: "CPU / GPU", description: `${fmtTemp(mon.cpuTemp)} / ${fmtTemp(mon.gpuTemp)}` }), SP_JSX.jsx(DFL.Field, { label: t("Fan"), description: mon.fanPct != null ? `${mon.fanPct}%` : "—" }), SP_JSX.jsx(DFL.Field, { label: t("Battery"), description: batteryLine(mon) })] })) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Quick toggles"), children: [SP_JSX.jsx(ToggleRow, { label: t("FPS overlay (all games)"), description: t("Shows FPS in every game, incl. non-Steam. Applies after reboot."), value: !!mon?.overlayEnabled, onChange: setOverlay }), stickLed?.supported && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Notification flash"), description: t("Stick LEDs flash on notifications"), value: !!stickLed.notifyEnabled, onChange: setStickLedNotify$1 }), !qam && stickLed.notifyEnabled && (SP_JSX.jsx(ColorPicker, { label: t("Flash color"), hex: stickLed.notifyColor || "33AAFF", onChange: setStickLedNotifyColor$1 }))] }))] }), SP_JSX.jsx(DFL.PanelSection, { title: t("System"), children: SP_JSX.jsx(DFL.Field, { label: t("OS Version"), description: config.osVersion || t("unknown") }) }), SP_JSX.jsx(DFL.PanelSection, { title: t("Hotkeys"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(Collapsible, { label: t("Show hotkeys"), children: HOTKEYS.map((row, index) => (SP_JSX.jsxs(SP_REACT.Fragment, { children: [(index === 0 || HOTKEYS[index - 1].mode !== row.mode) && SP_JSX.jsx(DFL.Field, { label: t(row.mode) }), SP_JSX.jsx(DFL.Field, { label: t(row.action), description: row.combo })] }, index))) }) }) })] }));
+    if (!stickLed?.supported)
+        return null;
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ToggleRow, { label: t("Notification flash"), description: t("Stick LEDs flash on notifications"), value: !!stickLed.notifyEnabled, onChange: setStickLedNotify$1 }), showColor && stickLed.notifyEnabled && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(Collapsible, { label: t("Flash color"), children: SP_JSX.jsx(ColorPicker, { label: t("Flash color"), hex: stickLed.notifyColor || "33AAFF", onChange: setStickLedNotifyColor$1 }) }) }))] }));
+}
+function Home({ config, setConfig, qam }) {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [qam && SP_JSX.jsx(OpenFullScreenButton, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Monitor"), children: SP_JSX.jsx(MonitorRows, {}) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Quick toggles"), children: [SP_JSX.jsx(OverlayToggleRow, {}), SP_JSX.jsx(NotifyFlashRows, { config: config, setConfig: setConfig, showColor: !qam })] }), SP_JSX.jsx(DFL.PanelSection, { title: t("System"), children: SP_JSX.jsx(DFL.Field, { label: t("OS Version"), description: config.osVersion || t("unknown") }) }), SP_JSX.jsx(DFL.PanelSection, { title: t("Hotkeys"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(Collapsible, { label: t("Show hotkeys"), children: HOTKEYS.map((row, index) => (SP_JSX.jsxs(SP_REACT.Fragment, { children: [(index === 0 || HOTKEYS[index - 1].mode !== row.mode) && SP_JSX.jsx(DFL.Field, { label: t(row.mode) }), SP_JSX.jsx(DFL.Field, { label: t(row.action), description: row.combo })] }, index))) }) }) })] }));
 }
 // Physical button names (Home/Back/D-Pad/Start/Select) stay untranslated -
 // they are what is printed on the device.
@@ -3820,7 +3857,21 @@ function openCalibration() {
     DFL.showModal(SP_JSX.jsx(CalibrationModal, {}));
 }
 
-function System({ config, setConfig, qam }) {
+function ControllerExtras({ config, setConfig, showEmulation = true }) {
+    const setControllerType$1 = async (value) => {
+        const previous = config.controllerType || "deck-uhid";
+        setConfig((current) => (current ? { ...current, controllerType: value } : current));
+        try {
+            const applied = await setControllerType(value);
+            setConfig((current) => (current ? { ...current, controllerType: applied } : current));
+        }
+        catch (error) {
+            setConfig((current) => (current ? { ...current, controllerType: previous } : current));
+        }
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Controller"), children: [showEmulation && (SP_JSX.jsx(SelectEdit, { label: t("Emulation"), value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 })), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: t("Launch Calibration") })] }));
+}
+function SshRow({ config, setConfig }) {
     const setSshEnabled$1 = async (enabled) => {
         if (enabled === !!config.sshEnabled) {
             return;
@@ -3834,17 +3885,9 @@ function System({ config, setConfig, qam }) {
             setConfig((current) => (current ? { ...current, sshEnabled: !enabled } : current));
         }
     };
-    const setControllerType$1 = async (value) => {
-        const previous = config.controllerType || "deck-uhid";
-        setConfig((current) => (current ? { ...current, controllerType: value } : current));
-        try {
-            const applied = await setControllerType(value);
-            setConfig((current) => (current ? { ...current, controllerType: applied } : current));
-        }
-        catch (error) {
-            setConfig((current) => (current ? { ...current, controllerType: previous } : current));
-        }
-    };
+    return SP_JSX.jsx(ToggleRow, { label: t("Enable SSH"), value: !!config.sshEnabled, onChange: setSshEnabled$1 });
+}
+function SharedStorageRow({ config, setConfig }) {
     const setSharedStorageEnabled$1 = async (enabled) => {
         if (enabled === !!config.sharedStorageEnabled) {
             return;
@@ -3858,7 +3901,13 @@ function System({ config, setConfig, qam }) {
             setConfig((current) => (current ? { ...current, sharedStorageEnabled: !enabled } : current));
         }
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("Controller"), children: [!qam && (SP_JSX.jsx(SelectEdit, { label: t("Emulation"), value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 })), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: t("Launch Calibration") })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("System"), children: [SP_JSX.jsx(ToggleRow, { label: t("Enable SSH"), value: !!config.sshEnabled, onChange: setSshEnabled$1 }), !qam && (SP_JSX.jsx(ToggleRow, { label: t("Mount shared storage"), description: t("Mount NEBEL_SHARED partition at ~/Shared"), value: !!config.sharedStorageEnabled, onChange: setSharedStorageEnabled$1 }))] }), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+    return (SP_JSX.jsx(ToggleRow, { label: t("Mount shared storage"), description: t("Mount NEBEL_SHARED partition at ~/Shared"), value: !!config.sharedStorageEnabled, onChange: setSharedStorageEnabled$1 }));
+}
+function SystemExtras({ config, setConfig, showStorage = true }) {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("System"), children: [SP_JSX.jsx(SshRow, { config: config, setConfig: setConfig }), showStorage && SP_JSX.jsx(SharedStorageRow, { config: config, setConfig: setConfig })] }));
+}
+function System({ config, setConfig, qam }) {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ControllerExtras, { config: config, setConfig: setConfig, showEmulation: !qam }), SP_JSX.jsx(SystemExtras, { config: config, setConfig: setConfig, showStorage: !qam }), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
 
 function usePluginConfig() {
@@ -4032,12 +4081,13 @@ function NativeStyles() {
 function MissingConfig({ message }) {
     return (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.Field, { label: message }) }));
 }
-// Settings -> Controller: stick lighting (full Lighting tab).
+// Settings -> Controller: controller-type emulation + calibration first
+// (they concern the gamepad itself), then the full Lighting tab.
 function ControllerLightingSection() {
     const { config, setConfig, message } = useInjectedConfig();
     if (!config)
         return SP_JSX.jsx(MissingConfig, { message: message });
-    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig })] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(ControllerExtras, { config: config, setConfig: setConfig }), SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig })] }));
 }
 // Settings -> Power: fan curve / CPU-GPU limits (Power tab).
 function PowerLimitsSection() {
@@ -4066,15 +4116,39 @@ function GameTweaksSection({ appid }) {
 function CloudSyncSection() {
     return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Sync, {})] }));
 }
-// Settings -> System: entry point to the fullscreen control center, plus the
-// "Add non-Steam game" picker (Steam's own Browse dialog is broken in the
-// ARM64 client, so this is the working way to register shortcuts - it belongs
-// in native settings now that the plugin no longer shows in the QAM list).
-// Neutrally labeled ("Control Center", not "Nebel Control") so the settings
-// page keeps a stock look - the brand only shows on the fullscreen page
-// itself, where it belongs.
+// Settings -> System: entry point to the fullscreen control center, plus
+// shared-storage mounting. Neutrally labeled ("Control Center", not "Nebel
+// Control") so the settings page keeps a stock look - the brand only shows
+// on the fullscreen page itself, where it belongs.
 function ControlCenterSection() {
-    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Control Center"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.Navigate("/nebel-control"), children: t("Open Control Center") }) }) }), SP_JSX.jsx(AddGameSection, {})] }));
+    const { config, setConfig } = useInjectedConfig();
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Control Center"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.Navigate("/nebel-control"), children: t("Open Control Center") }) }) }), config && (SP_JSX.jsx(DFL.PanelSection, { title: t("Storage"), children: SP_JSX.jsx(SharedStorageRow, { config: config, setConfig: setConfig }) }))] }));
+}
+// Settings -> Library: the working "Add non-Steam game" picker (Steam's own
+// Browse dialog is broken in the ARM64 client).
+function LibraryAddGameSection() {
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(AddGameSection, {})] }));
+}
+// Settings -> Internet: SSH access toggle.
+function SshSection() {
+    const { config, setConfig, message } = useInjectedConfig();
+    if (!config)
+        return SP_JSX.jsx(MissingConfig, { message: message });
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("SSH"), children: SP_JSX.jsx(SshRow, { config: config, setConfig: setConfig }) })] }));
+}
+// Settings -> In Game: gamescope FPS overlay for all games (next to Steam's
+// own FPS counter options).
+function InGameOverlaySection() {
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Overlay"), children: SP_JSX.jsx(OverlayToggleRow, {}) })] }));
+}
+// Settings -> Notifications: stick-LED flash on notifications + flash color.
+function NotificationFlashSection() {
+    const { config, setConfig, message } = useInjectedConfig();
+    if (!config)
+        return SP_JSX.jsx(MissingConfig, { message: message });
+    if (!config.stickLed?.supported)
+        return null;
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Stick Lighting"), children: SP_JSX.jsx(NotifyFlashRows, { config: config, setConfig: setConfig }) })] }));
 }
 
 // Duplicates Nebel Control's management UI into Steam's own settings pages
@@ -4123,6 +4197,26 @@ const SETTINGS_SECTIONS = [
         name: "cloud-sync",
         match: (page) => page.route === "/settings/cloud",
         render: () => SP_JSX.jsx(CloudSyncSection, {}),
+    },
+    {
+        name: "library-add-game",
+        match: (page) => page.route === "/settings/library",
+        render: () => SP_JSX.jsx(LibraryAddGameSection, {}),
+    },
+    {
+        name: "internet-ssh",
+        match: (page) => page.route === "/settings/internet",
+        render: () => SP_JSX.jsx(SshSection, {}),
+    },
+    {
+        name: "ingame-overlay",
+        match: (page) => page.route === "/settings/ingame",
+        render: () => SP_JSX.jsx(InGameOverlaySection, {}),
+    },
+    {
+        name: "notification-flash",
+        match: (page) => page.route === "/settings/notifications",
+        render: () => SP_JSX.jsx(NotificationFlashSection, {}),
     },
     {
         name: "control-center-entry",
@@ -4557,9 +4651,11 @@ const isNativePerfProfileEl = (el) => {
 function replaceNativePerfProfile(node, depth) {
     if (!node || typeof node !== "object" || depth > 8)
         return false;
-    // Single-child case: <Row><SG/></Row> reached via props.children.
+    // Single-child case: <Row><SG/></Row> reached via props.children. The
+    // monitor rows go ABOVE the profile pick (live temps/fan/battery readout
+    // heads the Perf tab, the lever follows).
     if (isNativePerfProfileEl(node.props?.children)) {
-        node.props.children = (SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(QuickPowerProfileDropdown, {}) }));
+        node.props.children = (SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(MonitorRows, {}), SP_JSX.jsx(QuickPowerProfileDropdown, {})] }) }));
         return true;
     }
     const kids = node.props?.children;
@@ -4569,7 +4665,7 @@ function replaceNativePerfProfile(node, depth) {
         if (!child || typeof child !== "object")
             continue;
         if (isNativePerfProfileEl(child) || isNativePerfProfileEl(child.props?.children)) {
-            arr[i] = (SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(QuickPowerProfileRow, {}) }, "nebel-power"));
+            arr[i] = (SP_JSX.jsxs(DFL.ErrorBoundary, { children: [SP_JSX.jsx(MonitorRows, {}), SP_JSX.jsx(QuickPowerProfileRow, {})] }, "nebel-power"));
             if (Array.isArray(kids))
                 node.props.children = arr;
             else
@@ -4598,7 +4694,7 @@ function visitPerf(ret) {
     if (!nativePerfProfileType) {
         // Couldn't identify the native dropdown - append ours so the feature
         // isn't lost, leaving Steam's control alone.
-        return (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(QuickPowerProfileRow, {}) }) }));
+        return (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsxs(DFL.ErrorBoundary, { children: [SP_JSX.jsx(MonitorRows, {}), SP_JSX.jsx(QuickPowerProfileRow, {})] }) }));
     }
     // Search BEFORE cascading: the cascade swaps element types for wrapped
     // copies, which would hide the raw native type from the matcher at this

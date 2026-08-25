@@ -4,6 +4,7 @@ import type { Patch } from "@decky/ui";
 import { getDisplayState, restartGamescopeSession, setDisplayConfig, setStickLedEnabled, setStickLedMaxBrightness } from "../backend";
 import { SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
+import { MonitorRows } from "../tabs/Home";
 import { titleCase, update } from "../lib/util";
 import type { DisplayState } from "../types";
 import { useInjectedConfig } from "./injectedConfig";
@@ -278,11 +279,16 @@ const isNativePerfProfileEl = (el: any): boolean => {
 
 function replaceNativePerfProfile(node: any, depth: number): boolean {
   if (!node || typeof node !== "object" || depth > 8) return false;
-  // Single-child case: <Row><SG/></Row> reached via props.children.
+  // Single-child case: <Row><SG/></Row> reached via props.children. The
+  // monitor rows go ABOVE the profile pick (live temps/fan/battery readout
+  // heads the Perf tab, the lever follows).
   if (isNativePerfProfileEl(node.props?.children)) {
     node.props.children = (
       <ErrorBoundary>
-        <QuickPowerProfileDropdown />
+        <>
+          <MonitorRows />
+          <QuickPowerProfileDropdown />
+        </>
       </ErrorBoundary>
     );
     return true;
@@ -295,6 +301,7 @@ function replaceNativePerfProfile(node: any, depth: number): boolean {
     if (isNativePerfProfileEl(child) || isNativePerfProfileEl(child.props?.children)) {
       arr[i] = (
         <ErrorBoundary key="nebel-power">
+          <MonitorRows />
           <QuickPowerProfileRow />
         </ErrorBoundary>
       );
@@ -325,6 +332,7 @@ function visitPerf(ret: any): any {
     return (
       <PanelSection>
         <ErrorBoundary>
+          <MonitorRows />
           <QuickPowerProfileRow />
         </ErrorBoundary>
       </PanelSection>
