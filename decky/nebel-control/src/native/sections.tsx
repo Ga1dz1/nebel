@@ -1,7 +1,7 @@
 import { ButtonItem, Field, Navigation, PanelSection, PanelSectionRow } from "@decky/ui";
 import { t } from "../i18n";
 import { Display } from "../tabs/Display";
-import { Games } from "../tabs/Games";
+import { AddGameSection, Games } from "../tabs/Games";
 import { Lighting } from "../tabs/Lighting";
 import { Power } from "../tabs/Power";
 import { Sync } from "../tabs/Sync";
@@ -83,12 +83,13 @@ export function CloudSyncSection() {
   );
 }
 
-// Settings -> System: entry point to the fullscreen control center. The
-// plugin no longer appears in Decky's QAM plugin list (no `content`
-// returned), so this is the discoverable way in; /nebel-control stays
-// directly navigable as before. Neutrally labeled ("Control Center", not
-// "Nebel Control") so the settings page keeps a stock look - the brand only
-// shows on the fullscreen page itself, where it belongs.
+// Settings -> System: entry point to the fullscreen control center, plus the
+// "Add non-Steam game" picker (Steam's own Browse dialog is broken in the
+// ARM64 client, so this is the working way to register shortcuts - it belongs
+// in native settings now that the plugin no longer shows in the QAM list).
+// Neutrally labeled ("Control Center", not "Nebel Control") so the settings
+// page keeps a stock look - the brand only shows on the fullscreen page
+// itself, where it belongs.
 export function ControlCenterSection() {
   return (
     <div className="nebel-native">
@@ -100,6 +101,7 @@ export function ControlCenterSection() {
           </ButtonItem>
         </PanelSectionRow>
       </PanelSection>
+      <AddGameSection />
     </div>
   );
 }

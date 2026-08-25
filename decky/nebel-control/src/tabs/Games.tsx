@@ -773,7 +773,7 @@ function DependenciesSection({ appid, eraXp }: { appid: string; eraXp: boolean }
 // in the ARM64 client (OpenFileDialog fails before reaching the portal), and
 // native dialogs never appear in the gamescope session — so the picker lives
 // right here and the pick is registered through Steam's AddShortcut API.
-function AddGameSection() {
+export function AddGameSection() {
   const [picker, setPicker] = useState<DirListing | null>(null);
   const [addResult, setAddResult] = useState("");
 
