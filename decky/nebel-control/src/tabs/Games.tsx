@@ -518,6 +518,7 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
         <div className="nebel-compat-note">{t("Compatibility changes apply on next launch")}</div>
       </PanelSection>
       )}
+      {(editingDefault || !injected || forcedTool) && (
       <PanelSection title={t("Profile Settings")}>
         {editingDefault ? (
           <>
@@ -583,7 +584,7 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
           </>
         )}
         {resolutionMessage ? <Field label={t("Status")} description={resolutionMessage} /> : null}
-        {!qam && (!injected || isX86Mode) && (
+        {!qam && (!injected || (forcedTool && isX86Mode)) && (
           <>
             <SelectEdit label={t("FEX Preset")} value={fexValue} options={fexOptions} onChange={onSelectFex} />
             {isCustom
@@ -594,7 +595,15 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
           </>
         )}
       </PanelSection>
-      {!qam && (
+      )}
+      {!editingDefault && game?.appid ? (
+        <HeroicSection
+          appid={game.appid}
+          forced={gameSettings.heroicForce === true}
+          onToggleForce={(enabled) => patchSettings({ heroicForce: enabled || undefined })}
+        />
+      ) : null}
+      {!qam && (!injected || forcedTool) && (
         <>
           <PanelSection>
             <Collapsible label={t("Advanced")}>
@@ -679,13 +688,6 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
           </PanelSection>
           {!editingDefault && game?.appid && forcedTool ? (
             <DependenciesSection appid={game.appid} eraXp={values.gameEra === "xp"} />
-          ) : null}
-          {!editingDefault && game?.appid ? (
-            <HeroicSection
-              appid={game.appid}
-              forced={gameSettings.heroicForce === true}
-              onToggleForce={(enabled) => patchSettings({ heroicForce: enabled || undefined })}
-            />
           ) : null}
           {!editingDefault ? (
             <PanelSection>

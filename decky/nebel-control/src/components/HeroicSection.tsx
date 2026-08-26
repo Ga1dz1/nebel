@@ -110,10 +110,12 @@ export function HeroicSection({ appid, forced, onToggleForce }: { appid: string;
         />
       ) : null}
       {forced && sarekAvailable && !sarekActive ? (
-        <Field
-          label=""
-          description={t("A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found")}
-        />
+        <div className="nebel-compat-note">
+          {t("A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found")}
+        </div>
+      ) : null}
+      {forced && !cfg ? (
+        <div className="nebel-compat-note">{t("Heroic configuration not found - launch the game once from Heroic first")}</div>
       ) : null}
       {forced && cfg ? (
         <>
