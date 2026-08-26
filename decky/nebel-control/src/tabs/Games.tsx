@@ -11,8 +11,8 @@ import {
 } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { saveCompatApplied, listDir, getDepsStatus, installDeps } from "../backend";
-import type { DepsStatus, DirListing } from "../backend";
+import { saveCompatApplied, listDir, listHeroicGames, heroicLaunch, heroicMatch, getDepsStatus, installDeps } from "../backend";
+import type { DepsStatus, DirListing, HeroicGame } from "../backend";
 import { Collapsible, OpenFullScreenButton, SelectEdit } from "../components/widgets";
 import { t } from "../i18n";
 import { getGlobalResolution, setGlobalResolution } from "../lib/steamSettings";
@@ -773,9 +773,19 @@ function DependenciesSection({ appid, eraXp }: { appid: string; eraXp: boolean }
 // in the ARM64 client (OpenFileDialog fails before reaching the portal), and
 // native dialogs never appear in the gamescope session — so the picker lives
 // right here and the pick is registered through Steam's AddShortcut API.
+// Heroic games are added as `heroic --no-gui heroic://launch...` shortcuts
+// (what Heroic's own "Add to Steam" writes): a raw exe pick would run
+// without the Heroic prefix/wine/env and silently fail to launch.
 export function AddGameSection() {
   const [picker, setPicker] = useState<DirListing | null>(null);
   const [addResult, setAddResult] = useState("");
+  const [heroicGames, setHeroicGames] = useState<HeroicGame[] | null>(null);
+
+  useEffect(() => {
+    listHeroicGames()
+      .then((games) => setHeroicGames(games))
+      .catch(() => setHeroicGames([]));
+  }, []);
 
   const navigate = async (path: string) => {
     try {
@@ -785,14 +795,33 @@ export function AddGameSection() {
       setPicker(null);
     }
   };
+  const addShortcut = async (name: string, exe: string, args: string, note?: string) => {
+    const appid = await SteamClient?.Apps?.AddShortcut?.(name, exe, args, "");
+    setAddResult(typeof appid === "number" && appid > 0 ? (note || t("Added to Steam library")) : t("Failed to add shortcut"));
+  };
+  const addHeroic = async (game: HeroicGame) => {
+    setAddResult("");
+    try {
+      const launch = await heroicLaunch(game);
+      await addShortcut(launch.name, launch.exe, launch.args, t("Added to Steam library (launches via Heroic)"));
+    } catch {
+      setAddResult(t("Failed to add shortcut"));
+    }
+  };
   const pick = async (fullPath: string) => {
     setPicker(null);
     setAddResult("");
     try {
+      // An exe inside a Heroic install dir is launched through Heroic, never
+      // bare - bare it gets a default prefix and no Heroic settings.
+      const owning = await heroicMatch(fullPath);
+      if (owning) {
+        await addHeroic(owning);
+        return;
+      }
       const name = fullPath.split("/").pop()?.replace(/\.[^.]+$/, "") || fullPath;
       // Steam quotes the Exe field itself — passing a pre-quoted path yields ""..."".
-      const appid = await SteamClient?.Apps?.AddShortcut?.(name, fullPath, "", "");
-      setAddResult(typeof appid === "number" && appid > 0 ? t("Added to Steam library") : t("Failed to add shortcut"));
+      await addShortcut(name, fullPath, "");
     } catch {
       setAddResult(t("Failed to add shortcut"));
     }
@@ -828,6 +857,15 @@ export function AddGameSection() {
   }
   return (
     <PanelSection title={t("Add non-Steam game")}>
+      {heroicGames && heroicGames.length > 0 && (
+        <Collapsible label={t("Heroic games")}>
+          {heroicGames.map((game) => (
+            <ButtonItem key={game.appName} layout="below" onClick={() => addHeroic(game)}>
+              {game.title}
+            </ButtonItem>
+          ))}
+        </Collapsible>
+      )}
       <ButtonItem layout="below" onClick={() => navigate("")}>{t("Select the game's executable")}</ButtonItem>
       {addResult && <Field label={addResult} />}
     </PanelSection>

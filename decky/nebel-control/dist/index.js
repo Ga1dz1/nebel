@@ -41,6 +41,9 @@ const setSshEnabled = (enabled) => call("set_ssh_enabled", enabled);
 const setControllerType = (value) => call("set_controller_type", value);
 const setSharedStorageEnabled = (enabled) => call("set_shared_storage_enabled", enabled);
 const listDir = (path) => call("list_dir", path);
+const listHeroicGames = () => call("heroic_games");
+const heroicMatch = (path) => call("heroic_match", path);
+const heroicLaunch = (game) => call("heroic_launch", game);
 const getDepsStatus = (appid) => call("deps_status", appid);
 const installDeps = (appid, verbs) => call("deps_install", appid, verbs);
 const setStickLedColor = (side, value) => call("set_stick_led_color", side, value);
@@ -365,6 +368,8 @@ const uk = {
     "Add non-Steam game": "Додати сторонню гру",
     "Select the game's executable": "Виберіть виконуваний файл гри",
     "Added to Steam library": "Додано до бібліотеки Steam",
+    "Added to Steam library (launches via Heroic)": "Додано до бібліотеки Steam (запуск через Heroic)",
+    "Heroic games": "Ігри Heroic",
     "SD card": "Карта SD",
     "Internal storage": "Внутрішня пам’ять",
     "Monitor": "Монітор",
@@ -646,6 +651,8 @@ const ru = {
     "Add non-Steam game": "Добавить стороннюю игру",
     "Select the game's executable": "Выберите исполняемый файл игры",
     "Added to Steam library": "Добавлено в библиотеку Steam",
+    "Added to Steam library (launches via Heroic)": "Добавлено в библиотеку Steam (запуск через Heroic)",
+    "Heroic games": "Игры Heroic",
     "SD card": "Карта SD",
     "Internal storage": "Встроенная память",
     "Monitor": "Монитор",
@@ -927,6 +934,8 @@ const es = {
     "Add non-Steam game": "Añadir juego externo",
     "Select the game's executable": "Selecciona el ejecutable del juego",
     "Added to Steam library": "Añadido a la biblioteca de Steam",
+    "Added to Steam library (launches via Heroic)": "Añadido a la biblioteca de Steam (se inicia vía Heroic)",
+    "Heroic games": "Juegos de Heroic",
     "SD card": "Tarjeta SD",
     "Internal storage": "Almacenamiento interno",
     "Monitor": "Monitor",
@@ -1208,6 +1217,8 @@ const fr = {
     "Add non-Steam game": "Ajouter un jeu externe",
     "Select the game's executable": "Sélectionnez l'exécutable du jeu",
     "Added to Steam library": "Ajouté à la bibliothèque Steam",
+    "Added to Steam library (launches via Heroic)": "Ajouté à la bibliothèque Steam (lancé via Heroic)",
+    "Heroic games": "Jeux Heroic",
     "SD card": "Carte SD",
     "Internal storage": "Stockage interne",
     "Monitor": "Moniteur",
@@ -2791,9 +2802,18 @@ function DependenciesSection({ appid, eraXp }) {
 // in the ARM64 client (OpenFileDialog fails before reaching the portal), and
 // native dialogs never appear in the gamescope session — so the picker lives
 // right here and the pick is registered through Steam's AddShortcut API.
+// Heroic games are added as `heroic --no-gui heroic://launch...` shortcuts
+// (what Heroic's own "Add to Steam" writes): a raw exe pick would run
+// without the Heroic prefix/wine/env and silently fail to launch.
 function AddGameSection() {
     const [picker, setPicker] = SP_REACT.useState(null);
     const [addResult, setAddResult] = SP_REACT.useState("");
+    const [heroicGames, setHeroicGames] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        listHeroicGames()
+            .then((games) => setHeroicGames(games))
+            .catch(() => setHeroicGames([]));
+    }, []);
     const navigate = async (path) => {
         try {
             setPicker(await listDir(path));
@@ -2803,14 +2823,34 @@ function AddGameSection() {
             setPicker(null);
         }
     };
+    const addShortcut = async (name, exe, args, note) => {
+        const appid = await SteamClient?.Apps?.AddShortcut?.(name, exe, args, "");
+        setAddResult(typeof appid === "number" && appid > 0 ? (note || t("Added to Steam library")) : t("Failed to add shortcut"));
+    };
+    const addHeroic = async (game) => {
+        setAddResult("");
+        try {
+            const launch = await heroicLaunch(game);
+            await addShortcut(launch.name, launch.exe, launch.args, t("Added to Steam library (launches via Heroic)"));
+        }
+        catch {
+            setAddResult(t("Failed to add shortcut"));
+        }
+    };
     const pick = async (fullPath) => {
         setPicker(null);
         setAddResult("");
         try {
+            // An exe inside a Heroic install dir is launched through Heroic, never
+            // bare - bare it gets a default prefix and no Heroic settings.
+            const owning = await heroicMatch(fullPath);
+            if (owning) {
+                await addHeroic(owning);
+                return;
+            }
             const name = fullPath.split("/").pop()?.replace(/\.[^.]+$/, "") || fullPath;
             // Steam quotes the Exe field itself — passing a pre-quoted path yields ""..."".
-            const appid = await SteamClient?.Apps?.AddShortcut?.(name, fullPath, "", "");
-            setAddResult(typeof appid === "number" && appid > 0 ? t("Added to Steam library") : t("Failed to add shortcut"));
+            await addShortcut(name, fullPath, "");
         }
         catch {
             setAddResult(t("Failed to add shortcut"));
@@ -2820,7 +2860,7 @@ function AddGameSection() {
     if (picker) {
         return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Select the game's executable"), children: [SP_JSX.jsx(DFL.Field, { label: picker.path }), (picker.shortcuts || []).map((s) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(s.path), children: [shortcutLabel(s), "/"] }, `s:${s.path}`))), picker.parent !== null && (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(picker.parent || "/"), children: ".." })), picker.dirs.map((dir) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(`${picker.path}/${dir}`), children: [dir, "/"] }, `d:${dir}`))), picker.files.map((file) => (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => pick(`${picker.path}/${file}`), children: file }, `f:${file}`))), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setPicker(null), children: t("Cancel") })] }));
     }
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Add non-Steam game"), children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(""), children: t("Select the game's executable") }), addResult && SP_JSX.jsx(DFL.Field, { label: addResult })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Add non-Steam game"), children: [heroicGames && heroicGames.length > 0 && (SP_JSX.jsx(Collapsible, { label: t("Heroic games"), children: heroicGames.map((game) => (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => addHeroic(game), children: game.title }, game.appName))) })), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(""), children: t("Select the game's executable") }), addResult && SP_JSX.jsx(DFL.Field, { label: addResult })] }));
 }
 
 // RRGGBB hex <-> RGB <-> HSB conversions shared by every color picker in

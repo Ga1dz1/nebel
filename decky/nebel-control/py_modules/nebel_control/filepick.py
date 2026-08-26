@@ -6,14 +6,75 @@ reaching the desktop portal. Native dialogs (kdialog, xdg-desktop-portal) are
 useless in the gamescope session — gamescope never presents their windows —
 so the picker UI lives inside the plugin and only lists directories here; the
 frontend registers the pick via SteamClient.Apps.AddShortcut.
+
+Heroic games must not be added as raw exe picks: they need their Heroic
+prefix, wine build and env, which only a `heroic --no-gui heroic://launch...`
+shortcut sets up (the same shortcut Heroic's own "Add to Steam" writes).
+heroic_games() feeds a one-click list in the picker, and heroic_match()
+intercepts manual picks inside a Heroic install dir.
 """
 import glob
+import json
 import os
+import shutil
 
 SESSION_HOME = "/var/home/nebel"
 
 # Filesystem bookkeeping junk that should never be picked as a game.
 HIDDEN_ENTRIES = {"lost+found", "System Volume Information", "$RECYCLE.BIN", "RECYCLER"}
+
+# Heroic per-store installed-games registries: (installed.json path, runner).
+HEROIC_STORES = [
+    (os.path.join(SESSION_HOME, ".config/heroic/legendaryConfig/legendary/installed.json"), "legendary"),
+    (os.path.join(SESSION_HOME, ".config/heroic/gog_store/installed.json"), "gog"),
+]
+
+HEROIC_BIN = shutil.which("heroic") or "heroic"
+
+
+def heroic_games():
+    """Installed Heroic games: [{appName, title, runner, installPath}]."""
+    games = []
+    for registry, runner in HEROIC_STORES:
+        try:
+            data = json.load(open(registry, encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for entry in data.values():
+            if not isinstance(entry, dict) or entry.get("is_dlc"):
+                continue
+            app_name, install_path = entry.get("app_name"), entry.get("install_path")
+            if not app_name or not install_path:
+                continue
+            games.append({
+                "appName": app_name,
+                "title": entry.get("title") or app_name,
+                "runner": runner,
+                "installPath": install_path,
+            })
+    games.sort(key=lambda game: game["title"].lower())
+    return games
+
+
+def heroic_launch(game):
+    """Steam shortcut fields for launching the game through Heroic itself."""
+    return {
+        "name": game["title"],
+        "exe": HEROIC_BIN,
+        "args": f'--no-gui --no-sandbox "heroic://launch?appName={game["appName"]}&runner={game["runner"]}"',
+    }
+
+
+def heroic_match(path):
+    """The Heroic game owning `path` (an exe inside its install dir), or None."""
+    if not path:
+        return None
+    real = os.path.realpath(path)
+    for game in heroic_games():
+        root = os.path.realpath(game["installPath"])
+        if real == root or real.startswith(root + os.sep):
+            return game
+    return None
 
 
 def list_dir(path):

@@ -26,6 +26,15 @@ export interface DirListing {
   shortcuts: { id: string; label: string; path: string }[];
 }
 export const listDir = (path: string) => call<[string], DirListing>("list_dir", path);
+export interface HeroicGame {
+  appName: string;
+  title: string;
+  runner: string;
+  installPath: string;
+}
+export const listHeroicGames = () => call<[], HeroicGame[]>("heroic_games");
+export const heroicMatch = (path: string) => call<[string], HeroicGame | null>("heroic_match", path);
+export const heroicLaunch = (game: HeroicGame) => call<[HeroicGame], { name: string; exe: string; args: string }>("heroic_launch", game);
 export interface DepsStatus {
   appid: string;
   available: boolean;
