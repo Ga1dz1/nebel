@@ -2823,15 +2823,23 @@ function AddGameSection() {
             setPicker(null);
         }
     };
-    const addShortcut = async (name, exe, args, note) => {
+    const addShortcut = async (name, exe, args, note, native = false) => {
         const appid = await SteamClient?.Apps?.AddShortcut?.(name, exe, args, "");
+        if (typeof appid === "number" && appid > 0 && native) {
+            // A launcher binary is a Linux app: clear any forced Proton, or Steam
+            // wraps the ELF in `proton waitforexitandrun` and it never starts.
+            try {
+                await SteamClient?.Apps?.SpecifyCompatTool?.(appid, "");
+            }
+            catch { }
+        }
         setAddResult(typeof appid === "number" && appid > 0 ? (note || t("Added to Steam library")) : t("Failed to add shortcut"));
     };
     const addHeroic = async (game) => {
         setAddResult("");
         try {
             const launch = await heroicLaunch(game);
-            await addShortcut(launch.name, launch.exe, launch.args, t("Added to Steam library (launches via Heroic)"));
+            await addShortcut(launch.name, launch.exe, launch.args, t("Added to Steam library (launches via Heroic)"), true);
         }
         catch {
             setAddResult(t("Failed to add shortcut"));
