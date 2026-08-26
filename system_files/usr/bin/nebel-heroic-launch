@@ -1,0 +1,98 @@
+#!/bin/bash
+# nebel-heroic-launch <app_name> [runner]
+#
+# Foreground launcher for Heroic (Epic/legendary) games, intended for Steam
+# non-Steam shortcuts. Unlike `heroic --no-gui heroic://launch ...`, this
+# script never talks to a running Heroic instance and never daemonizes, so
+# Steam/gamescope can track the real process tree: proper window focus,
+# overlay, and exit detection.
+#
+# Game settings (prefix, Proton/Wine build) are read from Heroic's own
+# per-game config, so changes made in Heroic (or via Nebel Control) apply.
+
+set -u
+
+APP="${1:-}"
+RUNNER="${2:-legendary}"
+
+if [ -z "$APP" ]; then
+    echo "usage: nebel-heroic-launch <app_name> [runner]" >&2
+    exit 2
+fi
+
+HEROIC_CFG="$HOME/.config/heroic"
+GAMECFG="$HEROIC_CFG/GamesConfig/$APP.json"
+LEGENDARY_BIN="/usr/lib64/heroic/resources/app.asar.unpacked/build/bin/arm64/linux/legendary"
+UMU_RUN="$HEROIC_CFG/tools/runtimes/umu/umu_run.py"
+
+if [ "$RUNNER" != "legendary" ]; then
+    # Only Epic/legendary is supported by the direct launcher so far.
+    echo "nebel-heroic-launch: runner '$RUNNER' not supported, falling back to heroic" >&2
+    exec /usr/bin/heroic --no-gui --no-sandbox "heroic://launch?appName=$APP&runner=$RUNNER"
+fi
+
+if [ ! -x "$LEGENDARY_BIN" ] || [ ! -f "$UMU_RUN" ]; then
+    echo "nebel-heroic-launch: heroic runtime not found (open Heroic once first)" >&2
+    exit 1
+fi
+
+# Pull per-game settings out of Heroic's GamesConfig.
+eval "$(python3 - "$GAMECFG" <<'EOF'
+import json, os, shlex, sys
+
+cfg = {}
+try:
+    with open(sys.argv[1]) as f:
+        cfg = json.load(f)
+except Exception:
+    pass
+# Heroic nests per-game overrides under the app name key.
+cfg = cfg.get(os.path.basename(sys.argv[1]).removesuffix(".json"), cfg)
+
+wv = cfg.get("wineVersion") or {}
+bin_path = wv.get("bin", "")
+wtype = wv.get("type", "")
+prefix = cfg.get("winePrefix", "")
+
+out = []
+if wtype == "proton" and bin_path:
+    out.append(("PROTONPATH", os.path.dirname(bin_path)))
+elif bin_path:
+    out.append(("NEBEL_WINE_BIN", bin_path))
+if prefix:
+    out.append(("WINEPREFIX", prefix))
+
+envopts = cfg.get("enviromentOptions") or []
+for opt in envopts:
+    k, v = opt.get("key", ""), opt.get("value", "")
+    if k:
+        out.append((k, v))
+
+for k, v in out:
+    print(f"export {k}={shlex.quote(str(v))}")
+EOF
+)"
+
+if [ -z "${PROTONPATH:-}" ] && [ -z "${NEBEL_WINE_BIN:-}" ]; then
+    echo "nebel-heroic-launch: no wine/proton configured for '$APP' (open Heroic game settings once)" >&2
+    exit 1
+fi
+
+if [ -n "${WINEPREFIX:-}" ]; then
+    export STEAM_COMPAT_DATA_PATH="$WINEPREFIX"
+fi
+export STEAM_COMPAT_APP_ID=0
+export STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.steam/steam"
+export LEGENDARY_CONFIG_PATH="$HEROIC_CFG/legendaryConfig/legendary"
+export GAMEID="${GAMEID:-0}"
+export SteamAppId=0
+export SteamGameId="heroic-$APP"
+export STORE=egs
+
+if [ -n "${NEBEL_WINE_BIN:-}" ]; then
+    # Plain wine build: let legendary drive it directly.
+    exec "$LEGENDARY_BIN" launch "$APP" --wine "$NEBEL_WINE_BIN" --language en --skip-version-check
+fi
+
+# Proton via umu (same path Heroic itself uses).
+exec "$LEGENDARY_BIN" launch "$APP" --no-wine --wrapper "$UMU_RUN" --language en --skip-version-check

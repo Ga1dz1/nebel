@@ -8,15 +8,17 @@ so the picker UI lives inside the plugin and only lists directories here; the
 frontend registers the pick via SteamClient.Apps.AddShortcut.
 
 Heroic games must not be added as raw exe picks: they need their Heroic
-prefix, wine build and env, which only a `heroic --no-gui heroic://launch...`
-shortcut sets up (the same shortcut Heroic's own "Add to Steam" writes).
+prefix, wine build and env. Shortcuts point at /usr/bin/nebel-heroic-launch,
+a foreground wrapper that reads Heroic's per-game config and execs
+legendary+umu directly. `heroic --no-gui heroic://launch...` is unsuitable:
+with any Heroic instance already running it just forwards the URL and exits,
+so Steam sees the "game" die after two seconds and never focuses the window.
 heroic_games() feeds a one-click list in the picker, and heroic_match()
 intercepts manual picks inside a Heroic install dir.
 """
 import glob
 import json
 import os
-import shutil
 
 SESSION_HOME = "/var/home/nebel"
 
@@ -29,7 +31,12 @@ HEROIC_STORES = [
     (os.path.join(SESSION_HOME, ".config/heroic/gog_store/installed.json"), "gog"),
 ]
 
-HEROIC_BIN = shutil.which("heroic") or "heroic"
+# Foreground launcher shipped in the image; falls back to ~/.local/bin on
+# systems where /usr/bin is still an older (pre-wrapper) build.
+HEROIC_LAUNCHER_CANDIDATES = [
+    "/usr/bin/nebel-heroic-launch",
+    os.path.join(SESSION_HOME, ".local/bin/nebel-heroic-launch"),
+]
 
 
 def heroic_games():
@@ -57,11 +64,13 @@ def heroic_games():
 
 
 def heroic_launch(game):
-    """Steam shortcut fields for launching the game through Heroic itself."""
+    """Steam shortcut fields for launching the game via nebel-heroic-launch."""
+    exe = next((p for p in HEROIC_LAUNCHER_CANDIDATES if os.path.isfile(p)),
+               HEROIC_LAUNCHER_CANDIDATES[0])
     return {
         "name": game["title"],
-        "exe": HEROIC_BIN,
-        "args": f'--no-gui --no-sandbox "heroic://launch?appName={game["appName"]}&runner={game["runner"]}"',
+        "exe": exe,
+        "args": f'"{game["appName"]}" {game["runner"]}',
     }
 
 
