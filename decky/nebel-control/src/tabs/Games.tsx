@@ -104,12 +104,21 @@ const vkd3dVersionOptions = [
 ];
 const DEPENDENCY_VERBS = [
   { id: "d3dx9", label: "DirectX 9 Runtime" },
+  { id: "d3dx10", label: "DirectX 10 Runtime" },
+  { id: "d3dx11_43", label: "DirectX 11 Runtime" },
+  { id: "d3dcompiler_47", label: "D3D Compiler 47 (DirectX 11.1/12)" },
+  { id: "xact", label: "XAudio2 (XACT)" },
   { id: "physx", label: "NVIDIA PhysX" },
   { id: "vcrun2005", label: "Visual C++ 2005" },
   { id: "vcrun2008", label: "Visual C++ 2008" },
   { id: "vcrun2010", label: "Visual C++ 2010" },
-  { id: "xna40", label: "XNA Framework 4.0" },
+  { id: "vcrun2012", label: "Visual C++ 2012" },
+  { id: "vcrun2013", label: "Visual C++ 2013" },
+  { id: "vcrun2022", label: "Visual C++ 2015-2022" },
   { id: "dotnet35", label: t(".NET 3.5 (slow)") },
+  { id: "dotnet40", label: ".NET 4.0" },
+  { id: "dotnet48", label: t(".NET 4.8 (slow)") },
+  { id: "xna40", label: "XNA Framework 4.0" },
   { id: "flash", label: "Flash Player" },
 ];
 const RECOMMENDED_XP_DEPS = ["d3dx9", "vcrun2005"];
@@ -448,6 +457,12 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
   // "Follow Steam" resolves against the global default mode. Drives which
   // knobs are meaningful in the injected view.
   const isX86Mode = perGameMode === "x86_64" || (perGameMode === FOLLOW_STEAM_COMPAT && compatMode === "x86_64");
+  // Mirrors Steam's "Force the use of a specific Steam Play compatibility
+  // tool" checkbox: a concrete tool is pinned in config.vdf. "Use Default"
+  // also counts - it pins the global default tool. Per-game profile knobs
+  // and the dependency installer only appear once a tool is forced, so the
+  // page stays stock-looking for untouched games.
+  const forcedTool = currentTool !== "" && currentTool !== FOLLOW_STEAM_COMPAT;
   const onSelectPerGameMode = async (choice: any) => {
     if (!game?.appid) return;
     const mode = String(choice);
@@ -550,17 +565,21 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
                 <SelectEdit labelBelow label={t("Compatibility Tool")} value={currentTool} options={perGameToolOptions} onChange={onSelectPerGameTool} />
               </>
             )}
-            <SelectEdit
-              labelBelow
-              label={t("Game Era")}
-              value={String(values.gameEra || "")}
-              options={gameEraOptions}
-              onChange={(value) => patchSettings({ gameEra: value || undefined })}
-            />
-            {values.gameEra === "xp" ? (
-              <div className="nebel-compat-note">{t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced")}</div>
-            ) : null}
-            <SelectEdit label={t("Game Resolution")} value={resolution} options={resolutionOptions} onChange={setSteamResolution} />
+            {forcedTool && (
+              <>
+                <SelectEdit
+                  labelBelow
+                  label={t("Game Era")}
+                  value={String(values.gameEra || "")}
+                  options={gameEraOptions}
+                  onChange={(value) => patchSettings({ gameEra: value || undefined })}
+                />
+                {values.gameEra === "xp" ? (
+                  <div className="nebel-compat-note">{t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced")}</div>
+                ) : null}
+                <SelectEdit label={t("Game Resolution")} value={resolution} options={resolutionOptions} onChange={setSteamResolution} />
+              </>
+            )}
           </>
         )}
         {resolutionMessage ? <Field label={t("Status")} description={resolutionMessage} /> : null}
@@ -658,11 +677,15 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
               <div className="nebel-compat-note">{t("Launch switches applied to the game's environment - the managed equivalent of Steam's launch options line")}</div>
             </Collapsible>
           </PanelSection>
-          {!editingDefault && game?.appid ? (
+          {!editingDefault && game?.appid && forcedTool ? (
             <DependenciesSection appid={game.appid} eraXp={values.gameEra === "xp"} />
           ) : null}
           {!editingDefault && game?.appid ? (
-            <HeroicSection appid={game.appid} />
+            <HeroicSection
+              appid={game.appid}
+              forced={gameSettings.heroicForce === true}
+              onToggleForce={(enabled) => patchSettings({ heroicForce: enabled || undefined })}
+            />
           ) : null}
           {!editingDefault ? (
             <PanelSection>
@@ -717,15 +740,19 @@ function DependenciesSection({ appid, eraXp }: { appid: string; eraXp: boolean }
   };
   if (!status.available) {
     return (
-      <PanelSection title={t("Dependencies")}>
-        <Field description={t("Dependency installer (winetricks) is missing in this OS build")} />
+      <PanelSection>
+        <Collapsible label={t("Dependencies")}>
+          <Field description={t("Dependency installer (winetricks) is missing in this OS build")} />
+        </Collapsible>
       </PanelSection>
     );
   }
   if (!status.prefixFound) {
     return (
-      <PanelSection title={t("Dependencies")}>
-        <Field description={t("Game prefix not found - launch the game once first")} />
+      <PanelSection>
+        <Collapsible label={t("Dependencies")}>
+          <Field description={t("Game prefix not found - launch the game once first")} />
+        </Collapsible>
       </PanelSection>
     );
   }
@@ -747,28 +774,30 @@ function DependenciesSection({ appid, eraXp }: { appid: string; eraXp: boolean }
   })();
   const recommendedMissing = RECOMMENDED_XP_DEPS.filter((verb) => !status.installed.includes(verb));
   return (
-    <PanelSection title={t("Dependencies")}>
-      <div className="nebel-compat-note">{t("Installing dependencies needs an internet connection")}</div>
-      {eraXp && recommendedMissing.length ? (
-        <ButtonItem
-          layout="below"
-          disabled={status.busy}
-          description={t("Recommended for Windows XP-era games")}
-          onClick={() => install(recommendedMissing)}
-        >
-          {t("Install recommended (DirectX 9 + VC++ 2005)")}
-        </ButtonItem>
-      ) : null}
-      {DEPENDENCY_VERBS.map((verb) => {
-        const installed = status.installed.includes(verb.id);
-        const installing = status.busy && status.currentVerb === verb.id;
-        return (
-          <ButtonItem key={verb.id} layout="below" disabled={installed || status.busy} onClick={() => install([verb.id])}>
-            {verb.label} — {installed ? `✓ ${t("Installed")}` : installing ? t("Installing...") : t("Install")}
+    <PanelSection>
+      <Collapsible label={t("Dependencies")}>
+        <div className="nebel-compat-note">{t("Installing dependencies needs an internet connection")}</div>
+        {eraXp && recommendedMissing.length ? (
+          <ButtonItem
+            layout="below"
+            disabled={status.busy}
+            description={t("Recommended for Windows XP-era games")}
+            onClick={() => install(recommendedMissing)}
+          >
+            {t("Install recommended (DirectX 9 + VC++ 2005)")}
           </ButtonItem>
-        );
-      })}
-      {errorText ? <Field label={t("Status")} description={errorText} /> : null}
+        ) : null}
+        {DEPENDENCY_VERBS.map((verb) => {
+          const installed = status.installed.includes(verb.id);
+          const installing = status.busy && status.currentVerb === verb.id;
+          return (
+            <ButtonItem key={verb.id} layout="below" disabled={installed || status.busy} onClick={() => install([verb.id])}>
+              {verb.label} — {installed ? `✓ ${t("Installed")}` : installing ? t("Installing...") : t("Install")}
+            </ButtonItem>
+          );
+        })}
+        {errorText ? <Field label={t("Status")} description={errorText} /> : null}
+      </Collapsible>
     </PanelSection>
   );
 }

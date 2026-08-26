@@ -23,7 +23,7 @@ import {
 import { t } from "../i18n";
 import { SelectEdit } from "./widgets";
 
-export function HeroicSection({ appid }: { appid: string }) {
+export function HeroicSection({ appid, forced, onToggleForce }: { appid: string; forced: boolean; onToggleForce: (enabled: boolean) => void }) {
   const [info, setInfo] = useState<HeroicShortcutInfo | null>(null);
   const [cfg, setCfg] = useState<HeroicConfig | null>(null);
   const [versions, setVersions] = useState<HeroicVersion[]>([]);
@@ -92,7 +92,13 @@ export function HeroicSection({ appid }: { appid: string }) {
           </ButtonItem>
         </>
       ) : null}
-      {cfg && versions.length > 0 ? (
+      <ToggleField
+        label={t("Force Heroic launch settings")}
+        description={t("Overrides the game's Heroic launch configuration from here")}
+        checked={forced}
+        onChange={onToggleForce}
+      />
+      {forced && cfg && versions.length > 0 ? (
         <SelectEdit
           label={t("Proton/Wine build (Heroic)")}
           value={cfg.wineVersionBin}
@@ -103,13 +109,13 @@ export function HeroicSection({ appid }: { appid: string }) {
           }}
         />
       ) : null}
-      {sarekAvailable && !sarekActive ? (
+      {forced && sarekAvailable && !sarekActive ? (
         <Field
           label=""
           description={t("A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found")}
         />
       ) : null}
-      {cfg ? (
+      {forced && cfg ? (
         <>
           <ToggleField label="Esync" checked={cfg.enableEsync} onChange={(value) => patch({ enableEsync: value })} />
           <ToggleField label="Fsync" checked={cfg.enableFsync} onChange={(value) => patch({ enableFsync: value })} />

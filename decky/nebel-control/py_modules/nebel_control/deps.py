@@ -1,5 +1,5 @@
 # Per-game runtime dependencies ("Dependencies" tab): installs winetricks
-# verbs (d3dx9, vcrun*, physx, xna40, dotnet35, flash) into the game's Proton
+# verbs (d3dx*, d3dcompiler_47, xact, physx, vcrun*, dotnet*, xna40, flash) into the game's Proton
 # prefix. winetricks itself is a noarch shell script shipped in the OS image
 # (build_files/33-install-winetricks.sh); verb payloads download on demand,
 # so an offline console surfaces a readable error instead of hanging.
@@ -20,7 +20,11 @@ from pathlib import Path
 
 USER = "nebel"
 WINETRICKS = "/usr/bin/winetricks"
-VERBS = ("d3dx9", "physx", "vcrun2005", "vcrun2008", "vcrun2010", "xna40", "dotnet35", "flash")
+VERBS = (
+    "d3dx9", "d3dx10", "d3dx11_43", "d3dcompiler_47", "xact", "physx",
+    "vcrun2005", "vcrun2008", "vcrun2010", "vcrun2012", "vcrun2013", "vcrun2022",
+    "dotnet35", "dotnet40", "dotnet48", "xna40", "flash",
+)
 VERB_TIMEOUT_S = 30 * 60  # dotnet35 under FEX can take a long while
 LOG_TAIL_LINES = 12
 
