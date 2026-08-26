@@ -14,6 +14,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { saveCompatApplied, listDir, listHeroicGames, heroicLaunch, heroicMatch, getDepsStatus, installDeps } from "../backend";
 import type { DepsStatus, DirListing, HeroicGame } from "../backend";
 import { Collapsible, OpenFullScreenButton, SelectEdit } from "../components/widgets";
+import { HeroicSection } from "../components/HeroicSection";
 import { t } from "../i18n";
 import { getGlobalResolution, setGlobalResolution } from "../lib/steamSettings";
 import { clone } from "../lib/util";
@@ -659,6 +660,9 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
           </PanelSection>
           {!editingDefault && game?.appid ? (
             <DependenciesSection appid={game.appid} eraXp={values.gameEra === "xp"} />
+          ) : null}
+          {!editingDefault && game?.appid ? (
+            <HeroicSection appid={game.appid} />
           ) : null}
           {!editingDefault ? (
             <PanelSection>

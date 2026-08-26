@@ -63,6 +63,29 @@ def _shortcut_games():
     return games
 
 
+def shortcut_entry(appid):
+    """Full shortcuts.vdf entry (Exe, LaunchOptions, ...) for an unsigned appid."""
+    for vdf_file in STEAM_ROOT.glob("userdata/*/config/shortcuts.vdf"):
+        try:
+            data = vdf_file.read_bytes()
+        except OSError:
+            continue
+        try:
+            root, _ = _vdf_parse_map(data, 0)
+        except (ValueError, IndexError, struct.error):
+            continue
+        shortcuts = root.get("shortcuts") or {}
+        if not isinstance(shortcuts, dict):
+            continue
+        for entry in shortcuts.values():
+            if not isinstance(entry, dict):
+                continue
+            raw_appid = entry.get("appid")
+            if isinstance(raw_appid, int) and str(raw_appid & 0xFFFFFFFF) == str(appid):
+                return entry
+    return None
+
+
 def installed_games():
     steamapps_dirs = {STEAM_APPS_DIR}
     for library_file in (STEAM_APPS_DIR / "libraryfolders.vdf", STEAM_ROOT / "config/libraryfolders.vdf"):

@@ -44,6 +44,10 @@ const listDir = (path) => call("list_dir", path);
 const listHeroicGames = () => call("heroic_games");
 const heroicMatch = (path) => call("heroic_match", path);
 const heroicLaunch = (game) => call("heroic_launch", game);
+const heroicShortcut = (appid) => call("heroic_shortcut", appid);
+const getHeroicConfig = (appName) => call("heroic_config", appName);
+const setHeroicConfig = (appName, patch) => call("heroic_set_config", appName, patch);
+const listHeroicVersions = () => call("heroic_versions");
 const getDepsStatus = (appid) => call("deps_status", appid);
 const installDeps = (appid, verbs) => call("deps_install", appid, verbs);
 const setStickLedColor = (side, value) => call("set_stick_led_color", side, value);
@@ -370,6 +374,15 @@ const uk = {
     "Added to Steam library": "Додано до бібліотеки Steam",
     "Added to Steam library (launches via Heroic)": "Додано до бібліотеки Steam (запуск через Heroic)",
     "Heroic games": "Ігри Heroic",
+    "Heroic game": "Гра Heroic",
+    "This shortcut goes through the Heroic client - in game mode the game may not appear on screen": "Цей ярлик запускається через клієнт Heroic - в ігровому режимі гра може не з'явитися на екрані",
+    "Fix shortcut": "Полагодити ярлик",
+    "Fixing...": "Лагодження...",
+    "Shortcut fixed - the game now launches directly, without the Heroic client": "Ярлик полагоджено - гра тепер запускається напряму, без клієнта Heroic",
+    "Failed to fix shortcut": "Не вдалося полагодити ярлик",
+    "Proton/Wine build (Heroic)": "Збірка Proton/Wine (Heroic)",
+    "A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found": "Встановлено збірку Sarek (старіший DXVK) - оберіть її для ігор із чорним екраном або помилкою «no adapters found»",
+    "WoW64 mode": "Режим WoW64",
     "SD card": "Карта SD",
     "Internal storage": "Внутрішня пам’ять",
     "Monitor": "Монітор",
@@ -653,6 +666,15 @@ const ru = {
     "Added to Steam library": "Добавлено в библиотеку Steam",
     "Added to Steam library (launches via Heroic)": "Добавлено в библиотеку Steam (запуск через Heroic)",
     "Heroic games": "Игры Heroic",
+    "Heroic game": "Игра Heroic",
+    "This shortcut goes through the Heroic client - in game mode the game may not appear on screen": "Этот ярлык запускается через клиент Heroic - в игровом режиме игра может не появиться на экране",
+    "Fix shortcut": "Починить ярлык",
+    "Fixing...": "Починка...",
+    "Shortcut fixed - the game now launches directly, without the Heroic client": "Ярлык исправлен - игра теперь запускается напрямую, без клиента Heroic",
+    "Failed to fix shortcut": "Не удалось починить ярлык",
+    "Proton/Wine build (Heroic)": "Сборка Proton/Wine (Heroic)",
+    "A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found": "Установлена сборка Sarek (устаревший DXVK) - выберите её для игр с чёрным экраном или ошибкой «no adapters found»",
+    "WoW64 mode": "Режим WoW64",
     "SD card": "Карта SD",
     "Internal storage": "Встроенная память",
     "Monitor": "Монитор",
@@ -936,6 +958,15 @@ const es = {
     "Added to Steam library": "Añadido a la biblioteca de Steam",
     "Added to Steam library (launches via Heroic)": "Añadido a la biblioteca de Steam (se inicia vía Heroic)",
     "Heroic games": "Juegos de Heroic",
+    "Heroic game": "Juego de Heroic",
+    "This shortcut goes through the Heroic client - in game mode the game may not appear on screen": "Este acceso directo se inicia a través del cliente Heroic: en el modo de juego es posible que el juego no aparezca en pantalla",
+    "Fix shortcut": "Reparar acceso directo",
+    "Fixing...": "Reparando...",
+    "Shortcut fixed - the game now launches directly, without the Heroic client": "Acceso directo reparado: el juego ahora se inicia directamente, sin el cliente Heroic",
+    "Failed to fix shortcut": "No se pudo reparar el acceso directo",
+    "Proton/Wine build (Heroic)": "Versión de Proton/Wine (Heroic)",
+    "A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found": "Hay una versión Sarek (DXVK heredado) instalada: elígela para los juegos con pantalla negra o con el error «no adapters found»",
+    "WoW64 mode": "Modo WoW64",
     "SD card": "Tarjeta SD",
     "Internal storage": "Almacenamiento interno",
     "Monitor": "Monitor",
@@ -1219,6 +1250,15 @@ const fr = {
     "Added to Steam library": "Ajouté à la bibliothèque Steam",
     "Added to Steam library (launches via Heroic)": "Ajouté à la bibliothèque Steam (lancé via Heroic)",
     "Heroic games": "Jeux Heroic",
+    "Heroic game": "Jeu Heroic",
+    "This shortcut goes through the Heroic client - in game mode the game may not appear on screen": "Ce raccourci passe par le client Heroic - en mode jeu, le jeu peut ne pas apparaître à l'écran",
+    "Fix shortcut": "Réparer le raccourci",
+    "Fixing...": "Réparation...",
+    "Shortcut fixed - the game now launches directly, without the Heroic client": "Raccourci réparé - le jeu se lance désormais directement, sans le client Heroic",
+    "Failed to fix shortcut": "Échec de la réparation du raccourci",
+    "Proton/Wine build (Heroic)": "Version de Proton/Wine (Heroic)",
+    "A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found": "Une version Sarek (DXVK hérité) est installée - choisissez-la pour les jeux qui affichent un écran noir ou l'erreur « no adapters found »",
+    "WoW64 mode": "Mode WoW64",
     "SD card": "Carte SD",
     "Internal storage": "Stockage interne",
     "Monitor": "Moniteur",
@@ -2224,6 +2264,67 @@ function Display(_props) {
                     }, children: t("Apply & Restart Game Mode") }) })] }));
 }
 
+function HeroicSection({ appid }) {
+    const [info, setInfo] = SP_REACT.useState(null);
+    const [cfg, setCfg] = SP_REACT.useState(null);
+    const [versions, setVersions] = SP_REACT.useState([]);
+    const [message, setMessage] = SP_REACT.useState("");
+    const [fixing, setFixing] = SP_REACT.useState(false);
+    const load = async () => {
+        try {
+            const next = await heroicShortcut(appid);
+            setInfo(next);
+            if (next) {
+                setCfg(await getHeroicConfig(next.appName));
+                setVersions(await listHeroicVersions());
+            }
+        }
+        catch {
+            setInfo(null);
+        }
+    };
+    SP_REACT.useEffect(() => {
+        setInfo(null);
+        setCfg(null);
+        setMessage("");
+        load();
+    }, [appid]);
+    if (!info)
+        return null;
+    const fixShortcut = async () => {
+        setFixing(true);
+        try {
+            const id = Number(appid);
+            const apps = window.SteamClient?.Apps;
+            const dir = info.launcher.substring(0, info.launcher.lastIndexOf("/") + 1);
+            await apps?.SetShortcutExe?.(id, info.launcher);
+            await apps?.SetShortcutStartDir?.(id, dir);
+            await apps?.SetShortcutLaunchOptions?.(id, `"${info.appName}" ${info.runner}`);
+            await apps?.SpecifyCompatTool?.(id, "");
+            setMessage(t("Shortcut fixed - the game now launches directly, without the Heroic client"));
+            await load();
+        }
+        catch {
+            setMessage(t("Failed to fix shortcut"));
+        }
+        setFixing(false);
+    };
+    const patch = async (value) => {
+        try {
+            setCfg(await setHeroicConfig(info.appName, value));
+        }
+        catch {
+        }
+    };
+    const sarekAvailable = versions.some((version) => /sarek/i.test(version.name));
+    const sarekActive = /sarek/i.test(cfg?.wineVersionName || "");
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Heroic", children: [info.style === "heroic" ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: t("Heroic game"), description: t("This shortcut goes through the Heroic client - in game mode the game may not appear on screen") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: fixing, onClick: fixShortcut, children: fixing ? t("Fixing...") : t("Fix shortcut") })] })) : null, cfg && versions.length > 0 ? (SP_JSX.jsx(SelectEdit, { label: t("Proton/Wine build (Heroic)"), value: cfg.wineVersionBin, options: versions.map((version) => ({ data: version.bin, label: version.name })), onChange: (bin) => {
+                    const version = versions.find((entry) => entry.bin === bin);
+                    if (version)
+                        patch({ wineVersion: { bin: version.bin, name: version.name, type: version.type } });
+                } })) : null, sarekAvailable && !sarekActive ? (SP_JSX.jsx(DFL.Field, { label: "", description: t("A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found") })) : null, cfg ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { label: "Esync", checked: cfg.enableEsync, onChange: (value) => patch({ enableEsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Fsync", checked: cfg.enableFsync, onChange: (value) => patch({ enableFsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Msync", checked: cfg.enableMsync, onChange: (value) => patch({ enableMsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WoW64 mode"), checked: cfg.enableWoW64, onChange: (value) => patch({ enableWoW64: value }) })] })) : null, message ? SP_JSX.jsx(DFL.Field, { label: message }) : null] }));
+}
+
 const GLOBAL_RESOLUTION_KEY = "gamescope_game_resolution_global";
 function getGlobalResolution() {
     return window.settingsStore?.GetClientSetting?.(GLOBAL_RESOLUTION_KEY)?.[0] || "Default";
@@ -2732,7 +2833,7 @@ function Games({ config, setConfig, qam, lockedAppid, injected }) {
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
                                 : null] }))] }), !qam && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsxs(Collapsible, { label: t("Advanced"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                                 ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
-                                                : null] }))] }), SP_JSX.jsxs(Collapsible, { label: t("Launch flags"), children: [SP_JSX.jsx(DFL.ToggleField, { label: t("D3D12 feature level 12_1"), description: t("For DirectX 12 games that black-screen or refuse to start"), checked: envPresets.dx12Fl121 === true, onChange: (value) => setEnvPreset("dx12Fl121", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable DirectX 12"), description: t("For games whose DirectX 12 mode crashes - they fall back to DX11"), checked: envPresets.noD3d12 === true, onChange: (value) => setEnvPreset("noD3d12", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WineD3D instead of DXVK"), description: t("For old DirectX 9-11 games that won't start on DXVK"), checked: envPresets.wineD3d === true, onChange: (value) => setEnvPreset("wineD3d", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Old OpenGL compatibility"), description: t("For old OpenGL games that misdetect the graphics driver"), checked: envPresets.oldGlString === true, onChange: (value) => setEnvPreset("oldGlString", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Large address aware (32-bit games)"), description: t("For 32-bit era games crashing with out-of-memory errors"), checked: envPresets.largeAddress === true, onChange: (value) => setEnvPreset("largeAddress", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Mod/launcher DLL override"), description: t("Needed by mod loaders and third-party launchers (winhttp)"), checked: envPresets.winhttpOverride === true, onChange: (value) => setEnvPreset("winhttpOverride", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable fsync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noFsync === true, onChange: (value) => setEnvPreset("noFsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable esync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noEsync === true, onChange: (value) => setEnvPreset("noEsync", value) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Launch switches applied to the game's environment - the managed equivalent of Steam's launch options line") })] })] }), !editingDefault && game?.appid ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+                                                : null] }))] }), SP_JSX.jsxs(Collapsible, { label: t("Launch flags"), children: [SP_JSX.jsx(DFL.ToggleField, { label: t("D3D12 feature level 12_1"), description: t("For DirectX 12 games that black-screen or refuse to start"), checked: envPresets.dx12Fl121 === true, onChange: (value) => setEnvPreset("dx12Fl121", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable DirectX 12"), description: t("For games whose DirectX 12 mode crashes - they fall back to DX11"), checked: envPresets.noD3d12 === true, onChange: (value) => setEnvPreset("noD3d12", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WineD3D instead of DXVK"), description: t("For old DirectX 9-11 games that won't start on DXVK"), checked: envPresets.wineD3d === true, onChange: (value) => setEnvPreset("wineD3d", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Old OpenGL compatibility"), description: t("For old OpenGL games that misdetect the graphics driver"), checked: envPresets.oldGlString === true, onChange: (value) => setEnvPreset("oldGlString", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Large address aware (32-bit games)"), description: t("For 32-bit era games crashing with out-of-memory errors"), checked: envPresets.largeAddress === true, onChange: (value) => setEnvPreset("largeAddress", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Mod/launcher DLL override"), description: t("Needed by mod loaders and third-party launchers (winhttp)"), checked: envPresets.winhttpOverride === true, onChange: (value) => setEnvPreset("winhttpOverride", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable fsync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noFsync === true, onChange: (value) => setEnvPreset("noFsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable esync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noEsync === true, onChange: (value) => setEnvPreset("noEsync", value) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Launch switches applied to the game's environment - the managed equivalent of Steam's launch options line") })] })] }), !editingDefault && game?.appid ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault && game?.appid ? (SP_JSX.jsx(HeroicSection, { appid: game.appid })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
 // Per-game winetricks verbs ("Dependencies"): installs run in a backend
 // worker thread, so the UI polls deps_status while busy instead of blocking.

@@ -11,7 +11,16 @@ from nebel_control.config import build_config
 from nebel_control.controller import set_controller_type
 from nebel_control.deps import get_status as deps_status, install_verbs as deps_install
 from nebel_control.display import display_state, restart_gamescope_session, set_display_config, set_internal_touchpad
-from nebel_control.filepick import heroic_games, heroic_launch, heroic_match, list_dir
+from nebel_control.filepick import (
+    heroic_config,
+    heroic_games,
+    heroic_launch,
+    heroic_match,
+    heroic_set_config,
+    heroic_shortcut,
+    heroic_versions,
+    list_dir,
+)
 from nebel_control.lighting import (
     set_stick_led_charging_indicator,
     set_stick_led_chase,
@@ -94,6 +103,18 @@ class Plugin:
 
     async def heroic_match(self, path):
         return await asyncio.to_thread(heroic_match, path)
+
+    async def heroic_shortcut(self, appid):
+        return await asyncio.to_thread(heroic_shortcut, appid)
+
+    async def heroic_config(self, app_name):
+        return await asyncio.to_thread(heroic_config, app_name)
+
+    async def heroic_set_config(self, app_name, patch):
+        return await asyncio.to_thread(heroic_set_config, app_name, patch)
+
+    async def heroic_versions(self):
+        return await asyncio.to_thread(heroic_versions)
 
     async def deps_status(self, appid):
         return await asyncio.to_thread(deps_status, appid)

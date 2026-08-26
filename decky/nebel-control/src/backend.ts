@@ -35,6 +35,32 @@ export interface HeroicGame {
 export const listHeroicGames = () => call<[], HeroicGame[]>("heroic_games");
 export const heroicMatch = (path: string) => call<[string], HeroicGame | null>("heroic_match", path);
 export const heroicLaunch = (game: HeroicGame) => call<[HeroicGame], { name: string; exe: string; args: string }>("heroic_launch", game);
+export interface HeroicShortcutInfo {
+  style: "wrapper" | "heroic";
+  appName: string;
+  runner: string;
+  name: string;
+  exe: string;
+  launchOptions: string;
+  launcher: string;
+}
+export const heroicShortcut = (appid: string) => call<[string], HeroicShortcutInfo | null>("heroic_shortcut", appid);
+export interface HeroicConfig {
+  appName: string;
+  wineVersionBin: string;
+  wineVersionName: string;
+  wineVersionType: string;
+  winePrefix: string;
+  enableEsync: boolean;
+  enableFsync: boolean;
+  enableMsync: boolean;
+  enableWoW64: boolean;
+}
+export const getHeroicConfig = (appName: string) => call<[string], HeroicConfig>("heroic_config", appName);
+export const setHeroicConfig = (appName: string, patch: Partial<HeroicConfig> & { wineVersion?: { bin: string; name: string; type: string } }) =>
+  call<[string, typeof patch], HeroicConfig>("heroic_set_config", appName, patch);
+export interface HeroicVersion { name: string; type: string; bin: string; }
+export const listHeroicVersions = () => call<[], HeroicVersion[]>("heroic_versions");
 export interface DepsStatus {
   appid: string;
   available: boolean;

@@ -19,6 +19,7 @@ intercepts manual picks inside a Heroic install dir.
 import glob
 import json
 import os
+import re
 
 SESSION_HOME = "/var/home/nebel"
 
@@ -37,6 +38,140 @@ HEROIC_LAUNCHER_CANDIDATES = [
     "/usr/bin/nebel-heroic-launch",
     os.path.join(SESSION_HOME, ".local/bin/nebel-heroic-launch"),
 ]
+
+HEROIC_CFG_DIR = os.path.join(SESSION_HOME, ".config/heroic")
+
+
+def heroic_launcher():
+    """The launcher path to put into shortcuts (first one that exists)."""
+    return next((p for p in HEROIC_LAUNCHER_CANDIDATES if os.path.isfile(p)),
+                HEROIC_LAUNCHER_CANDIDATES[0])
+
+
+def heroic_shortcut(appid):
+    """How a Steam shortcut relates to Heroic, or None.
+
+    Returns {"style": "wrapper"|"heroic", "appName", "runner", "name",
+             "exe", "launchOptions", "launcher"}.
+    "wrapper" = launches via nebel-heroic-launch (reliable, tracked by Steam).
+    "heroic"  = Heroic's own `heroic --no-gui heroic://launch...` form, which
+                breaks in game mode whenever a Heroic instance is running.
+    """
+    from nebel_control.steam import shortcut_entry
+
+    entry = shortcut_entry(appid)
+    if not entry:
+        return None
+    exe = (entry.get("Exe") or "").strip().strip('"')
+    options = entry.get("LaunchOptions") or ""
+    name = entry.get("AppName") or ""
+    base = os.path.basename(exe)
+    app_name, runner = "", "legendary"
+    if base == "nebel-heroic-launch":
+        style = "wrapper"
+        match = re.match(r'\s*"([^"]+)"\s*(\w*)', options)
+        if match:
+            app_name = match.group(1)
+            runner = match.group(2) or "legendary"
+    else:
+        match = re.search(r"heroic://launch\?appName=([^&\"\s]+)(?:&runner=(\w+))?", options)
+        if not match and base != "heroic":
+            return None
+        style = "heroic"
+        if match:
+            app_name = match.group(1)
+            runner = match.group(2) or "legendary"
+    if not app_name:
+        return None
+    return {
+        "style": style,
+        "appName": app_name,
+        "runner": runner,
+        "name": name,
+        "exe": exe,
+        "launchOptions": options,
+        "launcher": heroic_launcher(),
+    }
+
+
+# Heroic GamesConfig files nest per-game overrides under the app name key and
+# keep global defaults under "default".
+def _heroic_games_config(app_name):
+    path = os.path.join(HEROIC_CFG_DIR, "GamesConfig", f"{app_name}.json")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        data = {}
+    return path, data
+
+
+def heroic_config(app_name):
+    """Per-game Heroic settings relevant to launching, flattened for the UI."""
+    _, data = _heroic_games_config(app_name)
+    game = data.get(app_name)
+    if not isinstance(game, dict):
+        game = data.get("default") if isinstance(data.get("default"), dict) else {}
+    wine_version = game.get("wineVersion") or {}
+    return {
+        "appName": app_name,
+        "wineVersionBin": wine_version.get("bin", ""),
+        "wineVersionName": wine_version.get("name", ""),
+        "wineVersionType": wine_version.get("type", ""),
+        "winePrefix": game.get("winePrefix", ""),
+        "enableEsync": bool(game.get("enableEsync", True)),
+        "enableFsync": bool(game.get("enableFsync", True)),
+        "enableMsync": bool(game.get("enableMsync", False)),
+        "enableWoW64": bool(game.get("enableWoW64", True)),
+    }
+
+
+_HEROIC_TOGGLES = ("enableEsync", "enableFsync", "enableMsync", "enableWoW64")
+
+
+def heroic_set_config(app_name, patch):
+    """Merge a settings patch into Heroic's per-game config, preserving layout."""
+    if not re.fullmatch(r"[\w.-]+", app_name or ""):
+        raise ValueError("bad app name")
+    path, data = _heroic_games_config(app_name)
+    game = data.get(app_name)
+    if not isinstance(game, dict):
+        game = {}
+        data[app_name] = game
+    for key in _HEROIC_TOGGLES:
+        if key in patch:
+            game[key] = bool(patch[key])
+    version = patch.get("wineVersion")
+    if isinstance(version, dict) and version.get("bin"):
+        game["wineVersion"] = {
+            "bin": str(version["bin"]),
+            "name": str(version.get("name") or os.path.basename(os.path.dirname(version["bin"]))),
+            "type": str(version.get("type") or "proton"),
+        }
+    data.setdefault("version", "v0")
+    data["explicit"] = True
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=2)
+    os.replace(tmp, path)
+    return heroic_config(app_name)
+
+
+def heroic_versions():
+    """Wine/Proton builds installed under Heroic's tools dir."""
+    out = []
+    for kind, subdir, bin_rel in (("proton", "proton", "proton"),
+                                  ("wine", "wine", os.path.join("bin", "wine"))):
+        base = os.path.join(HEROIC_CFG_DIR, "tools", subdir)
+        try:
+            entries = sorted(os.listdir(base))
+        except OSError:
+            continue
+        for name in entries:
+            binary = os.path.join(base, name, bin_rel)
+            if os.path.isfile(binary):
+                out.append({"name": name, "type": kind, "bin": binary})
+    return out
 
 
 def heroic_games():
@@ -65,11 +200,9 @@ def heroic_games():
 
 def heroic_launch(game):
     """Steam shortcut fields for launching the game via nebel-heroic-launch."""
-    exe = next((p for p in HEROIC_LAUNCHER_CANDIDATES if os.path.isfile(p)),
-               HEROIC_LAUNCHER_CANDIDATES[0])
     return {
         "name": game["title"],
-        "exe": exe,
+        "exe": heroic_launcher(),
         "args": f'"{game["appName"]}" {game["runner"]}',
     }
 
