@@ -12,6 +12,16 @@
 
 set -u
 
+# Steam on this stack launches non-Steam shortcuts with NO PATH in the
+# environment. legendary/umu are python zipapps with a "#!/usr/bin/env python3"
+# shebang: env(1) still finds python3 via its compiled-in default path, but
+# CPython then cannot resolve argv[0] and leaves sys.executable empty — which
+# kills multiprocessing (the resource_tracker child is spawned with an empty
+# interpreter path and dies instantly, surfacing as a BrokenPipeError in
+# legendary's setup_threaded_logging) and makes Steam report the game as
+# exited a second after launch. Guarantee a sane PATH for the whole chain.
+export PATH="${PATH:-/usr/local/bin:/usr/bin}"
+
 APP="${1:-}"
 RUNNER="${2:-legendary}"
 
