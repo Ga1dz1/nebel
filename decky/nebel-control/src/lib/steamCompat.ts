@@ -186,7 +186,9 @@ function resolveSettledCompatDetails(appid: string): Promise<any> {
   return waitForAppDetails(appid, () => true, 1500, 250, true).promise;
 }
 
-// app_type: 1 = Game. Polls because overviews load a beat after plugin init.
+// app_type: 1 = Game, 0x40000000 = non-Steam shortcut. Polls because overviews
+// load a beat after plugin init.
+const SHORTCUT_APP_TYPE = 0x40000000;
 async function resolveOverviewType(appid: string): Promise<number | null> {
   for (let i = 0; i < 5; i++) {
     try {
@@ -313,12 +315,13 @@ async function applyCompatDefaultForRoute(appid: string, route: CompatRoute | nu
   return true;
 }
 
-// Wraps only a confirmed game (app_type 1), never a tool/runtime. Returns false if the
-// overview/details were still cold, so the caller can retry; true once resolved.
+// Wraps only a confirmed game or non-Steam shortcut (app_type 1 /
+// 0x40000000), never a tool/runtime. Returns false if the overview/details
+// were still cold, so the caller can retry; true once resolved.
 export async function applyLaunchWrapperToGame(appid: string): Promise<boolean> {
   const type = await resolveOverviewType(appid);
   if (type === null) return false;
-  if (type !== 1) return true;
+  if (type !== 1 && type !== SHORTCUT_APP_TYPE) return true;
   const details = await resolveDetails(appid);
   if (!details) return false;
   const next = wrapLaunchOptions(String(details.strLaunchOptions || ""));

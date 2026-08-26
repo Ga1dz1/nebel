@@ -67,9 +67,12 @@ def heroic_shortcut(appid):
     name = entry.get("AppName") or ""
     base = os.path.basename(exe)
     app_name, runner = "", "legendary"
+    # The game-launch wrapper is prepended to shortcuts automatically
+    # ("nebel-game-launch %command% ...") - look past it when parsing.
+    parse_options = re.sub(r"^\s*\S*nebel-game-launch\s+%command%\s*", "", options)
     if base == "nebel-heroic-launch":
         style = "wrapper"
-        match = re.match(r'\s*"([^"]+)"\s*(\w*)', options)
+        match = re.match(r'\s*"([^"]+)"\s*(\w*)', parse_options)
         if match:
             app_name = match.group(1)
             runner = match.group(2) or "legendary"

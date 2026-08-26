@@ -2,7 +2,7 @@ import { routerHook } from "@decky/api";
 import { ErrorBoundary } from "@decky/ui";
 import type { RoutePatch } from "@decky/api";
 import type { ReactNode } from "react";
-import { ControllerLightingSection, CloudSyncSection, ControlCenterSection, ExternalDisplaySection, GameTweaksSection, InGameOverlaySection, LibraryAddGameSection, NotificationFlashSection, PowerLimitsSection, SshSection } from "./sections";
+import { ControllerLightingSection, CloudSyncSection, ControlCenterSection, ExternalDisplaySection, GameTweaksSection, InGameOverlaySection, NotificationFlashSection, PowerLimitsSection, SshSection } from "./sections";
 
 // Duplicates Nebel Control's management UI into Steam's own settings pages
 // (Steam Settings -> Controller/Power/Display and game Properties), rendered
@@ -65,11 +65,6 @@ const SETTINGS_SECTIONS: InjectedSection[] = [
     name: "cloud-sync",
     match: (page) => page.route === "/settings/cloud",
     render: () => <CloudSyncSection />,
-  },
-  {
-    name: "library-add-game",
-    match: (page) => page.route === "/settings/library",
-    render: () => <LibraryAddGameSection />,
   },
   {
     name: "internet-ssh",

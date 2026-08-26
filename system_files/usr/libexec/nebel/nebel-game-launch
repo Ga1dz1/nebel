@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 # Game launch-option prefix wrapper ("nebel-game-launch %command%"). Applies
 # per-game settings via FEX_APP_CONFIG, the only knob every compat tool's FEX reads
 # (the on-disk FEX config files are seen only by the system FEX, not arm64ec/wow64).
@@ -166,7 +166,8 @@ def apply_fex(settings, game_id, profiles, env):
             json.dump(config, f, indent=2, sort_keys=True)
             f.write("\n")
         os.replace(tmp, target)
-        env["FEX_APP_CONFIG"] = str(target)
+        # An explicit FEX_APP_CONFIG in the game's Launch Options wins.
+        env.setdefault("FEX_APP_CONFIG", str(target))
     finally:
         tmp.unlink(missing_ok=True)
 
@@ -272,13 +273,13 @@ def use_wined3d(settings):
 
 
 def apply_renderer(settings, env):
-    explicit = settings.get("legacyRenderer") or "auto"
     if use_wined3d(settings):
         # DXVK covers D3D8-12; D3D1-7 (ddraw-era) renders wrong or not at all
-        # through it, so XP-era titles get WineD3D for everything.
-        env["PROTON_USE_WINED3D"] = "1"
-    elif explicit == "off":
-        env.pop("PROTON_USE_WINED3D", None)
+        # through it, so XP-era titles get WineD3D for everything. An explicit
+        # PROTON_USE_WINED3D in the game's Launch Options wins over the UI.
+        env.setdefault("PROTON_USE_WINED3D", "1")
+    # "off"/"auto" simply mean we don't ask for WineD3D - never strip a value
+    # the user set directly in Launch Options.
 
 
 def apply_gpu_spoof(settings, env, wined3d):
@@ -437,6 +438,9 @@ def apply_dxvk_override(pfx, settings):
 # for 32-bit-era titles crashing on big-memory hosts, and the winhttp DLL
 # override that mod loaders and third-party launchers need.
 # Boolean on/off knobs only; anything taking a value belongs in a picker.
+# Variables the user set directly in the game's Launch Options arrive in our
+# environment before we run and ALWAYS win: presets only fill gaps, never
+# overwrite, and WINEDLLOVERRIDES entries merge instead of clobbering.
 PRESET_ENV = {
     "dx12Fl121": {"VKD3D_FEATURE_LEVEL": "12_1"},
     "noD3d12": {"PROTON_NO_D3D12": "1"},
@@ -458,8 +462,15 @@ def apply_env_presets(settings, env):
     if not isinstance(presets, dict):
         return
     for key, envvars in PRESET_ENV.items():
-        if presets.get(key):
-            env.update(envvars)
+        if not presets.get(key):
+            continue
+        for name, value in envvars.items():
+            if name == "WINEDLLOVERRIDES" and env.get(name):
+                entries = env[name].split(";")
+                if value not in entries:
+                    env[name] = f"{value};{env[name]}"
+                continue
+            env.setdefault(name, value)
 
 
 def apply_memory_limit(settings):
@@ -681,6 +692,11 @@ def main():
     args = sys.argv[1:]
     if not args:
         raise SystemExit("usage: nebel-game-launch COMMAND [ARGS...]")
+
+    # Steam launches non-Steam shortcuts with no PATH at all in game mode;
+    # guarantee a sane one for the whole subtree (proton's shell scripts,
+    # wine tooling and the game itself all call PATH lookups).
+    os.environ.setdefault("PATH", "/usr/local/bin:/usr/bin")
 
     # Proton-CachyOS enables its shader compiler HUD unless DXVK_HUD is already
     # set. Keep Nebel's default clean while preserving an explicit user HUD.

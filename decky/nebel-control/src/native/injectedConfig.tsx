@@ -58,5 +58,11 @@ export function useInjectedConfig(): { config: Config | null; setConfig: Dispatc
 // spacing overrides align the QAM-styled PanelSection with the host page's
 // own full-width settings groups.
 export function NativeStyles() {
-  return <style>{styles}{nativeSectionSpacingCss(".nebel-native")}</style>;
+  // Steam's Properties pages give their own DialogBody flex-grow: 1, which
+  // stretches it across the whole column and pushes our appended section to
+  // the bottom (a big blank gap under Steam's checkbox). Pin the body to its
+  // content height, but only when our block is actually present.
+  const fix =
+    ".DialogContent_InnerWidth:has(> .nebel-native) > .DialogBody{flex-grow:0 !important;}";
+  return <style>{styles}{nativeSectionSpacingCss(".nebel-native")}{fix}</style>;
 }

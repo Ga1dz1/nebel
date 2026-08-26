@@ -11,8 +11,8 @@ import {
 } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { saveCompatApplied, listDir, listHeroicGames, heroicLaunch, heroicMatch, getDepsStatus, installDeps } from "../backend";
-import type { DepsStatus, DirListing, HeroicGame } from "../backend";
+import { saveCompatApplied, getDepsStatus, installDeps } from "../backend";
+import type { DepsStatus } from "../backend";
 import { Collapsible, OpenFullScreenButton, SelectEdit } from "../components/widgets";
 import { HeroicSection } from "../components/HeroicSection";
 import { t } from "../i18n";
@@ -26,6 +26,7 @@ import {
   FOLLOW_STEAM_COMPAT,
   USE_DEFAULT_COMPAT,
   X86_64_MODE_THUNKS,
+  applyLaunchWrapperToGame,
   compatSelection,
   getAppCompatTools,
   getProtonTools,
@@ -240,6 +241,9 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
     const appid = game.appid;
     let cancelled = false;
     setCurrentTool(FOLLOW_STEAM_COMPAT);
+    // Non-Steam shortcuts added mid-session never pass the bootstrap sweep -
+    // make sure the launch wrapper is in place once the game is opened here.
+    applyLaunchWrapperToGame(appid).catch(() => {});
     resolveCompatState(appid).then((state) => {
       if (!cancelled) setCurrentTool(compatSelection(state));
     });
@@ -683,7 +687,7 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
               <ToggleField label={t("Mod/launcher DLL override")} description={t("Needed by mod loaders and third-party launchers (winhttp)")} checked={envPresets.winhttpOverride === true} onChange={(value) => setEnvPreset("winhttpOverride", value)} />
               <ToggleField label={t("Disable fsync")} description={t("For games that hang at startup or in anti-cheat init")} checked={envPresets.noFsync === true} onChange={(value) => setEnvPreset("noFsync", value)} />
               <ToggleField label={t("Disable esync")} description={t("For games that hang at startup or in anti-cheat init")} checked={envPresets.noEsync === true} onChange={(value) => setEnvPreset("noEsync", value)} />
-              <div className="nebel-compat-note">{t("Launch switches applied to the game's environment - the managed equivalent of Steam's launch options line")}</div>
+              <div className="nebel-compat-note">{t("Launch switches applied to the game's environment - variables set directly in Launch Options take precedence")}</div>
             </Collapsible>
           </PanelSection>
           {!editingDefault && game?.appid && forcedTool ? (
@@ -704,7 +708,6 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
           )}
         </>
       )}
-      {!lockedAppid && <AddGameSection />}
       {qam && <OpenFullScreenButton />}
     </>
   );
@@ -800,117 +803,6 @@ function DependenciesSection({ appid, eraXp }: { appid: string; eraXp: boolean }
         })}
         {errorText ? <Field label={t("Status")} description={errorText} /> : null}
       </Collapsible>
-    </PanelSection>
-  );
-}
-
-// The stock "Browse..." button in Steam's Add Non-Steam Game dialog is broken
-// in the ARM64 client (OpenFileDialog fails before reaching the portal), and
-// native dialogs never appear in the gamescope session — so the picker lives
-// right here and the pick is registered through Steam's AddShortcut API.
-// Heroic games are added as `heroic --no-gui heroic://launch...` shortcuts
-// (what Heroic's own "Add to Steam" writes): a raw exe pick would run
-// without the Heroic prefix/wine/env and silently fail to launch.
-export function AddGameSection() {
-  const [picker, setPicker] = useState<DirListing | null>(null);
-  const [addResult, setAddResult] = useState("");
-  const [heroicGames, setHeroicGames] = useState<HeroicGame[] | null>(null);
-
-  useEffect(() => {
-    listHeroicGames()
-      .then((games) => setHeroicGames(games))
-      .catch(() => setHeroicGames([]));
-  }, []);
-
-  const navigate = async (path: string) => {
-    try {
-      setPicker(await listDir(path));
-    } catch {
-      setAddResult(t("Failed to add shortcut"));
-      setPicker(null);
-    }
-  };
-  const addShortcut = async (name: string, exe: string, args: string, note?: string, native = false) => {
-    // AddShortcut(appName, exe, startDir, launchOptions) - args are LAST.
-    const appid = await SteamClient?.Apps?.AddShortcut?.(name, exe, "", args);
-    if (typeof appid === "number" && appid > 0 && native) {
-      // A launcher binary is a Linux app: clear any forced Proton, or Steam
-      // wraps the ELF in `proton waitforexitandrun` and it never starts.
-      try {
-        await SteamClient?.Apps?.SpecifyCompatTool?.(appid, "");
-      } catch {}
-    }
-    setAddResult(typeof appid === "number" && appid > 0 ? (note || t("Added to Steam library")) : t("Failed to add shortcut"));
-  };
-  const addHeroic = async (game: HeroicGame) => {
-    setAddResult("");
-    try {
-      const launch = await heroicLaunch(game);
-      await addShortcut(launch.name, launch.exe, launch.args, t("Added to Steam library (launches via Heroic)"), true);
-    } catch {
-      setAddResult(t("Failed to add shortcut"));
-    }
-  };
-  const pick = async (fullPath: string) => {
-    setPicker(null);
-    setAddResult("");
-    try {
-      // An exe inside a Heroic install dir is launched through Heroic, never
-      // bare - bare it gets a default prefix and no Heroic settings.
-      const owning = await heroicMatch(fullPath);
-      if (owning) {
-        await addHeroic(owning);
-        return;
-      }
-      const name = fullPath.split("/").pop()?.replace(/\.[^.]+$/, "") || fullPath;
-      // Steam quotes the Exe field itself — passing a pre-quoted path yields ""..."".
-      await addShortcut(name, fullPath, "");
-    } catch {
-      setAddResult(t("Failed to add shortcut"));
-    }
-  };
-  const shortcutLabel = (s: { id: string; label: string }) =>
-    s.id === "home" ? t("Internal storage") : `${t("SD card")}: ${s.label}`;
-
-  if (picker) {
-    return (
-      <PanelSection title={t("Select the game's executable")}>
-        <Field label={picker.path} />
-        {(picker.shortcuts || []).map((s) => (
-          <ButtonItem key={`s:${s.path}`} layout="below" onClick={() => navigate(s.path)}>
-            {shortcutLabel(s)}/
-          </ButtonItem>
-        ))}
-        {picker.parent !== null && (
-          <ButtonItem layout="below" onClick={() => navigate(picker.parent || "/")}>..</ButtonItem>
-        )}
-        {picker.dirs.map((dir) => (
-          <ButtonItem key={`d:${dir}`} layout="below" onClick={() => navigate(`${picker.path}/${dir}`)}>
-            {dir}/
-          </ButtonItem>
-        ))}
-        {picker.files.map((file) => (
-          <ButtonItem key={`f:${file}`} layout="below" onClick={() => pick(`${picker.path}/${file}`)}>
-            {file}
-          </ButtonItem>
-        ))}
-        <ButtonItem layout="below" onClick={() => setPicker(null)}>{t("Cancel")}</ButtonItem>
-      </PanelSection>
-    );
-  }
-  return (
-    <PanelSection title={t("Add non-Steam game")}>
-      {heroicGames && heroicGames.length > 0 && (
-        <Collapsible label={t("Heroic games")}>
-          {heroicGames.map((game) => (
-            <ButtonItem key={game.appName} layout="below" onClick={() => addHeroic(game)}>
-              {game.title}
-            </ButtonItem>
-          ))}
-        </Collapsible>
-      )}
-      <ButtonItem layout="below" onClick={() => navigate("")}>{t("Select the game's executable")}</ButtonItem>
-      {addResult && <Field label={addResult} />}
     </PanelSection>
   );
 }

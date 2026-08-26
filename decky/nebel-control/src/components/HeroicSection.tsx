@@ -9,8 +9,8 @@
 //  2. Edit the game's Heroic settings (Proton/Wine build, sync primitives)
 //     in place - nebel-heroic-launch reads this very config at launch time,
 //     so changes apply on the next start.
-import { useEffect, useState } from "react";
-import { ButtonItem, Field, PanelSection, ToggleField } from "@decky/ui";
+import { useEffect, useRef, useState } from "react";
+import { ButtonItem, DialogCheckbox, Field, PanelSection, ToggleField } from "@decky/ui";
 import {
   HeroicConfig,
   HeroicShortcutInfo,
@@ -29,6 +29,8 @@ export function HeroicSection({ appid, forced, onToggleForce }: { appid: string;
   const [versions, setVersions] = useState<HeroicVersion[]>([]);
   const [message, setMessage] = useState("");
   const [fixing, setFixing] = useState(false);
+  // Auto-repair attempted for this appid - guards against a fix<->reload loop.
+  const fixAttempted = useRef("");
 
   const load = async () => {
     try {
@@ -46,20 +48,19 @@ export function HeroicSection({ appid, forced, onToggleForce }: { appid: string;
     setInfo(null);
     setCfg(null);
     setMessage("");
+    fixAttempted.current = "";
     load();
   }, [appid]);
 
-  if (!info) return null;
-
-  const fixShortcut = async () => {
+  const fixShortcut = async (target: HeroicShortcutInfo) => {
     setFixing(true);
     try {
       const id = Number(appid);
       const apps = window.SteamClient?.Apps;
-      const dir = info.launcher.substring(0, info.launcher.lastIndexOf("/") + 1);
-      await apps?.SetShortcutExe?.(id, info.launcher);
+      const dir = target.launcher.substring(0, target.launcher.lastIndexOf("/") + 1);
+      await apps?.SetShortcutExe?.(id, target.launcher);
       await apps?.SetShortcutStartDir?.(id, dir);
-      await apps?.SetShortcutLaunchOptions?.(id, `"${info.appName}" ${info.runner}`);
+      await apps?.SetShortcutLaunchOptions?.(id, `"${target.appName}" ${target.runner}`);
       await apps?.SpecifyCompatTool?.(id, "");
       setMessage(t("Shortcut fixed - the game now launches directly, without the Heroic client"));
       await load();
@@ -68,6 +69,19 @@ export function HeroicSection({ appid, forced, onToggleForce }: { appid: string;
     }
     setFixing(false);
   };
+
+  // heroic:// shortcuts silently die in game mode (they forward the URL to
+  // any running Heroic instance and exit, so Steam thinks the game ended
+  // instantly) - repair on sight instead of waiting for a click. Runs from
+  // an effect so fixShortcut sees the loaded info, not a stale render scope.
+  useEffect(() => {
+    if (info?.style === "heroic" && fixAttempted.current !== appid) {
+      fixAttempted.current = appid;
+      fixShortcut(info);
+    }
+  }, [info, appid]);
+
+  if (!info) return null;
 
   const patch = async (value: Parameters<typeof setHeroicConfig>[1]) => {
     try {
@@ -87,16 +101,17 @@ export function HeroicSection({ appid, forced, onToggleForce }: { appid: string;
             label={t("Heroic game")}
             description={t("This shortcut goes through the Heroic client - in game mode the game may not appear on screen")}
           />
-          <ButtonItem layout="below" disabled={fixing} onClick={fixShortcut}>
+          <ButtonItem layout="below" disabled={fixing} onClick={() => fixShortcut(info)}>
             {fixing ? t("Fixing...") : t("Fix shortcut")}
           </ButtonItem>
         </>
       ) : null}
-      <ToggleField
+      <DialogCheckbox
         label={t("Force Heroic launch settings")}
         description={t("Overrides the game's Heroic launch configuration from here")}
         checked={forced}
         onChange={onToggleForce}
+        bottomSeparator="none"
       />
       {forced && cfg && versions.length > 0 ? (
         <SelectEdit
