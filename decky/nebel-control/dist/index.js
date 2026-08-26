@@ -2337,6 +2337,17 @@ function HeroicSection({ appid, forced, onToggleForce }) {
     }, [info, appid]);
     if (!info)
         return null;
+    // Steam styles its own compatibility checkbox with a page-local class the
+    // borrowed DialogCheckbox component doesn't get - adopt it so both rows are
+    // pixel-identical (a CSS fallback in NativeStyles covers the same values).
+    const [hostClass, setHostClass] = SP_REACT.useState("");
+    SP_REACT.useEffect(() => {
+        const host = document.querySelector(".DialogBody .DialogCheckbox_Container");
+        if (!host)
+            return;
+        const skip = new Set(["DialogCheckbox_Container", "_DialogLayout", "Panel"]);
+        setHostClass(host.className.split(/\s+/).filter((c) => c && !skip.has(c)).join(" "));
+    }, []);
     const patch = async (value) => {
         try {
             setCfg(await setHeroicConfig(info.appName, value));
@@ -2346,11 +2357,11 @@ function HeroicSection({ appid, forced, onToggleForce }) {
     };
     const sarekAvailable = versions.some((version) => /sarek/i.test(version.name));
     const sarekActive = /sarek/i.test(cfg?.wineVersionName || "");
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Heroic", children: [info.style === "heroic" ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: t("Heroic game"), description: t("This shortcut goes through the Heroic client - in game mode the game may not appear on screen") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: fixing, onClick: () => fixShortcut(info), children: fixing ? t("Fixing...") : t("Fix shortcut") })] })) : null, SP_JSX.jsx(DFL.DialogCheckbox, { label: t("Force Heroic launch settings"), description: t("Overrides the game's Heroic launch configuration from here"), checked: forced, onChange: onToggleForce, bottomSeparator: "none" }), forced && cfg && versions.length > 0 ? (SP_JSX.jsx(SelectEdit, { label: t("Proton/Wine build (Heroic)"), value: cfg.wineVersionBin, options: versions.map((version) => ({ data: version.bin, label: version.name })), onChange: (bin) => {
-                    const version = versions.find((entry) => entry.bin === bin);
-                    if (version)
-                        patch({ wineVersion: { bin: version.bin, name: version.name, type: version.type } });
-                } })) : null, forced && sarekAvailable && !sarekActive ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found") })) : null, forced && !cfg ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Heroic configuration not found - launch the game once from Heroic first") })) : null, forced && cfg ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { label: "Esync", checked: cfg.enableEsync, onChange: (value) => patch({ enableEsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Fsync", checked: cfg.enableFsync, onChange: (value) => patch({ enableFsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Msync", checked: cfg.enableMsync, onChange: (value) => patch({ enableMsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WoW64 mode"), checked: cfg.enableWoW64, onChange: (value) => patch({ enableWoW64: value }) })] })) : null, message ? SP_JSX.jsx(DFL.Field, { label: message }) : null] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [info.style === "heroic" ? (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("Heroic game"), description: t("This shortcut goes through the Heroic client - in game mode the game may not appear on screen") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: fixing, onClick: () => fixShortcut(info), children: fixing ? t("Fixing...") : t("Fix shortcut") })] })) : null, SP_JSX.jsx(DFL.DialogCheckbox, { className: hostClass || undefined, label: t("Force Heroic launch settings"), checked: forced, onChange: onToggleForce, bottomSeparator: "none" }), forced ? (SP_JSX.jsxs(DFL.PanelSection, { children: [cfg && versions.length > 0 ? (SP_JSX.jsx(SelectEdit, { label: t("Proton/Wine build (Heroic)"), value: cfg.wineVersionBin, options: versions.map((version) => ({ data: version.bin, label: version.name })), onChange: (bin) => {
+                            const version = versions.find((entry) => entry.bin === bin);
+                            if (version)
+                                patch({ wineVersion: { bin: version.bin, name: version.name, type: version.type } });
+                        } })) : null, sarekAvailable && !sarekActive ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found") })) : null, !cfg ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Heroic configuration not found - launch the game once from Heroic first") })) : null, cfg ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { label: "Esync", checked: cfg.enableEsync, onChange: (value) => patch({ enableEsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Fsync", checked: cfg.enableFsync, onChange: (value) => patch({ enableFsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Msync", checked: cfg.enableMsync, onChange: (value) => patch({ enableMsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WoW64 mode"), checked: cfg.enableWoW64, onChange: (value) => patch({ enableWoW64: value }) })] })) : null] })) : null, message ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.Field, { label: message }) })) : null] }));
 }
 
 const GLOBAL_RESOLUTION_KEY = "gamescope_game_resolution_global";
@@ -4250,11 +4261,15 @@ function useInjectedConfig() {
 // spacing overrides align the QAM-styled PanelSection with the host page's
 // own full-width settings groups.
 function NativeStyles() {
-    // Steam's Properties pages give their own DialogBody flex-grow: 1, which
-    // stretches it across the whole column and pushes our appended section to
-    // the bottom (a big blank gap under Steam's checkbox). Pin the body to its
-    // content height, but only when our block is actually present.
-    const fix = ".DialogContent_InnerWidth:has(> .nebel-native) > .DialogBody{flex-grow:0 !important;}";
+    // Steam's Properties pages give their own DialogBody `flex: 1` (basis 0),
+    // which stretches it across the whole column and pushes our appended
+    // section to the bottom. Neutralize it - but keep basis auto: with basis 0
+    // and no growth the body collapses to height 0 and its overflow clipping
+    // hides Steam's own controls entirely.
+    // The page also styles its own checkbox with a local class our borrowed
+    // DialogCheckbox doesn't get - replicate the box so both look identical.
+    const fix = ".DialogContent_InnerWidth:has(> .nebel-native) > .DialogBody{flex:0 0 auto !important;}" +
+        ".nebel-native .DialogCheckbox_Container{background:rgba(59,63,72,0.5);border-radius:3px;padding:9px;}";
     return SP_JSX.jsxs("style", { children: [styles, nativeSectionSpacingCss(".nebel-native"), fix] });
 }
 

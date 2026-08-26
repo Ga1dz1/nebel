@@ -83,6 +83,17 @@ export function HeroicSection({ appid, forced, onToggleForce }: { appid: string;
 
   if (!info) return null;
 
+  // Steam styles its own compatibility checkbox with a page-local class the
+  // borrowed DialogCheckbox component doesn't get - adopt it so both rows are
+  // pixel-identical (a CSS fallback in NativeStyles covers the same values).
+  const [hostClass, setHostClass] = useState("");
+  useEffect(() => {
+    const host = document.querySelector(".DialogBody .DialogCheckbox_Container");
+    if (!host) return;
+    const skip = new Set(["DialogCheckbox_Container", "_DialogLayout", "Panel"]);
+    setHostClass(host.className.split(/\s+/).filter((c) => c && !skip.has(c)).join(" "));
+  }, []);
+
   const patch = async (value: Parameters<typeof setHeroicConfig>[1]) => {
     try {
       setCfg(await setHeroicConfig(info.appName, value));
@@ -94,9 +105,9 @@ export function HeroicSection({ appid, forced, onToggleForce }: { appid: string;
   const sarekActive = /sarek/i.test(cfg?.wineVersionName || "");
 
   return (
-    <PanelSection title="Heroic">
+    <>
       {info.style === "heroic" ? (
-        <>
+        <PanelSection>
           <Field
             label={t("Heroic game")}
             description={t("This shortcut goes through the Heroic client - in game mode the game may not appear on screen")}
@@ -104,43 +115,51 @@ export function HeroicSection({ appid, forced, onToggleForce }: { appid: string;
           <ButtonItem layout="below" disabled={fixing} onClick={() => fixShortcut(info)}>
             {fixing ? t("Fixing...") : t("Fix shortcut")}
           </ButtonItem>
-        </>
+        </PanelSection>
       ) : null}
       <DialogCheckbox
+        className={hostClass || undefined}
         label={t("Force Heroic launch settings")}
-        description={t("Overrides the game's Heroic launch configuration from here")}
         checked={forced}
         onChange={onToggleForce}
         bottomSeparator="none"
       />
-      {forced && cfg && versions.length > 0 ? (
-        <SelectEdit
-          label={t("Proton/Wine build (Heroic)")}
-          value={cfg.wineVersionBin}
-          options={versions.map((version) => ({ data: version.bin, label: version.name }))}
-          onChange={(bin) => {
-            const version = versions.find((entry) => entry.bin === bin);
-            if (version) patch({ wineVersion: { bin: version.bin, name: version.name, type: version.type } });
-          }}
-        />
+      {forced ? (
+        <PanelSection>
+          {cfg && versions.length > 0 ? (
+            <SelectEdit
+              label={t("Proton/Wine build (Heroic)")}
+              value={cfg.wineVersionBin}
+              options={versions.map((version) => ({ data: version.bin, label: version.name }))}
+              onChange={(bin) => {
+                const version = versions.find((entry) => entry.bin === bin);
+                if (version) patch({ wineVersion: { bin: version.bin, name: version.name, type: version.type } });
+              }}
+            />
+          ) : null}
+          {sarekAvailable && !sarekActive ? (
+            <div className="nebel-compat-note">
+              {t("A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found")}
+            </div>
+          ) : null}
+          {!cfg ? (
+            <div className="nebel-compat-note">{t("Heroic configuration not found - launch the game once from Heroic first")}</div>
+          ) : null}
+          {cfg ? (
+            <>
+              <ToggleField label="Esync" checked={cfg.enableEsync} onChange={(value) => patch({ enableEsync: value })} />
+              <ToggleField label="Fsync" checked={cfg.enableFsync} onChange={(value) => patch({ enableFsync: value })} />
+              <ToggleField label="Msync" checked={cfg.enableMsync} onChange={(value) => patch({ enableMsync: value })} />
+              <ToggleField label={t("WoW64 mode")} checked={cfg.enableWoW64} onChange={(value) => patch({ enableWoW64: value })} />
+            </>
+          ) : null}
+        </PanelSection>
       ) : null}
-      {forced && sarekAvailable && !sarekActive ? (
-        <div className="nebel-compat-note">
-          {t("A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found")}
-        </div>
+      {message ? (
+        <PanelSection>
+          <Field label={message} />
+        </PanelSection>
       ) : null}
-      {forced && !cfg ? (
-        <div className="nebel-compat-note">{t("Heroic configuration not found - launch the game once from Heroic first")}</div>
-      ) : null}
-      {forced && cfg ? (
-        <>
-          <ToggleField label="Esync" checked={cfg.enableEsync} onChange={(value) => patch({ enableEsync: value })} />
-          <ToggleField label="Fsync" checked={cfg.enableFsync} onChange={(value) => patch({ enableFsync: value })} />
-          <ToggleField label="Msync" checked={cfg.enableMsync} onChange={(value) => patch({ enableMsync: value })} />
-          <ToggleField label={t("WoW64 mode")} checked={cfg.enableWoW64} onChange={(value) => patch({ enableWoW64: value })} />
-        </>
-      ) : null}
-      {message ? <Field label={message} /> : null}
-    </PanelSection>
+    </>
   );
 }
