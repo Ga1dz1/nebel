@@ -17,6 +17,7 @@ CONFIG_PATHS = {
     "power": Path("/etc/nebel/power-profiles.conf"),
     "tweaks": Path("/etc/nebel/game-tweaks.json"),
     "calibration": Path("/etc/nebel/input-calibration.json"),
+    "stick-led": Path("/etc/nebel/stick-led.conf"),
     "compat-applied": Path("/var/lib/nebel/compat-applied.json"),
 }
 # User-level configs live in the home dir so the Syncthing preset
@@ -24,7 +25,7 @@ CONFIG_PATHS = {
 # symlinks so boot-time readers (gamescope session, systemd conditions)
 # keep working unchanged.
 SYNC_CONFIG_DIR = Path("/var/home/nebel/.config/nebel")
-SYNCED_CONFIG_NAMES = ("tweaks", "calibration")
+SYNCED_CONFIG_NAMES = ("tweaks", "calibration", "stick-led")
 HOME_ROOT = Path("/var/home/nebel")
 DISPLAY_OVERRIDE_PATH = Path("/etc/nebel/display-override.conf")
 # Per-connector last-used settings, kept even after switching back to the

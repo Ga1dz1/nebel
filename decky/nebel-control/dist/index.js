@@ -40,6 +40,10 @@ const saveCompatApplied = (appids) => {
 const setSshEnabled = (enabled) => call("set_ssh_enabled", enabled);
 const setControllerType = (value) => call("set_controller_type", value);
 const setSharedStorageEnabled = (enabled) => call("set_shared_storage_enabled", enabled);
+const listDir = (path) => call("list_dir", path);
+const listHeroicGames = () => call("heroic_games");
+const heroicMatch = (path) => call("heroic_match", path);
+const heroicLaunch = (game) => call("heroic_launch", game);
 const heroicShortcut = (appid) => call("heroic_shortcut", appid);
 const getHeroicConfig = (appName) => call("heroic_config", appName);
 const setHeroicConfig = (appName, patch) => call("heroic_set_config", appName, patch);
@@ -2890,7 +2894,7 @@ function Games({ config, setConfig, qam, lockedAppid, injected }) {
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
                                 : null] }))] })), !editingDefault && game?.appid ? (SP_JSX.jsx(HeroicSection, { appid: game.appid, forced: gameSettings.heroicForce === true, onToggleForce: (enabled) => patchSettings({ heroicForce: enabled || undefined }) })) : null, !qam && (!injected || forcedTool) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsxs(Collapsible, { label: t("Advanced"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                                 ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
-                                                : null] }))] }), SP_JSX.jsxs(Collapsible, { label: t("Launch flags"), children: [SP_JSX.jsx(DFL.ToggleField, { label: t("D3D12 feature level 12_1"), description: t("For DirectX 12 games that black-screen or refuse to start"), checked: envPresets.dx12Fl121 === true, onChange: (value) => setEnvPreset("dx12Fl121", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable DirectX 12"), description: t("For games whose DirectX 12 mode crashes - they fall back to DX11"), checked: envPresets.noD3d12 === true, onChange: (value) => setEnvPreset("noD3d12", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WineD3D instead of DXVK"), description: t("For old DirectX 9-11 games that won't start on DXVK"), checked: envPresets.wineD3d === true, onChange: (value) => setEnvPreset("wineD3d", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Old OpenGL compatibility"), description: t("For old OpenGL games that misdetect the graphics driver"), checked: envPresets.oldGlString === true, onChange: (value) => setEnvPreset("oldGlString", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Large address aware (32-bit games)"), description: t("For 32-bit era games crashing with out-of-memory errors"), checked: envPresets.largeAddress === true, onChange: (value) => setEnvPreset("largeAddress", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Mod/launcher DLL override"), description: t("Needed by mod loaders and third-party launchers (winhttp)"), checked: envPresets.winhttpOverride === true, onChange: (value) => setEnvPreset("winhttpOverride", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable fsync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noFsync === true, onChange: (value) => setEnvPreset("noFsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable esync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noEsync === true, onChange: (value) => setEnvPreset("noEsync", value) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Launch switches applied to the game's environment - variables set directly in Launch Options take precedence") })] })] }), !editingDefault && game?.appid && forcedTool ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+                                                : null] }))] }), SP_JSX.jsxs(Collapsible, { label: t("Launch flags"), children: [SP_JSX.jsx(DFL.ToggleField, { label: t("D3D12 feature level 12_1"), description: t("For DirectX 12 games that black-screen or refuse to start"), checked: envPresets.dx12Fl121 === true, onChange: (value) => setEnvPreset("dx12Fl121", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable DirectX 12"), description: t("For games whose DirectX 12 mode crashes - they fall back to DX11"), checked: envPresets.noD3d12 === true, onChange: (value) => setEnvPreset("noD3d12", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WineD3D instead of DXVK"), description: t("For old DirectX 9-11 games that won't start on DXVK"), checked: envPresets.wineD3d === true, onChange: (value) => setEnvPreset("wineD3d", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Old OpenGL compatibility"), description: t("For old OpenGL games that misdetect the graphics driver"), checked: envPresets.oldGlString === true, onChange: (value) => setEnvPreset("oldGlString", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Large address aware (32-bit games)"), description: t("For 32-bit era games crashing with out-of-memory errors"), checked: envPresets.largeAddress === true, onChange: (value) => setEnvPreset("largeAddress", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Mod/launcher DLL override"), description: t("Needed by mod loaders and third-party launchers (winhttp)"), checked: envPresets.winhttpOverride === true, onChange: (value) => setEnvPreset("winhttpOverride", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable fsync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noFsync === true, onChange: (value) => setEnvPreset("noFsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable esync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noEsync === true, onChange: (value) => setEnvPreset("noEsync", value) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Launch switches applied to the game's environment - variables set directly in Launch Options take precedence") })] })] }), !editingDefault && game?.appid && forcedTool ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
 // Per-game winetricks verbs ("Dependencies"): installs run in a backend
 // worker thread, so the UI polls deps_status while busy instead of blocking.
@@ -2955,6 +2959,83 @@ function DependenciesSection({ appid, eraXp }) {
                     const installing = status.busy && status.currentVerb === verb.id;
                     return (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", disabled: installed || status.busy, onClick: () => install([verb.id]), children: [verb.label, " \u2014 ", installed ? `✓ ${t("Installed")}` : installing ? t("Installing...") : t("Install")] }, verb.id));
                 }), errorText ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: errorText }) : null] }) }));
+}
+// The stock "Browse..." button in Steam's Add Non-Steam Game dialog is broken
+// in the ARM64 client (OpenFileDialog fails before reaching the portal), and
+// native dialogs never appear in the gamescope session — so the picker lives
+// right here and the pick is registered through Steam's AddShortcut API.
+// Heroic games are added as `heroic --no-gui heroic://launch...` shortcuts
+// (what Heroic's own "Add to Steam" writes): a raw exe pick would run
+// without the Heroic prefix/wine/env and silently fail to launch.
+function AddGameSection() {
+    const [picker, setPicker] = SP_REACT.useState(null);
+    const [addResult, setAddResult] = SP_REACT.useState("");
+    const [heroicGames, setHeroicGames] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        listHeroicGames()
+            .then((games) => setHeroicGames(games))
+            .catch(() => setHeroicGames([]));
+    }, []);
+    const navigate = async (path) => {
+        try {
+            setPicker(await listDir(path));
+        }
+        catch {
+            setAddResult(t("Failed to add shortcut"));
+            setPicker(null);
+        }
+    };
+    const addShortcut = async (name, exe, startDir, args, note, native = false) => {
+        // AddShortcut(appName, exe, startDir, launchOptions) - args are LAST.
+        const appid = await SteamClient?.Apps?.AddShortcut?.(name, exe, startDir, args);
+        if (typeof appid === "number" && appid > 0 && native) {
+            // A launcher binary is a Linux app: clear any forced Proton, or Steam
+            // wraps the ELF in `proton waitforexitandrun` and it never starts.
+            try {
+                await SteamClient?.Apps?.SpecifyCompatTool?.(appid, "");
+            }
+            catch { }
+        }
+        setAddResult(typeof appid === "number" && appid > 0 ? (note || t("Added to Steam library")) : t("Failed to add shortcut"));
+    };
+    const addHeroic = async (game) => {
+        setAddResult("");
+        try {
+            const launch = await heroicLaunch(game);
+            const startDir = launch.exe.startsWith("/") ? launch.exe.slice(0, launch.exe.lastIndexOf("/")) || "/" : "";
+            await addShortcut(launch.name, launch.exe, startDir, launch.args, t("Added to Steam library (launches via Heroic)"), true);
+        }
+        catch {
+            setAddResult(t("Failed to add shortcut"));
+        }
+    };
+    const pick = async (fullPath) => {
+        setPicker(null);
+        setAddResult("");
+        try {
+            // An exe inside a Heroic install dir is launched through Heroic, never
+            // bare - bare it gets a default prefix and no Heroic settings.
+            const owning = await heroicMatch(fullPath);
+            if (owning) {
+                await addHeroic(owning);
+                return;
+            }
+            const name = fullPath.split("/").pop()?.replace(/\.[^.]+$/, "") || fullPath;
+            const startDir = fullPath.slice(0, fullPath.lastIndexOf("/")) || "/";
+            // Steam quotes the Exe field itself — passing a pre-quoted path yields ""..."".
+            // Bake the launch wrapper in from the start so per-game tweaks apply
+            // from the first launch (the bootstrap sweep would add it later anyway).
+            await addShortcut(name, fullPath, startDir, "/usr/libexec/nebel/nebel-game-launch %command%");
+        }
+        catch {
+            setAddResult(t("Failed to add shortcut"));
+        }
+    };
+    const shortcutLabel = (s) => s.id === "home" ? t("Internal storage") : `${t("SD card")}: ${s.label}`;
+    if (picker) {
+        return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Select the game's executable"), children: [SP_JSX.jsx(DFL.Field, { label: picker.path }), (picker.shortcuts || []).map((s) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(s.path), children: [shortcutLabel(s), "/"] }, `s:${s.path}`))), picker.parent !== null && (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(picker.parent || "/"), children: ".." })), picker.dirs.map((dir) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(`${picker.path}/${dir}`), children: [dir, "/"] }, `d:${dir}`))), picker.files.map((file) => (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => pick(`${picker.path}/${file}`), children: file }, `f:${file}`))), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setPicker(null), children: t("Cancel") })] }));
+    }
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Add non-Steam game"), children: [heroicGames && heroicGames.length > 0 && (SP_JSX.jsx(Collapsible, { label: t("Heroic games"), children: heroicGames.map((game) => (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => addHeroic(game), children: game.title }, game.appName))) })), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(""), children: t("Select the game's executable") }), addResult && SP_JSX.jsx(DFL.Field, { label: addResult })] }));
 }
 
 // RRGGBB hex <-> RGB <-> HSB conversions shared by every color picker in
@@ -4325,6 +4406,11 @@ function ControlCenterSection() {
     const { config, setConfig } = useInjectedConfig();
     return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Control Center"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.Navigate("/nebel-control"), children: t("Open Control Center") }) }) }), config && (SP_JSX.jsx(DFL.PanelSection, { title: t("Storage"), children: SP_JSX.jsx(SharedStorageRow, { config: config, setConfig: setConfig }) }))] }));
 }
+// Settings -> Library: the working "Add non-Steam game" picker (Steam's own
+// Browse dialog is broken in the ARM64 client).
+function LibraryAddGameSection() {
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(AddGameSection, {})] }));
+}
 // Settings -> Internet: SSH access toggle.
 function SshSection() {
     const { config, setConfig, message } = useInjectedConfig();
@@ -4393,6 +4479,11 @@ const SETTINGS_SECTIONS = [
         name: "cloud-sync",
         match: (page) => page.route === "/settings/cloud",
         render: () => SP_JSX.jsx(CloudSyncSection, {}),
+    },
+    {
+        name: "library-add-game",
+        match: (page) => page.route === "/settings/library",
+        render: () => SP_JSX.jsx(LibraryAddGameSection, {}),
     },
     {
         name: "internet-ssh",

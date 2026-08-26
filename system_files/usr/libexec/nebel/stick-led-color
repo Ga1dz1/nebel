@@ -851,10 +851,25 @@ def save_state(state):
             lines.append(f"{key}_{side}={s['settings'][key]:.3f}")
     for button in sorted(state["flash_colors"]):
         lines.append(f"flash_{button}={state['flash_colors'][button]}")
-    tmp = CONFIG.with_name(f".{CONFIG.name}.tmp")
+    # Write through the symlink: nebel-control links this config into
+    # ~/.config/nebel so the Syncthing preset can carry it between consoles.
+    # A plain tmp.replace(CONFIG) would replace the symlink itself and
+    # silently drop the file out of sync.
+    target = CONFIG.resolve() if CONFIG.is_symlink() else CONFIG
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_name(f".{target.name}.tmp")
     tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
     tmp.chmod(0o644)
-    tmp.replace(CONFIG)
+    tmp.replace(target)
+    # Root writes into the synced home dir must stay user-writable so
+    # Syncthing (running as the nebel user) can apply remote changes.
+    home = Path("/var/home/nebel")
+    if home in target.parents:
+        try:
+            st = home.stat()
+            os.chown(target, st.st_uid, st.st_gid)
+        except OSError:
+            pass
 
 
 def flash_color_rgb(flash_colors, button):

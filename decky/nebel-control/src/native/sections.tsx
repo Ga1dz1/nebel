@@ -1,7 +1,7 @@
 import { ButtonItem, Field, Navigation, PanelSection, PanelSectionRow } from "@decky/ui";
 import { t } from "../i18n";
 import { Display } from "../tabs/Display";
-import { Games } from "../tabs/Games";
+import { AddGameSection, Games } from "../tabs/Games";
 import { MonitorRows, NotifyFlashRows, OverlayToggleRow } from "../tabs/Home";
 import { Lighting } from "../tabs/Lighting";
 import { Power } from "../tabs/Power";
@@ -108,6 +108,17 @@ export function ControlCenterSection() {
           <SharedStorageRow config={config} setConfig={setConfig} />
         </PanelSection>
       )}
+    </div>
+  );
+}
+
+// Settings -> Library: the working "Add non-Steam game" picker (Steam's own
+// Browse dialog is broken in the ARM64 client).
+export function LibraryAddGameSection() {
+  return (
+    <div className="nebel-native">
+      <NativeStyles />
+      <AddGameSection />
     </div>
   );
 }
