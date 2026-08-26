@@ -11,8 +11,8 @@ import {
 } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { saveCompatApplied, listDir, listHeroicGames, heroicLaunch, heroicMatch, getDepsStatus, installDeps } from "../backend";
-import type { DepsStatus, DirListing, HeroicGame } from "../backend";
+import { saveCompatApplied, listDir, getDepsStatus, installDeps } from "../backend";
+import type { DepsStatus, DirListing } from "../backend";
 import { Collapsible, OpenFullScreenButton, SelectEdit } from "../components/widgets";
 import { HeroicSection } from "../components/HeroicSection";
 import { t } from "../i18n";
@@ -812,19 +812,12 @@ function DependenciesSection({ appid, eraXp }: { appid: string; eraXp: boolean }
 // in the ARM64 client (OpenFileDialog fails before reaching the portal), and
 // native dialogs never appear in the gamescope session — so the picker lives
 // right here and the pick is registered through Steam's AddShortcut API.
-// Heroic games are added as `heroic --no-gui heroic://launch...` shortcuts
-// (what Heroic's own "Add to Steam" writes): a raw exe pick would run
-// without the Heroic prefix/wine/env and silently fail to launch.
+// Heroic games are intentionally NOT offered here: Heroic's own "Add to
+// Steam" writes their shortcuts (with artwork and the right launch line) -
+// this picker is for everything else.
 export function AddGameSection() {
   const [picker, setPicker] = useState<DirListing | null>(null);
   const [addResult, setAddResult] = useState("");
-  const [heroicGames, setHeroicGames] = useState<HeroicGame[] | null>(null);
-
-  useEffect(() => {
-    listHeroicGames()
-      .then((games) => setHeroicGames(games))
-      .catch(() => setHeroicGames([]));
-  }, []);
 
   const navigate = async (path: string) => {
     try {
@@ -834,45 +827,24 @@ export function AddGameSection() {
       setPicker(null);
     }
   };
-  const addShortcut = async (name: string, exe: string, startDir: string, args: string, note?: string, native = false) => {
-    // AddShortcut(appName, exe, startDir, launchOptions) - args are LAST.
-    const appid = await SteamClient?.Apps?.AddShortcut?.(name, exe, startDir, args);
-    if (typeof appid === "number" && appid > 0 && native) {
-      // A launcher binary is a Linux app: clear any forced Proton, or Steam
-      // wraps the ELF in `proton waitforexitandrun` and it never starts.
-      try {
-        await SteamClient?.Apps?.SpecifyCompatTool?.(appid, "");
-      } catch {}
-    }
-    setAddResult(typeof appid === "number" && appid > 0 ? (note || t("Added to Steam library")) : t("Failed to add shortcut"));
-  };
-  const addHeroic = async (game: HeroicGame) => {
-    setAddResult("");
-    try {
-      const launch = await heroicLaunch(game);
-      const startDir = launch.exe.startsWith("/") ? launch.exe.slice(0, launch.exe.lastIndexOf("/")) || "/" : "";
-      await addShortcut(launch.name, launch.exe, startDir, launch.args, t("Added to Steam library (launches via Heroic)"), true);
-    } catch {
-      setAddResult(t("Failed to add shortcut"));
-    }
-  };
   const pick = async (fullPath: string) => {
     setPicker(null);
     setAddResult("");
     try {
-      // An exe inside a Heroic install dir is launched through Heroic, never
-      // bare - bare it gets a default prefix and no Heroic settings.
-      const owning = await heroicMatch(fullPath);
-      if (owning) {
-        await addHeroic(owning);
-        return;
-      }
       const name = fullPath.split("/").pop()?.replace(/\.[^.]+$/, "") || fullPath;
       const startDir = fullPath.slice(0, fullPath.lastIndexOf("/")) || "/";
       // Steam quotes the Exe field itself — passing a pre-quoted path yields ""..."".
-      // Bake the launch wrapper in from the start so per-game tweaks apply
-      // from the first launch (the bootstrap sweep would add it later anyway).
-      await addShortcut(name, fullPath, startDir, "/usr/libexec/nebel/nebel-game-launch %command%");
+      // AddShortcut on this client IGNORES the name and launchOptions arguments
+      // (it names the shortcut after the exe basename and writes empty options) -
+      // both have to be applied afterwards through the dedicated setters.
+      // The wrapper goes into Launch Options so per-game tweaks apply from the
+      // first launch (the bootstrap sweep would add it later anyway).
+      const appid = await SteamClient?.Apps?.AddShortcut?.(name, fullPath, startDir, "");
+      if (typeof appid === "number" && appid > 0) {
+        try { await SteamClient.Apps.SetShortcutName(appid, name); } catch {}
+        try { await SteamClient.Apps.SetShortcutLaunchOptions(appid, "/usr/libexec/nebel/nebel-game-launch %command%"); } catch {}
+      }
+      setAddResult(typeof appid === "number" && appid > 0 ? t("Added to Steam library") : t("Failed to add shortcut"));
     } catch {
       setAddResult(t("Failed to add shortcut"));
     }
@@ -908,15 +880,6 @@ export function AddGameSection() {
   }
   return (
     <PanelSection title={t("Add non-Steam game")}>
-      {heroicGames && heroicGames.length > 0 && (
-        <Collapsible label={t("Heroic games")}>
-          {heroicGames.map((game) => (
-            <ButtonItem key={game.appName} layout="below" onClick={() => addHeroic(game)}>
-              {game.title}
-            </ButtonItem>
-          ))}
-        </Collapsible>
-      )}
       <ButtonItem layout="below" onClick={() => navigate("")}>{t("Select the game's executable")}</ButtonItem>
       {addResult && <Field label={addResult} />}
     </PanelSection>
