@@ -2325,6 +2325,17 @@ function HeroicSection({ appid, forced, onToggleForce }) {
         }
         setFixing(false);
     };
+    // Steam styles its own compatibility checkbox with a page-local class the
+    // borrowed DialogCheckbox component doesn't get - adopt it so both rows are
+    // pixel-identical (a CSS fallback in NativeStyles covers the same values).
+    const [hostClass, setHostClass] = SP_REACT.useState("");
+    SP_REACT.useEffect(() => {
+        const host = document.querySelector(".DialogBody .DialogCheckbox_Container");
+        if (!host)
+            return;
+        const skip = new Set(["DialogCheckbox_Container", "_DialogLayout", "Panel"]);
+        setHostClass(host.className.split(/\s+/).filter((c) => c && !skip.has(c)).join(" "));
+    }, []);
     // heroic:// shortcuts silently die in game mode (they forward the URL to
     // any running Heroic instance and exit, so Steam thinks the game ended
     // instantly) - repair on sight instead of waiting for a click. Runs from
@@ -2337,17 +2348,6 @@ function HeroicSection({ appid, forced, onToggleForce }) {
     }, [info, appid]);
     if (!info)
         return null;
-    // Steam styles its own compatibility checkbox with a page-local class the
-    // borrowed DialogCheckbox component doesn't get - adopt it so both rows are
-    // pixel-identical (a CSS fallback in NativeStyles covers the same values).
-    const [hostClass, setHostClass] = SP_REACT.useState("");
-    SP_REACT.useEffect(() => {
-        const host = document.querySelector(".DialogBody .DialogCheckbox_Container");
-        if (!host)
-            return;
-        const skip = new Set(["DialogCheckbox_Container", "_DialogLayout", "Panel"]);
-        setHostClass(host.className.split(/\s+/).filter((c) => c && !skip.has(c)).join(" "));
-    }, []);
     const patch = async (value) => {
         try {
             setCfg(await setHeroicConfig(info.appName, value));
