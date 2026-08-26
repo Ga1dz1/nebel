@@ -2824,7 +2824,8 @@ function AddGameSection() {
         }
     };
     const addShortcut = async (name, exe, args, note, native = false) => {
-        const appid = await SteamClient?.Apps?.AddShortcut?.(name, exe, args, "");
+        // AddShortcut(appName, exe, startDir, launchOptions) - args are LAST.
+        const appid = await SteamClient?.Apps?.AddShortcut?.(name, exe, "", args);
         if (typeof appid === "number" && appid > 0 && native) {
             // A launcher binary is a Linux app: clear any forced Proton, or Steam
             // wraps the ELF in `proton waitforexitandrun` and it never starts.
