@@ -460,7 +460,8 @@ def stick_reactive_rgb(x, y, floor):
 # immediately), and the PNG needs decoding (ffmpeg's image2pipe/ppm muxer
 # handles that in one shot, reusing the same _parse_ppm() this file
 # already had for the old pipeline).
-AMBILIGHT_CAPTURE_FPS = 2  # how often to request a screenshot - see AmbilightSampler docstring
+AMBILIGHT_CAPTURE_FPS_BASE = 5  # screenshots per second at speed=1.0 - see AmbilightSampler docstring
+AMBILIGHT_CAPTURE_FPS_MAX = 15  # hard ceiling, reached at speed=3.0 (slider max)
 AMBILIGHT_CAPTURE_TIMEOUT_S = 2.0  # max time to wait for gamescopectl's async write to settle
 AMBILIGHT_CAPTURE_PATH = "/tmp/.nebel-stick-led-ambilight.png"
 AMBILIGHT_SMOOTHING = 0.35  # fraction of the way to the new sample each time, at speed=1.0
@@ -678,7 +679,12 @@ class AmbilightSampler:
         if AMBILIGHT_CAPTURE_DISABLED:
             return self.color_l, self.color_r
         now = time.time()
-        if now - self.last_sample_time < 1.0 / AMBILIGHT_CAPTURE_FPS:
+        # Capture rate scales with the speed slider: FPS_BASE per second at
+        # 1.0x, linearly up to FPS_MAX at 3.0x (slider 300). Higher speed =
+        # the sticks track the screen more tightly.
+        capture_fps = min(AMBILIGHT_CAPTURE_FPS_MAX,
+                          AMBILIGHT_CAPTURE_FPS_BASE * max(speed_l, speed_r))
+        if now - self.last_sample_time < 1.0 / capture_fps:
             return self.color_l, self.color_r
         self.last_sample_time = now
         frame = self._capture()
