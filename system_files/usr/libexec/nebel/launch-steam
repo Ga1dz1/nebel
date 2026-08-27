@@ -45,14 +45,30 @@ register_arm64_proton() {
     local runner="" reg="${steam_root}/compatibilitytools.d/${tool_id}"
     for steamapps in "${steamapps_dirs[@]}"; do
         local candidate="${steamapps}/common/${dirname}"
+        [[ -d "${candidate}" ]] || continue
         local flags
         flags="$(grep -oP '"StateFlags"\s+"\K[0-9]+' "${steamapps}/appmanifest_${appid}.acf" 2>/dev/null || true)"
-        if [[ -n "${flags}" ]] && (( flags & 4 )) && [[ -d "${candidate}" ]]; then
+        # Register whenever the tool's content is on disk. The StateFlags
+        # check only guards against half-downloaded tools - a momentarily
+        # unreadable manifest (Steam rewrites it while updating the tool or
+        # the client) must NOT tear down a working registration, otherwise
+        # the Proton silently vanishes from every compat picker until the
+        # next lucky launch.
+        if [[ -z "${flags}" ]] || (( flags & 4 )); then
             runner="${candidate}"
             break
         fi
     done
     if [[ -n "${runner}" ]]; then
+        # %v in the display name = version from the tool's own version file
+        # ("1787334524 proton-11.0-2-arm64" -> "11.0-2"), so the picker shows
+        # e.g. "Proton 11.0-2 (ARM64)" and stays in sync with updates.
+        if [[ "${display}" == *%v* ]]; then
+            local ver
+            ver="$(awk '{print $2}' "${runner}/version" 2>/dev/null || true)"
+            ver="${ver#proton-}"; ver="${ver%-arm64}"
+            [[ -n "${ver}" ]] && display="${display//%v/${ver}}"
+        fi
         mkdir -p "${reg}"
         cat > "${reg}/compatibilitytool.vdf" <<EOF
 "compatibilitytools"
@@ -73,7 +89,7 @@ EOF
         rm -rf "${reg}"
     fi
 }
-register_arm64_proton 4628740 "Proton 11.0 (ARM64)" proton-11-arm64 proton11_arm64 "Proton 11.0 (ARM64)"
+register_arm64_proton 4628740 "Proton 11.0 (ARM64)" proton-11-arm64 proton11_arm64 "Proton %v (ARM64)"
 register_arm64_proton 4427310 "Proton Experimental (ARM64)" proton-experimental-arm64 proton_experimental_arm64 "Proton Experimental (ARM64)"
 
 # The ARM client can't resolve require_tool_appid for the SLR4 Arm64 runtime (4185400)
