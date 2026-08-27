@@ -422,15 +422,21 @@ export function Lighting({ config, setConfig, qam }: {
         .map(([param, spec]) => {
           const key = `${param}_${mode}`;
           const raw = sideState.params[key] ?? PARAM_DEFAULTS[param];
+          // Ambilight's speed isn't an abstract animation multiplier - it is
+          // the screen capture rate, so show it in updates-per-second
+          // (10/s at 1.0x, 30/s at the slider max) instead of the raw
+          // 25-300 range the other animated modes use.
+          const hz = param === "speed" && mode === "ambilight";
           return (
             <SliderEdit
               key={param}
-              label={spec.label}
-              value={spec.fromBackend(raw)}
-              min={spec.min}
-              max={spec.max}
-              step={spec.step}
-              onChange={(value) => setStickLedParam(param, spec.toBackend(value))}
+              label={hz ? t("Updates per second") : spec.label}
+              value={hz ? Math.round(spec.fromBackend(raw) / 10) : spec.fromBackend(raw)}
+              min={hz ? 3 : spec.min}
+              max={hz ? 30 : spec.max}
+              step={hz ? 1 : spec.step}
+              valueSuffix={hz ? t("/s") : undefined}
+              onChange={(value) => setStickLedParam(param, spec.toBackend(hz ? value * 10 : value))}
             />
           );
         })}

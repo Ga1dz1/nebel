@@ -111,6 +111,7 @@ import select
 import struct
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -460,8 +461,8 @@ def stick_reactive_rgb(x, y, floor):
 # immediately), and the PNG needs decoding (ffmpeg's image2pipe/ppm muxer
 # handles that in one shot, reusing the same _parse_ppm() this file
 # already had for the old pipeline).
-AMBILIGHT_CAPTURE_FPS_BASE = 5  # screenshots per second at speed=1.0 - see AmbilightSampler docstring
-AMBILIGHT_CAPTURE_FPS_MAX = 15  # hard ceiling, reached at speed=3.0 (slider max)
+AMBILIGHT_CAPTURE_FPS_BASE = 10  # screenshots per second at speed=1.0 - see AmbilightSampler docstring
+AMBILIGHT_CAPTURE_FPS_MAX = 30  # hard ceiling, reached at speed=3.0 (slider max)
 AMBILIGHT_CAPTURE_TIMEOUT_S = 2.0  # max time to wait for gamescopectl's async write to settle
 AMBILIGHT_CAPTURE_PATH = "/tmp/.nebel-stick-led-ambilight.png"
 AMBILIGHT_SMOOTHING = 0.35  # fraction of the way to the new sample each time, at speed=1.0
@@ -594,10 +595,12 @@ def _average_region_rgb(data, width, x0, x1, y0, y1):
 class AmbilightSampler:
     """Asks gamescope itself for a screenshot of its already-composited
     output (via `gamescopectl screenshot <path>`, gamescope's own debug
-    control tool) once per sample rather than keeping a persistent
-    process - it's a one-shot request, not a stream, so there's no
-    persistent-process cost to amortize the way the old kmsgrab pipeline's
-    setup cost was. The screenshot request itself has to run as
+    control tool) per capture rather than keeping a persistent process -
+    it's a one-shot request, not a stream, so there's no persistent-process
+    cost to amortize the way the old kmsgrab pipeline's setup cost was.
+    Captures run in a background thread (_run) at the rate set by the speed
+    slider; sample() just hands out the latest smoothed colors. The
+    screenshot request itself has to run as
     AMBILIGHT_SESSION_USER (it talks to gamescope over the session's own
     Wayland socket), but never touches DRM directly, so unlike kmsgrab it
     can't contend with gamescope's own atomic commits for the primary
@@ -606,9 +609,15 @@ class AmbilightSampler:
     def __init__(self):
         self.color_l = AMBILIGHT_DEFAULT
         self.color_r = AMBILIGHT_DEFAULT
-        self.last_sample_time = 0.0
+        self.speeds = (1.0, 1.0)
+        self._stop = False
+        self._thread = None
 
     def close(self):
+        self._stop = True
+        thread, self._thread = self._thread, None
+        if thread is not None:
+            thread.join(timeout=2)
         try:
             os.remove(AMBILIGHT_CAPTURE_PATH)
         except OSError:
@@ -676,33 +685,42 @@ class AmbilightSampler:
         return _parse_ppm(proc.stdout)
 
     def sample(self, speed_l, speed_r):
+        """Return the latest smoothed colors; capture itself runs in a
+        background thread (_run) so a slow screenshot can't stall the
+        daemon's animation tick, and so the slider max (30/s) is actually
+        reachable even though a single capture takes longer than 1/30s."""
         if AMBILIGHT_CAPTURE_DISABLED:
             return self.color_l, self.color_r
-        now = time.time()
+        self.speeds = (speed_l, speed_r)
+        if self._thread is None:
+            self._stop = False
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
+        return self.color_l, self.color_r
+
+    def _run(self):
         # Capture rate scales with the speed slider: FPS_BASE per second at
         # 1.0x, linearly up to FPS_MAX at 3.0x (slider 300). Higher speed =
         # the sticks track the screen more tightly.
-        capture_fps = min(AMBILIGHT_CAPTURE_FPS_MAX,
-                          AMBILIGHT_CAPTURE_FPS_BASE * max(speed_l, speed_r))
-        if now - self.last_sample_time < 1.0 / capture_fps:
-            return self.color_l, self.color_r
-        self.last_sample_time = now
-        frame = self._capture()
-        if frame is None:
-            return self.color_l, self.color_r
-        width, height, pixels = frame
-        m, w = AMBILIGHT_EDGE_MARGIN_PX, AMBILIGHT_EDGE_WIDTH_PX
-        y0 = int(height * AMBILIGHT_TOP_EXCLUDE)
-        y1 = int(height * (1.0 - AMBILIGHT_BOTTOM_EXCLUDE))
-        left = _average_region_rgb(pixels, width, m, m + w, y0, y1)
-        right = _average_region_rgb(pixels, width, width - m - w, width - m, y0, y1)
-        if left is None or right is None:
-            return self.color_l, self.color_r
-        smoothing_l = min(0.9, AMBILIGHT_SMOOTHING * speed_l)
-        smoothing_r = min(0.9, AMBILIGHT_SMOOTHING * speed_r)
-        self.color_l = tuple(c * (1 - smoothing_l) + t * smoothing_l for c, t in zip(self.color_l, left))
-        self.color_r = tuple(c * (1 - smoothing_r) + t * smoothing_r for c, t in zip(self.color_r, right))
-        return self.color_l, self.color_r
+        while not self._stop:
+            started = time.time()
+            speed_l, speed_r = self.speeds
+            interval = 1.0 / min(AMBILIGHT_CAPTURE_FPS_MAX,
+                                 AMBILIGHT_CAPTURE_FPS_BASE * max(speed_l, speed_r))
+            frame = self._capture()
+            if frame is not None:
+                width, height, pixels = frame
+                m, w = AMBILIGHT_EDGE_MARGIN_PX, AMBILIGHT_EDGE_WIDTH_PX
+                y0 = int(height * AMBILIGHT_TOP_EXCLUDE)
+                y1 = int(height * (1.0 - AMBILIGHT_BOTTOM_EXCLUDE))
+                left = _average_region_rgb(pixels, width, m, m + w, y0, y1)
+                right = _average_region_rgb(pixels, width, width - m - w, width - m, y0, y1)
+                if left is not None and right is not None:
+                    smoothing_l = min(0.9, AMBILIGHT_SMOOTHING * speed_l)
+                    smoothing_r = min(0.9, AMBILIGHT_SMOOTHING * speed_r)
+                    self.color_l = tuple(c * (1 - smoothing_l) + t * smoothing_l for c, t in zip(self.color_l, left))
+                    self.color_r = tuple(c * (1 - smoothing_r) + t * smoothing_r for c, t in zip(self.color_r, right))
+            time.sleep(max(0.01, interval - (time.time() - started)))
 
 
 def _default_side_state():

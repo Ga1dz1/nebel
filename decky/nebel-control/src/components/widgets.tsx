@@ -113,7 +113,7 @@ export function PresetSwatchGrid({ colors, selected, onSelect }: {
   );
 }
 
-export function SliderEdit({ label, value, min, max, step, onChange, format }: {
+export function SliderEdit({ label, value, min, max, step, onChange, format, valueSuffix }: {
   label: ReactNode;
   value: any;
   min: number;
@@ -121,6 +121,7 @@ export function SliderEdit({ label, value, min, max, step, onChange, format }: {
   step: number;
   onChange: (value: any) => void;
   format?: (value: number) => any;
+  valueSuffix?: string;
 }) {
   const numeric = Number(value);
   return (
@@ -133,6 +134,7 @@ export function SliderEdit({ label, value, min, max, step, onChange, format }: {
           max={max}
           step={step}
           showValue
+          valueSuffix={valueSuffix}
           onChange={(next) => onChange(format ? format(next) : next)}
         />
       </div>
