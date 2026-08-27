@@ -165,6 +165,57 @@ resume_inputplumber() {
     systemctl start inputplumber
 }
 
+# SD card: with a card in the slot, SM8550 (RP6) aborts deep suspend 1-2s
+# after entry - no wakeup source is ever recorded (every wakeup_count stays
+# 0); the SoC simply never reaches the deep state while the card device is
+# attached. Confirmed live with the card physically inserted: detach the
+# card device (host stays bound) and the console sleeps until the power
+# key; with it attached, every cycle bounces. Cleanly unmount and delete
+# the card device before the freeze, then re-probe the host on resume so
+# udisks/block-device-event remounts the card automatically. A card that
+# fails to unmount (a game running off it, open files) is left attached -
+# sleep may bounce, but data stays safe.
+SDCARD_DETACHED="$SAVE_DIR/sdcard-detached"
+
+suspend_sdcards() {
+    : > "$SDCARD_DETACHED"
+    local blk name part host ok
+    for blk in /sys/block/mmcblk*; do
+        [[ -e "$blk" ]] || continue
+        # Only removable cards - never touch internal storage.
+        [[ "$(cat "$blk/removable" 2>/dev/null)" == "1" ]] || continue
+        name="$(basename "$blk")"
+        # Host platform device (../<host>/mmcN/mmcblkN) - captured BEFORE
+        # the delete, needed to re-probe on resume.
+        host="$(basename "$(dirname "$(dirname "$(readlink -f "$blk/device")")")")"
+        ok=1
+        for part in "/dev/${name}"p*; do
+            [[ -b "$part" ]] || continue
+            udisksctl unmount -b "$part" >/dev/null 2>&1 || ok=0
+        done
+        (( ok )) || { log "SD card $name busy, leaving attached"; continue; }
+        sync
+        if echo 1 > "$blk/device/delete" 2>/dev/null; then
+            echo "$host" >> "$SDCARD_DETACHED"
+            log "detached SD card $name (host $host) for suspend"
+        fi
+    done
+}
+
+resume_sdcards() {
+    [[ -s "$SDCARD_DETACHED" ]] || return 0
+    local host drv
+    while IFS= read -r host; do
+        [[ -n "$host" ]] || continue
+        drv="$(basename "$(readlink -f "/sys/bus/platform/devices/$host/driver" 2>/dev/null)" 2>/dev/null)"
+        [[ -n "$drv" ]] || continue
+        # Re-probe the host: card-detect re-fires, the card device comes
+        # back and udisks remounts it, like a physical reinsertion.
+        echo "$host" > "/sys/bus/platform/drivers/$drv/unbind" 2>/dev/null || true
+        echo "$host" > "/sys/bus/platform/drivers/$drv/bind" 2>/dev/null || true
+    done < "$SDCARD_DETACHED"
+}
+
 # Community reports of an inconsistent ("every other time") wake failure on
 # SM8250 - the first default rollout of real suspend for this SoC - couldn't
 # be root-caused without either a live device or evidence from the failure
@@ -193,6 +244,10 @@ case "$1" in
         # aborts the WHOLE suspend, so this needs to be clear before any of
         # the rest of this hook (or the kernel's own suspend) bothers.
         suspend_inputplumber_if_vhci
+        suspend_sdcards
+        # Quiesce CPU/GPU clocks and stop the fan before the kernel freezes
+        # userspace; on resume the matching call restores the profile.
+        nebel-power suspend 2>/dev/null || true
         as_session wpctl set-mute @DEFAULT_AUDIO_SINK@ 1 2>/dev/null || true
         touch "$STICK_LED_FLAG"
         # Give the stick-led daemon (polls every 0.5s) a full cycle to blank
@@ -228,6 +283,9 @@ case "$1" in
         # reading the wake press's rebound as a fresh short-press because
         # just_resumed() had nothing to check yet).
         date +%s%3N > "$RESUME_FLAG" 2>/dev/null || true
+        # Restore nebel-powerd's active profile (clocks, fan curve) as early
+        # as possible so the thermal/fan policy is correct for the rest of resume.
+        nebel-power resume 2>/dev/null || true
         # First line after that, before anything else - real suspend's own
         # kernel-level DRM resume already turns the panel back on, but
         # relying on that alone means "wake feels instant" depends on the
@@ -266,6 +324,7 @@ case "$1" in
 
         resume_radios
         resume_inputplumber
+        resume_sdcards
         rm -rf "$SAVE_DIR"
         as_session wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 2>/dev/null || true
         log "post-resume done"

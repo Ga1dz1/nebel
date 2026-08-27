@@ -640,6 +640,11 @@ class NebelPower:
             return config["fan_safe_pwm"]
         if temp >= config["fan_safe_above"]:
             return config["fan_safe_pwm"]
+        # Real (deep) suspend powers the CPUs down entirely - no heat source
+        # left, so the fan can go fully off. Fake suspend keeps the SoC
+        # running (screen off only), so it keeps the low floor instead.
+        if self.env.get("NEBEL_SUSPEND_MODE", "fake") != "fake":
+            return 0
         return config["fan_low_pwm"]
 
     def quantize_pwm(self, pwm):
