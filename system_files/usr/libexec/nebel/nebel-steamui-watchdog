@@ -1,0 +1,67 @@
+#!/usr/bin/bash
+# nebel-steamui-watchdog: self-heal a corrupted Steam client payload.
+#
+# Real incident this exists for (RP6, 2026-08-26): the Steam client
+# self-updated and part of the new steamui JS payload landed corrupted on
+# disk (the console was hard-reset mid-update). The client then crashed its
+# UI with a React #130 error before ever drawing a window - black screen,
+# while SSH/gamescope/steam itself were all fine. Our image launches the
+# client with -noverifyfiles, so the corruption is never caught by Steam.
+# Fix that worked: wipe ~/.local/share/Steam/package so the bootstrapper
+# re-downloads the whole client, then restart the session.
+#
+# Detection: with our launch flags the client's CEF debug port (8080) lists
+# one page target per UI window. A healthy game-mode session shows pages
+# titled MainMenu_uid*/QuickAccess_uid* (locale-independent suffixes) within
+# a couple of minutes of steamwebhelper starting. If steamwebhelper has been
+# up for a while and there is still no UI page, the payload is presumed
+# broken -> repair once, then give up (never loop-wipe).
+set -u
+
+STEAM_DIR="/var/home/nebel/.local/share/Steam"
+JSON_URL="http://127.0.0.1:8080/json"
+UI_GRACE_S=150        # how long steamwebhelper may run without a UI page before we call it broken
+BOOT_BUDGET_S=420     # total watchdog lifetime after boot (desktop-mode boots just time out quietly)
+POLL_S=5
+
+log() { logger -t nebel-steamui-watchdog -- "$1"; }
+
+ui_up() {
+    curl -sf --max-time 3 "$JSON_URL" 2>/dev/null | grep -qE '"(MainMenu|QuickAccess)_uid'
+}
+
+repair() {
+    log "steamwebhelper ran ${UI_GRACE_S}s with no UI page - wiping the client package cache and restarting the session"
+    systemctl stop sddm
+    pkill -f steamwebhelper 2>/dev/null || true
+    sleep 2
+    local bad="${STEAM_DIR}/package.bad.$(date +%s)"
+    mv "${STEAM_DIR}/package" "$bad"
+    mkdir -p "${STEAM_DIR}/package"
+    # Preserve the update channel selection (beta file), drop everything else.
+    for f in "$bad"/beta*; do
+        [[ -f "$f" ]] && cp "$f" "${STEAM_DIR}/package/"
+    done
+    chown -R nebel:nebel "${STEAM_DIR}/package"
+    systemctl start sddm
+    log "session restarted; the client bootstrapper will re-download its payload"
+}
+
+start=$(date +%s)
+helper_since=0
+while (( $(date +%s) - start < BOOT_BUDGET_S )); do
+    if ui_up; then
+        exit 0
+    fi
+    if pgrep -f steamwebhelper >/dev/null 2>&1; then
+        (( helper_since == 0 )) && helper_since=$(date +%s)
+        if (( $(date +%s) - helper_since > UI_GRACE_S )); then
+            repair
+            exit 0
+        fi
+    else
+        helper_since=0
+    fi
+    sleep "$POLL_S"
+done
+exit 0

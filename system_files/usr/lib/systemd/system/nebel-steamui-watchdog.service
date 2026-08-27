@@ -1,0 +1,12 @@
+[Unit]
+Description=Self-heal a corrupted Steam client payload (black screen after a botched client self-update)
+After=sddm.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nebel/nebel-steamui-watchdog
+# The watchdog polls for up to BOOT_BUDGET_S (420s); give it headroom.
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target
