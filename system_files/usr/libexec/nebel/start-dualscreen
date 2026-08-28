@@ -194,6 +194,10 @@ fi
     echo '  </libinput>'
     # Emulator windows: fullscreen wherever they land.
     echo '  <windowRules>'
+    # Background Steam (gamepad provider for this session) still opens its
+    # main window on X11 - park it far offscreen instead of covering the
+    # emulator. Dialogs inherit the same class and hide with it.
+    echo '    <windowRule identifier="Steam"><action name="MoveResize"><x>20000</x><y>20000</y><width>1280</width><height>800</height></action></windowRule>'
     for id in melonds melonDS net.kuribo64.melonDS; do
         echo "    <windowRule identifier=\"$id\"><action name=\"ToggleFullscreen\"/></windowRule>"
     done
@@ -279,6 +283,16 @@ kanshi -c "$RUN_DIR/kanshi.conf" >"$RUN_DIR/kanshi.log" 2>&1 &
 # Root via sudoers: the raw gamepad node is unprivileged-inaccessible on
 # purpose (ghost-controller fix in 70-nebel-retroid-gamepad.rules).
 sudo -n /usr/libexec/nebel/nebel-dualscreen-exit >"$RUN_DIR/exit-watch.log" 2>&1 &
+# Steam in the background (like SteamOS desktop mode): game mode's own
+# Steam died with its session, and without it nothing in this session
+# exposes a usable gamepad - InputPlumber's source is passthrough-hidden
+# from SDL and its virtual targets are game-mode clients only. A silent
+# Steam provides the Steam Input virtual gamepad for emulators here.
+# Launched directly from the runtime dir: steam.sh refuses to start on
+# this arm64 system (its 32-bit libc check), and the pid file lets the
+# cleanup below kill it before game mode starts its own Steam.
+"$HOME/.local/share/Steam/steamrtarm64/steam" -silent >"$RUN_DIR/steam.log" 2>&1 &
+echo \$! >"$RUN_DIR/steam.pid"
 $( [[ "$APP_CMD" == *azahar* ]] && echo "/usr/libexec/nebel/azahar-x11-fullscreen >/dev/null 2>&1 &" )
 ( sleep 2; $APP_CMD >"$RUN_DIR/app.log" 2>&1; echo "APP_EXIT_CODE=\$?" >>"$RUN_DIR/app.log"; sleep 1; labwc --exit 2>/dev/null || killall labwc ) &
 EOF
@@ -292,6 +306,19 @@ export XDG_CURRENT_DESKTOP=labwc
 export WLR_NO_HARDWARE_CURSORS=1
 
 /usr/bin/labwc -C "$RUN_DIR" >"$RUN_DIR/labwc.log" 2>&1
+
+# labwc exited (app quit, exit hotkey, or a crash). Stop the background
+# Steam BEFORE sddm drops the next session into game mode - game mode
+# starts its own Steam and a leftover silent instance would collide with
+# it (single-instance handoff would leave game mode with a desktop Steam).
+if [[ -f "$RUN_DIR/steam.pid" ]]; then
+    kill "$(cat "$RUN_DIR/steam.pid")" 2>/dev/null || true
+    for _ in $(seq 1 20); do
+        kill -0 "$(cat "$RUN_DIR/steam.pid")" 2>/dev/null || break
+        sleep 0.5
+    done
+    rm -f "$RUN_DIR/steam.pid"
+fi
 
 # labwc exited (app quit, exit hotkey, or a crash). The autologin entry was
 # armed to game mode at session start, so sddm's autologin takes us back
