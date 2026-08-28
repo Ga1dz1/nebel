@@ -1,0 +1,48 @@
+#!/usr/bin/bash
+# desktop-input-mode {gamepad|mouse|status|toggle}
+#
+# In Plasma desktop mode InputPlumber normally runs the mouse_keyboard
+# profile: the built-in gamepad emulates mouse/keys so the desktop is
+# navigable without paired peripherals. Games and emulators (Azahar etc.)
+# instead need the pad as a real controller - this switches the loaded
+# profile on the fly:
+#
+#   gamepad -> default.yaml        (1:1 passthrough to the virtual xb360 pad)
+#   mouse   -> mouse_keyboard.yaml (desktop navigation)
+#
+# No target-device or session restart needed: session-control keeps the
+# xb360 target up in desktop mode precisely so this profile flip is enough.
+# State is tracked in /run/nebel/desktop-input-mode because InputPlumber
+# exposes no "current profile" query over D-Bus.
+set -euo pipefail
+
+STATE=/run/nebel/desktop-input-mode
+DEVICE=/org/shadowblip/InputPlumber/CompositeDevice0
+IFACE=org.shadowblip.Input.CompositeDevice
+GAMEPAD_PROFILE=/usr/share/inputplumber/profiles/default.yaml
+MOUSE_PROFILE=/usr/share/inputplumber/profiles/mouse_keyboard.yaml
+
+current() {
+    cat "$STATE" 2>/dev/null || echo mouse
+}
+
+apply() {
+    busctl --system call org.shadowblip.InputPlumber "$DEVICE" "$IFACE" \
+        LoadProfilePath s "$1" >/dev/null 2>&1 || true
+    mkdir -p /run/nebel
+    echo "$2" > "$STATE"
+}
+
+case "${1:-}" in
+    gamepad) apply "$GAMEPAD_PROFILE" gamepad ;;
+    mouse)   apply "$MOUSE_PROFILE" mouse ;;
+    status)  current ;;
+    toggle)
+        if [[ "$(current)" == gamepad ]]; then
+            exec "$0" mouse
+        else
+            exec "$0" gamepad
+        fi
+        ;;
+    *) echo "usage: $0 {gamepad|mouse|status|toggle}" >&2; exit 1 ;;
+esac

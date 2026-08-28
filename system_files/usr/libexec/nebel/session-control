@@ -33,7 +33,6 @@ inputplumber_composite_name() {
 }
 
 inputplumber_set_targets() {
-    local target=$1
     local paths
     paths=$(inputplumber_paths)
     [[ -n "$paths" ]] || return 0
@@ -50,15 +49,18 @@ inputplumber_set_targets() {
         done
         [[ "$match" == 1 ]] || continue
         busctl --system call "$SERVICE" "$path" "$IFACE" SetTargetDevices as \
-            "2" "$target" keyboard >/dev/null 2>&1 || true
+            "$#" "$@" >/dev/null 2>&1 || true
     done <<< "$paths"
 }
 
 inputplumber_desktop_mode() {
     # In Plasma desktop mode the handheld gamepad needs to emulate a mouse
     # and keyboard so the user can navigate without a paired Bluetooth
-    # keyboard/mouse.
-    inputplumber_set_targets mouse
+    # keyboard/mouse. The xb360 gamepad target stays up alongside them: while
+    # the mouse_keyboard profile is loaded it swallows the events anyway, and
+    # desktop-input-mode can flip the profile to default.yaml on the fly so
+    # SDL games/emulators (Azahar etc.) see a real controller.
+    inputplumber_set_targets xb360 mouse keyboard
 }
 
 inputplumber_gamepad_mode() {

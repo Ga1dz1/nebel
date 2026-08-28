@@ -33,11 +33,20 @@ nebel_inputplumber_profile() {
     busctl --system call org.shadowblip.InputPlumber "${IPLUMBER_DEVICE}" "${IPLUMBER_IFACE}" LoadProfilePath s "${profile}" >/dev/null 2>&1 || true
 }
 
+# Track the active profile for desktop-input-mode status/toggle (InputPlumber
+# has no D-Bus "current profile" query). /run/nebel is group-nebel writable
+# (tmpfiles.d/nebel-run.conf), and this script runs as nebel.
+nebel_input_mode_state() {
+    echo "$1" > /run/nebel/desktop-input-mode 2>/dev/null || true
+}
+
 cleanup_plasma() {
     nebel_inputplumber_profile "${GAMEPAD_PROFILE}"
+    nebel_input_mode_state gamepad
 }
 trap cleanup_plasma EXIT
 
 nebel_inputplumber_profile "${DESKTOP_PROFILE}"
+nebel_input_mode_state mouse
 
 /usr/bin/startplasma-wayland

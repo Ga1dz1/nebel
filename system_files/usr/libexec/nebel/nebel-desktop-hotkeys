@@ -15,6 +15,7 @@ Chords (Home + button):
   DPad Left/Right -> KEY_BRIGHTNESSDOWN/UP
   Start           -> KEY_F12
   Select          -> KEY_MENU
+  R3 (RStick click) -> toggle gamepad/mouse input mode (desktop-input-mode)
 """
 import fcntl
 import math
@@ -36,6 +37,7 @@ BTN_NORTH = 0x133
 BTN_WEST = 0x134
 BTN_START = 0x13B
 BTN_SELECT = 0x13A
+BTN_THUMBR = 0x13E
 BTN_DPAD_UP = 0x220
 BTN_DPAD_DOWN = 0x221
 BTN_DPAD_LEFT = 0x222
@@ -117,6 +119,19 @@ def toggle_osk():
 
 
 CHORD_FUNCS[BTN_WEST] = toggle_osk
+
+
+def toggle_input_mode():
+    """Home+R3: flip the desktop gamepad between mouse/keyboard emulation and
+    a real xb360 controller for SDL games/emulators (desktop-input-mode)."""
+    subprocess.run(
+        ["/usr/libexec/nebel/desktop-input-mode", "toggle"],
+        capture_output=True,
+        timeout=3,
+    )
+
+
+CHORD_FUNCS[BTN_THUMBR] = toggle_input_mode
 
 # uinput ioctls (standard Linux values)
 UINPUT_IOCTL_BASE = ord("U")
