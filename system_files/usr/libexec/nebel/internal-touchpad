@@ -6,10 +6,9 @@
 # the wrong orientation (the internal panel orientation only applies while
 # the internal panel is the active connector). Grabbing the device here and
 # re-emitting REL deltas through a virtual uinput mouse gives usable Deck
-# style trackpads instead: the right half moves the cursor (tap = left
-# click), the left half scrolls like the Deck's left trackpad (vertical
-# swipe = wheel, tap = right click). A quick two-finger tap is a right
-# click on either half.
+# style trackpads instead: both halves move the cursor (tap = left click),
+# a two-finger tap is a right click, and a two-finger vertical drag scrolls
+# like the Deck's left trackpad.
 #
 # Started/stopped by sessions.d/steam (external primary + the Decky toggle
 # on), nebel-control's set_internal_touchpad (live toggle), and stopped by
@@ -174,7 +173,6 @@ def run(touch_fd, uinput_fd, rotate, tap_max_move, wheel_step,
     slot = 0
     contacts = {}  # slot -> [x, y]
     primary = None
-    primary_side = None  # "left" (scroll) or "right" (cursor)
     primary_down_at = 0.0
     primary_travel = 0.0
     max_contacts = 0
@@ -182,15 +180,6 @@ def run(touch_fd, uinput_fd, rotate, tap_max_move, wheel_step,
     acc_x = 0.0
     acc_y = 0.0
     acc_wheel = 0.0
-
-    def side_of(pos):
-        if not split:
-            return "right"
-        mid = mid_x if split_axis == 0 else mid_y
-        value = pos[split_axis]
-        if value is None:
-            return "right"
-        return "left" if value < mid else "right"
 
     while True:
         data = os.read(touch_fd, INPUT_EVENT.size * 32)
@@ -205,7 +194,6 @@ def run(touch_fd, uinput_fd, rotate, tap_max_move, wheel_step,
                     contacts.setdefault(slot, [None, None])
                     if primary is None:
                         primary = slot
-                        primary_side = None  # decided on the first X/Y sample
                         primary_down_at = time.monotonic()
                         primary_travel = 0.0
                     max_contacts = max(max_contacts, len(contacts))
@@ -214,36 +202,32 @@ def run(touch_fd, uinput_fd, rotate, tap_max_move, wheel_step,
                     if slot == primary:
                         # A quick, nearly stationary primary contact is a
                         # click; a second finger having been down makes it a
-                        # right click. On the left half a tap is a right
-                        # click (Deck's left trackpad "menu" role).
+                        # right click. Both halves click the same - they are
+                        # both trackpads, Deck style.
                         if (time.monotonic() - primary_down_at < TAP_MAX_SECONDS
                                 and primary_travel < tap_max_move):
-                            if max_contacts > 1 or primary_side == "left":
+                            if max_contacts > 1:
                                 emit_click(uinput_fd, BTN_RIGHT)
                             else:
                                 emit_click(uinput_fd, BTN_LEFT)
                         primary = None
-                        primary_side = None
                     if not contacts:
                         primary = None
-                        primary_side = None
                         max_contacts = 0
             elif code in (ABS_MT_POSITION_X, ABS_MT_POSITION_Y) and slot in contacts:
                 pos = contacts[slot]
                 axis = 0 if code == ABS_MT_POSITION_X else 1
                 previous = pos[axis]
                 pos[axis] = value
-                if slot == primary and primary_side is None and pos[0] is not None:
-                    primary_side = side_of(pos)
                 if previous is None or slot != primary:
                     continue
                 dx = (value - previous) if axis == 0 else 0
                 dy = (value - previous) if axis == 1 else 0
                 primary_travel += abs(dx) + abs(dy)
                 rdx, rdy = rotate(dx, dy)
-                if primary_side == "left":
-                    # Left half = Deck left trackpad: vertical swipe scrolls.
-                    # Finger up (rdy < 0) scrolls up (wheel +1).
+                if len(contacts) >= 2:
+                    # Two-finger vertical drag scrolls (finger up, rdy < 0,
+                    # scrolls up = wheel +1), on either half.
                     acc_wheel += -rdy
                     steps = int(acc_wheel / wheel_step)
                     if steps:

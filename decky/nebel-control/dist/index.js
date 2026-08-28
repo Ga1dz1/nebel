@@ -232,7 +232,7 @@ const uk = {
     "270°": "270°",
     "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "Це портретна панель — оберіть поворот, за якого зображення стає рівним. Застосовується після перезапуску ігрового режиму.",
     "Internal screen as touchpad": "Вбудований екран як тачпад",
-    "The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen.": "Вбудований тачскрін працює як тачпад у стилі Steam Deck: права половина рухає вказівник (дотик = ліва кнопка), ліва — гортання (дотик = права кнопка). Вимкнено: звичайний тачскрін.",
+    "The internal touchscreen works as Steam Deck style trackpads: both halves move the pointer (tap = left click), two-finger tap = right click, two-finger drag = scroll. Off: normal touchscreen.": "Вбудований тачскрін працює як тачпади в стилі Steam Deck: обидві половини рухають вказівник (дотик = ліва кнопка), дотик двома пальцями = права кнопка, проведення двома = гортання. Вимкнено: звичайний тачскрін.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Зовнішній дисплей не виявлено. Під’єднайте його (док/USB-C/HDMI), щоб обрати тут.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Цей дисплей зараз не під’єднано — ігровий режим працює на вбудованому екрані, доки його не буде під’єднано знову. Налаштування збережено.",
     "Error: {message}": "Помилка: {message}",
@@ -535,7 +535,7 @@ const ru = {
     "270°": "270°",
     "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "Это портретная панель — выберите поворот, при котором изображение будет ровным. Применяется после перезапуска игрового режима.",
     "Internal screen as touchpad": "Встроенный экран как тачпад",
-    "The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen.": "Встроенный тачскрин работает как тачпад в стиле Steam Deck: правая половина двигает указатель (касание = ЛКМ), левая — прокрутка (касание = ПКМ). Выкл: обычный тачскрин.",
+    "The internal touchscreen works as Steam Deck style trackpads: both halves move the pointer (tap = left click), two-finger tap = right click, two-finger drag = scroll. Off: normal touchscreen.": "Встроенный тачскрин работает как тачпады в стиле Steam Deck: обе половины двигают указатель (касание = ЛКМ), касание двумя пальцами = ПКМ, проведение двумя = прокрутка. Выкл: обычный тачскрин.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Внешний дисплей не обнаружен. Подключите его (док/USB-C/HDMI), чтобы выбрать здесь.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Этот дисплей сейчас не подключён — игровой режим работает на встроенном экране, пока его не подключат снова. Настройки сохранены.",
     "Error: {message}": "Ошибка: {message}",
@@ -838,7 +838,7 @@ const es = {
     "270°": "270°",
     "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "Es un panel vertical: elige la rotación que deje la imagen derecha. Se aplica al reiniciar el modo de juego.",
     "Internal screen as touchpad": "Pantalla interna como panel táctil",
-    "The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen.": "La pantalla táctil interna funciona como un panel táctil estilo Steam Deck: la mitad derecha mueve el puntero (toque = clic izquierdo), la izquierda desplaza (toque = clic derecho). Desactivado: pantalla táctil normal.",
+    "The internal touchscreen works as Steam Deck style trackpads: both halves move the pointer (tap = left click), two-finger tap = right click, two-finger drag = scroll. Off: normal touchscreen.": "La pantalla táctil interna funciona como paneles táctiles estilo Steam Deck: ambas mitades mueven el puntero (toque = clic izquierdo), toque con dos dedos = clic derecho, arrastre con dos dedos = desplazamiento. Desactivado: pantalla táctil normal.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "No se detectó ninguna pantalla externa. Conecta una (dock/USB-C/HDMI) para elegirla aquí.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Esta pantalla no está conectada ahora mismo: el modo de juego funciona en la pantalla interna hasta que se vuelva a conectar. Sus ajustes se conservan.",
     "Error: {message}": "Error: {message}",
@@ -1141,7 +1141,7 @@ const fr = {
     "270°": "270°",
     "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "C'est un panneau portrait - choisissez la rotation qui redresse l'image. Appliqué au redémarrage du mode jeu.",
     "Internal screen as touchpad": "Écran interne comme pavé tactile",
-    "The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen.": "L'écran tactile interne fonctionne comme un pavé tactile façon Steam Deck : la moitié droite déplace le pointeur (toucher = clic gauche), la moitié gauche fait défiler (toucher = clic droit). Désactivé : écran tactile normal.",
+    "The internal touchscreen works as Steam Deck style trackpads: both halves move the pointer (tap = left click), two-finger tap = right click, two-finger drag = scroll. Off: normal touchscreen.": "L'écran tactile interne fonctionne comme des pavés tactiles façon Steam Deck : les deux moitiés déplacent le pointeur (toucher = clic gauche), toucher à deux doigts = clic droit, glisser à deux doigts = défilement. Désactivé : écran tactile normal.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Aucun écran externe détecté. Connectez-en un (dock/USB-C/HDMI) pour le choisir ici.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Cet écran n'est pas connecté pour le moment : le mode jeu tourne sur l'écran interne jusqu'à ce qu'il soit rebranché. Ses paramètres sont conservés.",
     "Error: {message}": "Erreur : {message}",
@@ -4149,7 +4149,7 @@ function InternalTouchpadRow() {
             .then(setEnabled)
             .catch(() => setEnabled(!value));
     };
-    return (SP_JSX.jsx(ToggleRow, { label: t("Internal screen as touchpad"), description: t("The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen."), value: enabled, onChange: onChange }));
+    return (SP_JSX.jsx(ToggleRow, { label: t("Internal screen as touchpad"), description: t("The internal touchscreen works as Steam Deck style trackpads: both halves move the pointer (tap = left click), two-finger tap = right click, two-finger drag = scroll. Off: normal touchscreen."), value: enabled, onChange: onChange }));
 }
 
 function ControllerExtras({ config, setConfig, showEmulation = true }) {

@@ -26,7 +26,7 @@ export function InternalTouchpadRow() {
   return (
     <ToggleRow
       label={t("Internal screen as touchpad")}
-      description={t("The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen.")}
+      description={t("The internal touchscreen works as Steam Deck style trackpads: both halves move the pointer (tap = left click), two-finger tap = right click, two-finger drag = scroll. Off: normal touchscreen.")}
       value={enabled}
       onChange={onChange}
     />

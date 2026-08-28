@@ -374,20 +374,19 @@ def action_get_internal_touchpad(request):
 def action_set_internal_touchpad(request):
     enabled = bool(request.get("enabled"))
     atomic_write(INTERNAL_TOUCHPAD_CONF, f"ENABLED={1 if enabled else 0}\n")
-    # Live-apply only makes sense while a game session is running on an
-    # external display (the marker sessions.d/steam writes); on the desktop
-    # or an internal-primary session the new value applies at next start.
-    if Path("/run/user/1000/nebel-display-connector").exists():
-        name = device_env().get("NEBEL_INTERNAL_TOUCHSCREEN", "")
-        if enabled:
-            # The rotator grabs the device - useless while it's inhibited.
-            if name:
-                run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
-            run(USER_SYSTEMCTL + ["start", INTERNAL_TOUCHPAD_SERVICE])
-        else:
-            run(USER_SYSTEMCTL + ["stop", INTERNAL_TOUCHPAD_SERVICE])
-            if name:
-                run(["/usr/libexec/nebel/touchscreen-inhibit", name, "1"])
+    # Live-apply in any session: the toggle is a mode switch, not a kill
+    # switch - OFF always returns the panel to a plain touchscreen (never
+    # leaves it inhibited), ON hands the digitizer to the trackpad service
+    # (which grabs it itself, so it must be uninhibited first).
+    name = device_env().get("NEBEL_INTERNAL_TOUCHSCREEN", "")
+    if enabled:
+        if name:
+            run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
+        run(USER_SYSTEMCTL + ["start", INTERNAL_TOUCHPAD_SERVICE])
+    else:
+        run(USER_SYSTEMCTL + ["stop", INTERNAL_TOUCHPAD_SERVICE])
+        if name:
+            run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
     return {"enabled": enabled}
 
 

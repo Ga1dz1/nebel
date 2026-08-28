@@ -28,9 +28,10 @@ if [[ -n "${NEBEL_INTERNAL_TOUCHSCREEN:-}" ]]; then
     /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_INTERNAL_TOUCHSCREEN" 0 2>/dev/null || true
     systemctl --user stop nebel-internal-touchpad.service 2>/dev/null || true
 fi
-# Decky Display tab toggle (nebel-control's set_internal_touchpad): with an
-# external display as primary, use the internal touchscreen as a relative
-# trackpad instead of silencing it. Default ON - a missing file means enabled.
+# Decky toggle (nebel-control's set_internal_touchpad, Controller tab + QAM):
+# with an external display as primary, use the internal touchscreen as Deck
+# style relative trackpads; off keeps it a plain touchscreen. Default ON -
+# a missing file means enabled.
 NEBEL_INTERNAL_TOUCHPAD_ENABLED=1
 if [[ -f /etc/nebel/internal-touchpad.conf ]]; then
     # shellcheck source=/dev/null
@@ -110,16 +111,14 @@ if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
             fi
             unset CUSTOM_REFRESH_RATES STEAM_DISPLAY_REFRESH_LIMITS
             # The internal panel goes dark while an external display owns game
-            # mode. Its touchscreen either becomes a relative trackpad
-            # (nebel-internal-touchpad.service, the default - toggle above)
-            # or is silenced outright, so fingers on the dark glass don't
-            # move Steam's cursor with the wrong orientation (same reason
-            # the Thor's secondary touchscreen is inhibited above).
+            # mode. With the trackpad toggle on (the default) its touchscreen
+            # becomes a pair of Deck-style relative trackpads; with the toggle
+            # off the touchscreen simply stays live (the session's own touch
+            # mapping applies) - the toggle is a mode switch, never a kill
+            # switch.
             if [[ -n "${NEBEL_INTERNAL_TOUCHSCREEN:-}" ]]; then
                 if (( NEBEL_INTERNAL_TOUCHPAD_ENABLED )); then
                     systemctl --user start nebel-internal-touchpad.service 2>/dev/null || true
-                else
-                    /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_INTERNAL_TOUCHSCREEN" 1 2>/dev/null || true
                 fi
             fi
         fi
