@@ -17,6 +17,14 @@
 # fall straight back to game mode instead of stranding the user.
 set -uo pipefail
 
+# A previous labwc instance can survive an sddm restart as an orphan and
+# still hold the seat/DRM master; a fresh labwc then dies instantly with
+# seatd's "seat is VT-bound and has an active client". Clean leftovers first.
+pkill -u "$(id -u)" -x labwc 2>/dev/null || true
+pkill -u "$(id -u)" -x kanshi 2>/dev/null || true
+pkill -u "$(id -u)" -f nebel-dualscreen-exit 2>/dev/null || true
+sleep 1
+
 eval "$(/usr/libexec/nebel/device-env)"
 
 INTERNAL="${NEBEL_PRIMARY_CONNECTOR:-DSI-1}"
@@ -127,13 +135,20 @@ elif [[ -f /etc/nebel/dualscreen-app.conf ]]; then
 fi
 APP_CMD="${APP_CMD:-$APP_CMD_DEFAULT}"
 
+# Flatpak apps often ship with X11-only socket permissions, but this session
+# is Wayland-only - grant the Wayland socket on the fly (idempotent).
+if [[ "$APP_CMD" =~ flatpak\ run\ ([^\ ]+) ]]; then
+    flatpak override --user "${BASH_REMATCH[1]}" --socket=wayland >/dev/null 2>&1 || true
+fi
+
 # labwc runs its <config-dir>/autostart via sh once the Wayland socket is
 # up, so kanshi and the app are launched from there. The trailing watcher
 # drops labwc (and thus the session) when the app exits.
 cat > "$RUN_DIR/autostart" <<EOF
 #!/bin/sh
-kanshi -c "$RUN_DIR/kanshi.conf" &
-( sleep 2; $APP_CMD; sleep 1; labwc --exit 2>/dev/null || killall labwc ) &
+kanshi -c "$RUN_DIR/kanshi.conf" >"$RUN_DIR/kanshi.log" 2>&1 &
+/usr/libexec/nebel/nebel-dualscreen-exit >"$RUN_DIR/exit-watch.log" 2>&1 &
+( sleep 2; $APP_CMD >"$RUN_DIR/app.log" 2>&1; echo "APP_EXIT_CODE=\$?" >>"$RUN_DIR/app.log"; sleep 1; labwc --exit 2>/dev/null || killall labwc ) &
 EOF
 chmod +x "$RUN_DIR/autostart"
 

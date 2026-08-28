@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""Exit hotkey watcher for the dual-screen (labwc) session.
+
+There is no Steam UI and no desktop shell in this session, so the only way
+out with the gamepad alone is a dedicated chord on the raw Retroid MCU
+gamepad (InputPlumber uses passthrough for it, so we can read the evdev
+node concurrently - same trick as nebel-desktop-hotkeys).
+
+Exit triggers (either one drops labwc; start-dualscreen then returns to
+game mode):
+  - hold Back/Select for 2 seconds
+  - Home + Back/Select chord
+"""
+import os
+import select
+import struct
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+EV_KEY = 0x01
+BTN_MODE = 0x13C      # Home
+BTN_SELECT = 0x13A    # Back / Select
+
+INPUT_EVENT_FMT = "llHHi"
+INPUT_EVENT_SIZE = struct.calcsize(INPUT_EVENT_FMT)
+
+GAMEPAD_NAMES = ("Retroid Pocket Gamepad", "AYN Odin2 Gamepad")
+BACK_HOLD_S = 2.0
+POLL_INTERVAL_S = 0.05
+
+
+def find_gamepad():
+    for ev in Path("/sys/class/input").glob("event*"):
+        try:
+            name = (ev / "device" / "name").read_text().strip()
+        except OSError:
+            continue
+        if name in GAMEPAD_NAMES:
+            return Path("/dev/input") / ev.name
+    return None
+
+
+def exit_session():
+    # labwc exits; start-dualscreen's tail then switches back to game mode.
+    subprocess.run(["labwc", "--exit"], capture_output=True, timeout=3)
+    subprocess.run(["killall", "labwc"], capture_output=True, timeout=3)
+
+
+def run():
+    fd = None
+    pressed = set()
+    back_since = None
+    while True:
+        if fd is None:
+            path = find_gamepad()
+            if path is None:
+                time.sleep(1)
+                continue
+            try:
+                fd = os.open(str(path), os.O_RDONLY | os.O_NONBLOCK)
+            except OSError:
+                time.sleep(1)
+                continue
+        try:
+            while select.select([fd], [], [], 0)[0]:
+                chunk = os.read(fd, INPUT_EVENT_SIZE)
+                if len(chunk) != INPUT_EVENT_SIZE:
+                    break
+                _, _, ev_type, code, value = struct.unpack(INPUT_EVENT_FMT, chunk)
+                if ev_type != EV_KEY:
+                    continue
+                if value == 1:
+                    pressed.add(code)
+                    if code == BTN_SELECT:
+                        back_since = time.time()
+                elif value == 0:
+                    pressed.discard(code)
+                    if code == BTN_SELECT:
+                        back_since = None
+        except OSError:
+            os.close(fd)
+            fd = None
+            continue
+
+        if BTN_SELECT in pressed:
+            chord = BTN_MODE in pressed
+            held = back_since is not None and (time.time() - back_since) >= BACK_HOLD_S
+            if chord or held:
+                print("dualscreen-exit: exit hotkey fired", flush=True)
+                exit_session()
+                pressed.discard(BTN_SELECT)
+                back_since = None
+
+        time.sleep(POLL_INTERVAL_S)
+
+
+if __name__ == "__main__":
+    try:
+        run()
+    except KeyboardInterrupt:
+        sys.exit(0)
