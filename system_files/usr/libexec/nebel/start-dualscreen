@@ -113,7 +113,15 @@ EOF
 } > "$RUN_DIR/rc.xml"
 
 APP_CMD_DEFAULT='flatpak run org.azahar_emu.Azahar'
-if [[ -f /etc/nebel/dualscreen-app.conf ]]; then
+# A per-game request (written by nebel-game-launch when the game's
+# "Dual-screen mode" toggle is on) wins over the /etc override; it is
+# consumed once so the next manual session start uses the default again.
+RUNTIME_CONF="${XDG_RUNTIME_DIR:-/run/user/1000}/nebel-dualscreen-app.conf"
+if [[ -f "$RUNTIME_CONF" ]]; then
+    # shellcheck source=/dev/null
+    source "$RUNTIME_CONF"
+    rm -f "$RUNTIME_CONF"
+elif [[ -f /etc/nebel/dualscreen-app.conf ]]; then
     # shellcheck source=/dev/null
     source /etc/nebel/dualscreen-app.conf
 fi

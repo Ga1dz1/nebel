@@ -20,6 +20,7 @@ sed -i '$r /usr/share/plasma/shells/org.kde.plasma.desktop/contents/updates/nebe
 
 find /etc/NetworkManager/system-connections -name '*.nmconnection' -exec chmod 0600 {} + -exec chown root:root {} + 2>/dev/null || true
 chmod 0440 /etc/sudoers.d/nebel-shared-storage 2>/dev/null || true
+chmod 0440 /etc/sudoers.d/nebel-session-control 2>/dev/null || true
 
 systemctl disable getty@tty1.service || true
 systemctl disable sshd.service || true

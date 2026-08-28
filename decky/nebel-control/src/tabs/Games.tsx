@@ -607,6 +607,16 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
           onToggleForce={(enabled) => patchSettings({ heroicForce: enabled || undefined })}
         />
       ) : null}
+      {!editingDefault && game?.appid ? (
+        <PanelSection>
+          <ToggleField
+            label={t("Dual-screen mode")}
+            description={t("Launch in the dual-screen session (internal + external display) instead of game mode - for dual-screen emulators like Azahar/melonDS. Requires the external display connected.")}
+            checked={values.dualScreen === true}
+            onChange={(enabled) => patchSettings({ dualScreen: enabled || undefined })}
+          />
+        </PanelSection>
+      ) : null}
       {!qam && (!injected || forcedTool) && (
         <>
           <PanelSection>

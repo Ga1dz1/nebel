@@ -1,0 +1,4 @@
+# Allow the nebel user to switch sessions (dual-screen and back) without a
+# password - needed when a game flagged "Dual-screen mode" launches from
+# inside the gamescope session.
+nebel ALL=(root) NOPASSWD: /usr/libexec/nebel/session-control

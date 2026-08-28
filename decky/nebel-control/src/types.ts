@@ -37,6 +37,7 @@ export interface GameTweak {
   gpuSpoof?: string;
   envPresets?: Record<string, boolean>;
   heroicForce?: boolean;
+  dualScreen?: boolean;
   [key: string]: any;
 }
 
