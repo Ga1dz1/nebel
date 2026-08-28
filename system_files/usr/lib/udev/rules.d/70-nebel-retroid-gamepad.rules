@@ -26,4 +26,24 @@ SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Retroid Pocket Gamepad", ENV
 # Same treatment as the AYN rule above: hide the raw node from libinput only.
 # InputPlumber, SDL/Steam and the session watchers all read evdev directly
 # and are unaffected.
-SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Retroid Pocket Gamepad", ENV{LIBINPUT_IGNORE_DEVICE}="1", ENV{ID_INPUT_MOUSE}=""
+# The MCU reports Back as BTN_BACK (0x116), which sits in the BTN_MOUSE
+# range, so stock udev tags the pad ID_INPUT_MOUSE=1 and libinput picks it up
+# as an ABSOLUTE POINTER (sticks on ABS_X/ABS_Y) - moving a stick then drags
+# a phantom cursor over every libinput session (labwc dual-screen, Plasma).
+# On top of that, Steam's bundled SDL3 and flatpak SDL builds enumerate
+# joysticks by scanning /dev/input/event* capabilities directly (no udev tag
+# check), so the raw pad showed up as a second, conflicting controller
+# (double input in Steam UI). Same treatment as the AYN rule in
+# 70-nebel-inputplumber.rules: hide the raw node from libinput AND from
+# unprivileged processes entirely. Every legitimate consumer runs as root
+# (InputPlumber, nebel-stick-led, nebel-desktop-hotkeys, waydroid) or through
+# sudo (nebel-dualscreen-exit, see etc/sudoers.d/nebel-session-control).
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Retroid Pocket Gamepad", ENV{LIBINPUT_IGNORE_DEVICE}="1", ENV{ID_INPUT_MOUSE}="", ENV{ID_INPUT_JOYSTICK}="", TAG-="uaccess", MODE="0000"
+
+# The js* node has no capability filtering at all: SDL's non-udev fallback
+# (Steam runtime, flatpak apps without a udev db) scans /dev/input/js*
+# directly and would find the raw pad as a ghost controller beside
+# InputPlumber's virtual one. Nothing on the system consumes the legacy js
+# interface for this pad (InputPlumber, watchers, LED reader, Waydroid all
+# use the event node) - lock it away like the AYN rule does.
+SUBSYSTEM=="input", KERNEL=="js*", ATTRS{name}=="Retroid Pocket Gamepad", ENV{ID_INPUT_JOYSTICK}="", ENV{ID_INPUT_MOUSE}="", TAG-="uaccess", MODE="0000"
