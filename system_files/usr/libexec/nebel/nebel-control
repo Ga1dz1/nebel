@@ -353,11 +353,17 @@ def action_start_dualscreen_session(request):
 
 INTERNAL_TOUCHPAD_CONF = Path("/etc/nebel/internal-touchpad.conf")
 INTERNAL_TOUCHPAD_SERVICE = "nebel-internal-touchpad.service"
+# Dropped by sessions.d/steam when game mode actually launched with an
+# external display as primary - the only layout where the pass-through
+# daemon may run (it grabs the internal digitizer).
+EXTERNAL_PRIMARY_MARKER = Path(
+    os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+) / "nebel-external-primary"
 
 
 def _internal_touchpad_enabled():
-    # Default ON: a missing/unreadable conf means enabled (sessions.d/steam
-    # reads the same file with the same default).
+    # Default ON: a missing/unreadable conf means enabled (the daemon reads
+    # the same file with the same default).
     try:
         for line in INTERNAL_TOUCHPAD_CONF.read_text(encoding="utf-8").splitlines():
             if line.startswith("ENABLED="):
@@ -374,19 +380,20 @@ def action_get_internal_touchpad(request):
 def action_set_internal_touchpad(request):
     enabled = bool(request.get("enabled"))
     atomic_write(INTERNAL_TOUCHPAD_CONF, f"ENABLED={1 if enabled else 0}\n")
-    # Live-apply in any session: the toggle is a mode switch, not a kill
-    # switch - OFF always returns the panel to a plain touchscreen (never
-    # leaves it inhibited), ON hands the digitizer to the trackpad service
-    # (which grabs it itself, so it must be uninhibited first).
+    # The daemon re-reads the conf on restart and picks its output node
+    # itself (trackpad split vs rotated touchscreen), so the toggle is just
+    # a restart - a mode switch, never a kill switch. But the service may
+    # only run while an external display owns game mode: on the internal
+    # panel it would grab the digitizer and kill normal touch, so without
+    # the marker we stop it (if running) and make sure the raw touchscreen
+    # is live.
     name = device_env().get("NEBEL_INTERNAL_TOUCHSCREEN", "")
-    if enabled:
-        if name:
-            run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
-        run(USER_SYSTEMCTL + ["start", INTERNAL_TOUCHPAD_SERVICE])
+    if name:
+        run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
+    if EXTERNAL_PRIMARY_MARKER.exists():
+        run(USER_SYSTEMCTL + ["restart", INTERNAL_TOUCHPAD_SERVICE])
     else:
         run(USER_SYSTEMCTL + ["stop", INTERNAL_TOUCHPAD_SERVICE])
-        if name:
-            run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
     return {"enabled": enabled}
 
 

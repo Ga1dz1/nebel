@@ -5,6 +5,28 @@ NEBEL_REGISTRY="ghcr.io/ga1dz1/nebel"
 NEBEL_CHANNEL_STATE="/var/lib/nebel/update-channel"
 NEBEL_CHANNELS="stable beta testing"
 
+# Supporter gating: stable is for everyone, beta/testing need a key whose
+# sha256 is on the published allowlist (Patreon tester perk). The key file is
+# written by nebel-control from the plugin UI; the allowlist is fetched at
+# most once a day and cached so offline consoles keep working.
+NEBEL_SUPPORTER_KEY="/var/lib/nebel/supporter-key"
+NEBEL_SUPPORTER_CACHE="/var/lib/nebel/supporter-keys.cache"
+NEBEL_SUPPORTER_LIST_URL="https://raw.githubusercontent.com/Ga1dz1/nebel/main/supporter-keys.txt"
+
+# 0 when a supporter key exists and its sha256 is on the allowlist.
+nebel_supporter_ok() {
+    [[ -s "$NEBEL_SUPPORTER_KEY" ]] || return 1
+    local list="$NEBEL_SUPPORTER_CACHE" now mtime
+    now=$(date +%s)
+    mtime=$(stat -c %Y "$list" 2>/dev/null || echo 0)
+    if [[ ! -s "$list" || $(( now - mtime )) -gt 86400 ]]; then
+        curl -fsSL --max-time 10 "$NEBEL_SUPPORTER_LIST_URL" -o "$list.new" 2>/dev/null \
+            && mv "$list.new" "$list" || rm -f "$list.new"
+    fi
+    [[ -s "$list" ]] || return 1
+    grep -qix "$(sha256sum "$NEBEL_SUPPORTER_KEY" | cut -d' ' -f1)" "$list"
+}
+
 # Steam's picker speaks Valve's branch tokens; translate to/from our ghcr tags.
 nebel_token_to_channel() {
     case "$1" in
@@ -89,9 +111,10 @@ nebel_desired_channel() {
     # channel; parroting it back made nebel-update try `bootc switch` to a
     # tag that doesn't exist on the registry, fail, and give up - so devices
     # flashed from a release SD image never adopted the OTA channel at all.
-    # Default them to testing: the first Steam update check switches to the
-    # signed ghcr ref and every later update is a plain upgrade.
-    echo testing
+    # Default them to stable: the first Steam update check switches to the
+    # signed ghcr ref and every later update is a plain upgrade. (beta and
+    # testing are supporter channels - see nebel_supporter_ok.)
+    echo stable
 }
 
 # Run a bootc command with progress wired to the Steam N% translator. fd 3 must

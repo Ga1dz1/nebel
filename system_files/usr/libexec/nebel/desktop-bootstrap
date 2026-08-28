@@ -47,6 +47,7 @@ if [[ -n "${NEBEL_INTERNAL_TOUCHSCREEN:-}" ]]; then
     /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_INTERNAL_TOUCHSCREEN" 0 2>/dev/null || true
 fi
 systemctl --user stop nebel-internal-touchpad.service 2>/dev/null || true
+rm -f "${XDG_RUNTIME_DIR:-/run/user/1000}/nebel-external-primary" 2>/dev/null || true
 
 display_connector="${NEBEL_PRIMARY_CONNECTOR:-}"
 panel_orientation="${NEBEL_PANEL_ORIENTATION:-normal}"

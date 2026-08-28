@@ -55,13 +55,15 @@ inputplumber_set_targets() {
 }
 
 inputplumber_desktop_mode() {
-    # In Plasma desktop mode the handheld gamepad needs to emulate a mouse
-    # and keyboard so the user can navigate without a paired Bluetooth
-    # keyboard/mouse. The xb360 gamepad target stays up alongside them: while
-    # the mouse_keyboard profile is loaded it swallows the events anyway, and
-    # desktop-input-mode can flip the profile to default.yaml on the fly so
-    # SDL games/emulators (Azahar etc.) see a real controller.
-    inputplumber_set_targets xb360 mouse keyboard
+    # Desktop exposes the SAME controller as game mode - the user's selected
+    # type (deck-uhid by default), never a hardcoded xb360 - so sticks are
+    # sticks and ABXY is ABXY in every session, flatpaks included. Desktop
+    # navigation is touch (or Steam's desktop layout when Steam is running);
+    # mouse/keyboard emulation is an opt-in toggle (desktop-input-mode,
+    # Start+Select chord), which is why those targets stay attached.
+    local pad
+    pad=$(/usr/libexec/nebel/controller-type get 2>/dev/null || echo deck-uhid)
+    inputplumber_set_targets "$pad" mouse keyboard
 }
 
 inputplumber_gamepad_mode() {

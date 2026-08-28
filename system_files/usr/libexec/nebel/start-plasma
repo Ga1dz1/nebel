@@ -19,11 +19,12 @@ systemctl --user start plasma-xdg-desktop-portal-kde.service 2>/dev/null || true
 # KDE backend is registered so FileChooser works on the very first request.
 (sleep 8; systemctl --user try-restart xdg-desktop-portal.service 2>/dev/null || true) &
 
-# In Plasma desktop mode the gamepad should act as a mouse/keyboard so the
-# handheld can be navigated without a paired controller. Switch InputPlumber to
-# the desktop profile while Plasma is running and restore the gamepad profile on
-# exit.
-DESKTOP_PROFILE="/usr/share/inputplumber/profiles/mouse_keyboard.yaml"
+# In Plasma desktop mode the gamepad stays a real gamepad - the same
+# controller type as game mode (default.yaml profile), so sticks are sticks
+# and ABXY is ABXY everywhere, flatpaks included. Desktop navigation is
+# touch; mouse/keyboard emulation is an opt-in toggle (desktop-input-mode,
+# Start+Select chord). The gamepad profile is (re)loaded while Plasma runs
+# and restored on exit.
 GAMEPAD_PROFILE="/usr/share/inputplumber/profiles/default.yaml"
 IPLUMBER_DEVICE="/org/shadowblip/InputPlumber/CompositeDevice0"
 IPLUMBER_IFACE="org.shadowblip.Input.CompositeDevice"
@@ -46,7 +47,7 @@ cleanup_plasma() {
 }
 trap cleanup_plasma EXIT
 
-nebel_inputplumber_profile "${DESKTOP_PROFILE}"
-nebel_input_mode_state mouse
+nebel_inputplumber_profile "${GAMEPAD_PROFILE}"
+nebel_input_mode_state gamepad
 
 /usr/bin/startplasma-wayland

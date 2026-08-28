@@ -16,6 +16,9 @@ Chords (Home + button):
   Start           -> KEY_F12
   Select          -> KEY_MENU
   R3 (RStick click) -> toggle gamepad/mouse input mode (desktop-input-mode)
+
+Standalone combo (no Home):
+  Start + Select  -> toggle gamepad/mouse input mode (desktop-input-mode)
 """
 import fcntl
 import math
@@ -122,8 +125,9 @@ CHORD_FUNCS[BTN_WEST] = toggle_osk
 
 
 def toggle_input_mode():
-    """Home+R3: flip the desktop gamepad between mouse/keyboard emulation and
-    a real xb360 controller for SDL games/emulators (desktop-input-mode)."""
+    """Flip the desktop gamepad between mouse/keyboard emulation and
+    a real controller for SDL games/emulators (desktop-input-mode).
+    Bound to Home+R3 and to the standalone Start+Select combo."""
     subprocess.run(
         ["/usr/libexec/nebel/desktop-input-mode", "toggle"],
         capture_output=True,
@@ -289,6 +293,7 @@ class GamepadReader:
 def run():
     reader = GamepadReader()
     keyboard = UInputKeyboard()
+    mode_combo_active = False
     while True:
         if not is_plasma_desktop_active():
             reader.close()
@@ -307,6 +312,26 @@ def run():
                 continue
 
         reader.poll()
+
+        # Standalone Start+Select combo toggles gamepad/mouse input mode.
+        # Fires once per press (rising edge); both buttons are swallowed so
+        # the mouse_keyboard profile / SDL games don't also see them.
+        mode_combo = (
+            BTN_START in reader.buttons
+            and BTN_SELECT in reader.buttons
+            and BTN_MODE not in reader.buttons
+        )
+        if mode_combo and not mode_combo_active:
+            mode_combo_active = True
+            try:
+                toggle_input_mode()
+                print("desktop-hotkeys: Start+Select toggled input mode", flush=True)
+            except Exception:
+                pass
+            reader.buttons.discard(BTN_START)
+            reader.buttons.discard(BTN_SELECT)
+        elif not mode_combo:
+            mode_combo_active = False
 
         if BTN_MODE in reader.buttons and reader.home_pressed_at is None:
             reader.home_pressed_at = time.time()
