@@ -362,15 +362,16 @@ EXTERNAL_PRIMARY_MARKER = Path(
 
 
 def _internal_touchpad_enabled():
-    # Default ON: a missing/unreadable conf means enabled (the daemon reads
-    # the same file with the same default).
+    # Default OFF (plain touchscreen), matching the daemon's own default:
+    # the Deck-trackpad split is opt-in until the InputPlumber deck chain is
+    # confirmed working end to end.
     try:
         for line in INTERNAL_TOUCHPAD_CONF.read_text(encoding="utf-8").splitlines():
             if line.startswith("ENABLED="):
                 return line.split("=", 1)[1].strip() != "0"
     except OSError:
         pass
-    return True
+    return False
 
 
 def action_get_internal_touchpad(request):

@@ -109,11 +109,13 @@ if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
             # ("Nebel Trackpad Screen") feeds InputPlumber's Deck-style
             # LeftPad/RightPad split, ENABLED=0 ("Nebel Rotated Touchscreen")
             # keeps it a plain correctly-oriented touchscreen - the toggle is
-            # a mode switch, never a kill switch. The raw node is inhibited
-            # either way so gamescope never double-processes it. The marker
-            # tells nebel-control's live toggle it may restart the service.
+            # a mode switch, never a kill switch. The daemon's EVIOCGRAB
+            # keeps the raw node away from gamescope (double-processing);
+            # do NOT use /sys/.../inhibited here - the kernel drops ALL events
+            # from an inhibited device, which would leave the daemon itself
+            # deaf. The marker tells nebel-control's live toggle it may
+            # restart the service.
             if [[ -n "${NEBEL_INTERNAL_TOUCHSCREEN:-}" ]]; then
-                /usr/libexec/nebel/touchscreen-inhibit "$NEBEL_INTERNAL_TOUCHSCREEN" 1 2>/dev/null || true
                 systemctl --user start nebel-internal-touchpad.service 2>/dev/null || true
                 printf 'connected\n' > "${XDG_RUNTIME_DIR:-/run/user/1000}/nebel-external-primary" 2>/dev/null || true
             fi

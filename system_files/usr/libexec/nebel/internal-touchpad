@@ -6,7 +6,7 @@
 # the raw internal digitizer rotated 90 degrees. This daemon grabs the raw
 # device and re-emits every contact with the panel orientation applied, so
 # consumers always see logical landscape coordinates. Two output nodes,
-# selected by /etc/nebel/internal-touchpad.conf ENABLED= (default 1):
+# selected by /etc/nebel/internal-touchpad.conf ENABLED= (default 0):
 #
 #   ENABLED=1  "Nebel Trackpad Screen" - faithful multi-touch pass-through.
 #     InputPlumber (patched, touchscreen mode deck_trackpads) matches this
@@ -100,8 +100,9 @@ def read_mode():
     override = os.environ.get("NEBEL_INTERNAL_TOUCHPAD_MODE")
     if override in ("trackpad", "touchscreen"):
         return override
-    # Default ON: a missing/unreadable conf means enabled.
-    enabled = "1"
+    # Default OFF (plain touchscreen): the Deck-trackpad split is opt-in
+    # until the InputPlumber deck chain is confirmed working end to end.
+    enabled = "0"
     try:
         for line in MODE_CONF.read_text(encoding="utf-8").splitlines():
             if line.startswith("ENABLED="):
