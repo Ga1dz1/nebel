@@ -103,6 +103,13 @@ mkdir -p "$RUN_DIR"
 # screen's touch, so always re-enable it for this session.
 [[ -n "$INT_TOUCH" ]] && /usr/libexec/nebel/touchscreen-inhibit "$INT_TOUCH" 0 2>/dev/null || true
 
+# The game-mode pass-through daemon (external-primary touchpad/touchscreen
+# re-emitter) must not hold the digitizer here: its uinput node has no
+# output association, so labwc would map it across BOTH outputs and every
+# tap would hit both screens. Raw digitizer + the rc.xml binding below is
+# what confines touch to its own panel.
+systemctl --user stop nebel-internal-touchpad.service 2>/dev/null || true
+
 # labwc matches <touch deviceName> exactly, but the kernel decorates some
 # input names with an unstable instance suffix ("generic ft5x06 (8d)") -
 # resolve the full name by prefix, same as touchscreen-inhibit does.
