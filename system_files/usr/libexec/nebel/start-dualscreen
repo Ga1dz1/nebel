@@ -25,6 +25,11 @@ pkill -u "$(id -u)" -x kanshi 2>/dev/null || true
 pkill -u "$(id -u)" -f nebel-dualscreen-exit 2>/dev/null || true
 sleep 1
 
+# This session is one-shot: arm game mode as the next autologin session
+# BEFORE anything can exit/crash, so sddm always lands back in game mode
+# without respawning dualscreen first (that race looked like a reboot).
+sudo -n /usr/libexec/nebel/session-control default-gamemode 2>/dev/null || true
+
 eval "$(/usr/libexec/nebel/device-env)"
 
 INTERNAL="${NEBEL_PRIMARY_CONNECTOR:-DSI-1}"
@@ -67,7 +72,7 @@ fi
 
 if [[ -z "$EXT" ]]; then
     echo "start-dualscreen: no external display connected - back to game mode" >&2
-    exec /usr/libexec/nebel/session-control switch-gamemode
+    exit 0  # autologin is already armed to game mode
 fi
 
 # wlroots/kanshi transform for our orientation names (90 = counterclockwise
@@ -101,13 +106,16 @@ mkdir -p "$RUN_DIR"
 # labwc matches <touch deviceName> exactly, but the kernel decorates some
 # input names with an unstable instance suffix ("generic ft5x06 (8d)") -
 # resolve the full name by prefix, same as touchscreen-inhibit does.
+# The RDS addon's USB touch flaps (disconnect bursts); if it is absent at
+# session start, fall back to the undecorated prefix so the mapping still
+# lands in rc.xml and binds when the device reappears.
 resolve_touch() {
     local prefix="$1" n
     for d in /sys/class/input/input*/name; do
         n=$(cat "$d" 2>/dev/null) || continue
         case "$n" in "$prefix"*) echo "$n"; return 0 ;; esac
     done
-    return 0
+    echo "$prefix"
 }
 
 # Physical layout: the addon sits ON TOP of the device, so stack the outputs
@@ -120,21 +128,63 @@ profile {
 }
 EOF
 
+# labwc does NOT rotate touch with the output transform by itself (wlroots
+# maps normalized coords straight onto the logical output box) - it needs a
+# libinput calibrationMatrix matching the output rotation. Raw corner-tap
+# capture on the Mini V2 (ft5x06) gives raw = (1-py, px) in physical-as-seen
+# space, so "0 1 0 -1 0 1" maps raw onto exactly what the user sees. It is
+# also what the RDS hwdb rule sets for the addon, so this stays consistent.
+# NOTE: labwc matches libinput device blocks by the *category* attribute
+# (<device category="...">) - a "name" attribute is silently ignored and the
+# matrix then lands in the default category, hitting every input device.
+# /etc/nebel/dualscreen-touch.conf may override INT_MATRIX/EXT_MATRIX.
+matrix_for() {
+    # Measured with raw evdev corner taps + labwc marker menu on the Mini V2
+    # (ft5x06, panel orientation "right", output transform 270): the extra
+    # rotation the compositor applies exactly cancels the digitizer's native
+    # rotation, so the internal touch needs NO matrix (identity).
+    # "left" (RP6 / RDS addon output): keep parity with the RDS hwdb rule.
+    case "$1" in
+        left)     echo "0 1 0 -1 0 1" ;;
+        right)    echo "" ;;
+        inverted) echo "-1 0 1 0 -1 1" ;;
+        *)        echo "" ;;
+    esac
+}
+INT_MATRIX=$(matrix_for "$PANEL_ORIENT")
+EXT_MATRIX=$(matrix_for "$EXT_ORIENT")
+if [[ -f /etc/nebel/dualscreen-touch.conf ]]; then
+    # shellcheck source=/dev/null
+    source /etc/nebel/dualscreen-touch.conf
+fi
+
 # Per-output touch binding: the internal panel's digitizer serves the
-# bottom screen, the addon's digitizer serves the top one. The hwdb
-# calibration matrix (90-nebel-rds-touch.hwdb) still applies underneath.
+# bottom screen, the addon's digitizer serves the top one.
 {
     echo '<?xml version="1.0"?>'
     echo '<labwc_config>'
+    INT_TOUCH_FULL=""
     if [[ -n "$INT_TOUCH" ]]; then
         INT_TOUCH_FULL=$(resolve_touch "$INT_TOUCH")
-        [[ -n "$INT_TOUCH_FULL" ]] && echo "  <touch deviceName=\"$INT_TOUCH_FULL\" output=\"$INTERNAL\"/>"
+        [[ -n "$INT_TOUCH_FULL" ]] && echo "  <touch deviceName=\"$INT_TOUCH_FULL\" mapToOutput=\"$INTERNAL\"/>"
     fi
+    declare -a EXT_TOUCH_FULL=()
     while IFS= read -r t; do
         [[ -z "$t" ]] && continue
         t_full=$(resolve_touch "$t")
-        [[ -n "$t_full" ]] && echo "  <touch deviceName=\"$t_full\" output=\"$EXT\"/>"
+        [[ -n "$t_full" ]] || continue
+        EXT_TOUCH_FULL+=("$t_full")
+        echo "  <touch deviceName=\"$t_full\" mapToOutput=\"$EXT\"/>"
     done <<< "$(echo "$EXT_TOUCHES" | tr ',' '\n')"
+    # Rotation matrices matching each output's transform (or the overrides).
+    echo '  <libinput>'
+    if [[ -n "$INT_TOUCH_FULL" && -n "$INT_MATRIX" ]]; then
+        echo "    <device category=\"$INT_TOUCH_FULL\"><calibrationMatrix>$INT_MATRIX</calibrationMatrix></device>"
+    fi
+    for t_full in ${EXT_TOUCH_FULL[@]+"${EXT_TOUCH_FULL[@]}"}; do
+        [[ -n "$EXT_MATRIX" ]] && echo "    <device category=\"$t_full\"><calibrationMatrix>$EXT_MATRIX</calibrationMatrix></device>"
+    done
+    echo '  </libinput>'
     # Fullscreen both emulator windows on whichever output they land on;
     # Azahar's own settings remember the per-screen placement afterwards.
     echo '  <windowRules>'
@@ -180,8 +230,12 @@ chmod +x "$RUN_DIR/autostart"
 export QT_QPA_PLATFORM="wayland;xcb"
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=labwc
+# Software cursor: the panel's hardware cursor plane mishandles rotation,
+# and a visible pointer is needed for touch testing (mouseEmulation).
+export WLR_NO_HARDWARE_CURSORS=1
 
-/usr/bin/labwc -C "$RUN_DIR"
+/usr/bin/labwc -C "$RUN_DIR" >"$RUN_DIR/labwc.log" 2>&1
 
-# App exited (or labwc died) - return to game mode.
-exec /usr/libexec/nebel/session-control switch-gamemode
+# labwc exited (app quit, exit hotkey, or a crash). The autologin entry was
+# armed to game mode at session start, so sddm's autologin takes us back
+# there on its own - nothing left to do here.

@@ -6,10 +6,9 @@ out with the gamepad alone is a dedicated chord on the raw Retroid MCU
 gamepad (InputPlumber uses passthrough for it, so we can read the evdev
 node concurrently - same trick as nebel-desktop-hotkeys).
 
-Exit triggers (either one drops labwc; start-dualscreen then returns to
-game mode):
-  - hold Back/Select for 2 seconds
-  - Home + Back/Select chord
+Exit trigger: Home + Back/Select chord (labwc drops; start-dualscreen then
+returns to game mode). A plain hold of Back was rejected on purpose: every
+button must stay free for emulator input mapping.
 """
 import os
 import select
@@ -21,13 +20,15 @@ from pathlib import Path
 
 EV_KEY = 0x01
 BTN_MODE = 0x13C      # Home
-BTN_SELECT = 0x13A    # Back / Select
+# The Retroid MCU reports its "Back" button as 0x116 (not the standard
+# BTN_SELECT 0x13A - that is what InputPlumber's target translates it into).
+# Accept both so this also works on units that emit the standard code.
+BTN_BACK_CODES = (0x116, 0x13A)
 
 INPUT_EVENT_FMT = "llHHi"
 INPUT_EVENT_SIZE = struct.calcsize(INPUT_EVENT_FMT)
 
 GAMEPAD_NAMES = ("Retroid Pocket Gamepad", "AYN Odin2 Gamepad")
-BACK_HOLD_S = 2.0
 POLL_INTERVAL_S = 0.05
 
 
@@ -43,7 +44,8 @@ def find_gamepad():
 
 
 def exit_session():
-    # labwc exits; start-dualscreen's tail then switches back to game mode.
+    # labwc exits; the autologin entry was already armed to game mode at
+    # session start, so sddm takes us straight back there.
     subprocess.run(["labwc", "--exit"], capture_output=True, timeout=3)
     subprocess.run(["killall", "labwc"], capture_output=True, timeout=3)
 
@@ -51,7 +53,6 @@ def exit_session():
 def run():
     fd = None
     pressed = set()
-    back_since = None
     while True:
         if fd is None:
             path = find_gamepad()
@@ -60,6 +61,7 @@ def run():
                 continue
             try:
                 fd = os.open(str(path), os.O_RDONLY | os.O_NONBLOCK)
+                print(f"dualscreen-exit: reading {path}", flush=True)
             except OSError:
                 time.sleep(1)
                 continue
@@ -71,27 +73,22 @@ def run():
                 _, _, ev_type, code, value = struct.unpack(INPUT_EVENT_FMT, chunk)
                 if ev_type != EV_KEY:
                     continue
+                print(f"dualscreen-exit: key {code:#x} value {value}", flush=True)
                 if value == 1:
                     pressed.add(code)
-                    if code == BTN_SELECT:
-                        back_since = time.time()
                 elif value == 0:
                     pressed.discard(code)
-                    if code == BTN_SELECT:
-                        back_since = None
         except OSError:
             os.close(fd)
             fd = None
             continue
 
-        if BTN_SELECT in pressed:
-            chord = BTN_MODE in pressed
-            held = back_since is not None and (time.time() - back_since) >= BACK_HOLD_S
-            if chord or held:
-                print("dualscreen-exit: exit hotkey fired", flush=True)
-                exit_session()
-                pressed.discard(BTN_SELECT)
-                back_since = None
+        back_pressed = any(c in pressed for c in BTN_BACK_CODES)
+        if back_pressed and BTN_MODE in pressed:
+            print("dualscreen-exit: Home+Back chord fired", flush=True)
+            exit_session()
+            for c in BTN_BACK_CODES:
+                pressed.discard(c)
 
         time.sleep(POLL_INTERVAL_S)
 
