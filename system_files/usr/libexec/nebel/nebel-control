@@ -355,10 +355,23 @@ INTERNAL_TOUCHPAD_CONF = Path("/etc/nebel/internal-touchpad.conf")
 INTERNAL_TOUCHPAD_SERVICE = "nebel-internal-touchpad.service"
 # Dropped by sessions.d/steam when game mode actually launched with an
 # external display as primary - the only layout where the pass-through
-# daemon may run (it grabs the internal digitizer).
+# daemon may run (it grabs the internal digitizer). Resolved across all
+# logged-in user runtime dirs: this backend can run as root (Decky talks to
+# the root control socket), where XDG_RUNTIME_DIR/getuid would point at
+# /run/user/0 and the marker would never be found - the toggle then fell
+# into the stop branch and killed the daemon on every enable.
 EXTERNAL_PRIMARY_MARKER = Path(
     os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
 ) / "nebel-external-primary"
+
+
+def _external_primary_active():
+    if EXTERNAL_PRIMARY_MARKER.exists():
+        return True
+    try:
+        return any(Path("/run/user").glob("*/nebel-external-primary"))
+    except OSError:
+        return False
 
 
 def _internal_touchpad_enabled():
@@ -391,7 +404,7 @@ def action_set_internal_touchpad(request):
     name = device_env().get("NEBEL_INTERNAL_TOUCHSCREEN", "")
     if name:
         run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
-    if EXTERNAL_PRIMARY_MARKER.exists():
+    if _external_primary_active():
         run(USER_SYSTEMCTL + ["restart", INTERNAL_TOUCHPAD_SERVICE])
     else:
         run(USER_SYSTEMCTL + ["stop", INTERNAL_TOUCHPAD_SERVICE])
