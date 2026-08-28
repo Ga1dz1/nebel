@@ -93,10 +93,30 @@ done
 
 mkdir -p "$RUN_DIR"
 
+# The game-mode session may have inhibited the internal digitizer ("internal
+# screen as touchpad" = off disables it entirely); here it is the bottom
+# screen's touch, so always re-enable it for this session.
+[[ -n "$INT_TOUCH" ]] && /usr/libexec/nebel/touchscreen-inhibit "$INT_TOUCH" 0 2>/dev/null || true
+
+# labwc matches <touch deviceName> exactly, but the kernel decorates some
+# input names with an unstable instance suffix ("generic ft5x06 (8d)") -
+# resolve the full name by prefix, same as touchscreen-inhibit does.
+resolve_touch() {
+    local prefix="$1" n
+    for d in /sys/class/input/input*/name; do
+        n=$(cat "$d" 2>/dev/null) || continue
+        case "$n" in "$prefix"*) echo "$n"; return 0 ;; esac
+    done
+    return 0
+}
+
+# Physical layout: the addon sits ON TOP of the device, so stack the outputs
+# vertically - external (top screen) above the internal panel (bottom, touch).
+# The addon is 1920x1080; rotated 90/270 its logical height is 1920.
 cat > "$RUN_DIR/kanshi.conf" <<EOF
 profile {
-    output $INTERNAL enable transform $(wl_transform "$PANEL_ORIENT")
-    output $EXT enable transform $(wl_transform "$EXT_ORIENT")
+    output $EXT enable transform $(wl_transform "$EXT_ORIENT") position 0,0
+    output $INTERNAL enable transform $(wl_transform "$PANEL_ORIENT") position 0,1920
 }
 EOF
 
@@ -106,9 +126,14 @@ EOF
 {
     echo '<?xml version="1.0"?>'
     echo '<labwc_config>'
-    [[ -n "$INT_TOUCH" ]] && echo "  <touch deviceName=\"$INT_TOUCH\" output=\"$INTERNAL\"/>"
+    if [[ -n "$INT_TOUCH" ]]; then
+        INT_TOUCH_FULL=$(resolve_touch "$INT_TOUCH")
+        [[ -n "$INT_TOUCH_FULL" ]] && echo "  <touch deviceName=\"$INT_TOUCH_FULL\" output=\"$INTERNAL\"/>"
+    fi
     while IFS= read -r t; do
-        [[ -n "$t" ]] && echo "  <touch deviceName=\"$t\" output=\"$EXT\"/>"
+        [[ -z "$t" ]] && continue
+        t_full=$(resolve_touch "$t")
+        [[ -n "$t_full" ]] && echo "  <touch deviceName=\"$t_full\" output=\"$EXT\"/>"
     done <<< "$(echo "$EXT_TOUCHES" | tr ',' '\n')"
     # Fullscreen both emulator windows on whichever output they land on;
     # Azahar's own settings remember the per-screen placement afterwards.
