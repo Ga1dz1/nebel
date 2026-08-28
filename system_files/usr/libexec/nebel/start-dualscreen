@@ -251,6 +251,13 @@ if [[ "$APP_CMD" =~ flatpak\ run\ ([^\ ]+) ]]; then
             sed -i 's/^fullscreen=false$/fullscreen=true/' "$AZAHAR_CONF"
             azahar_restore_fullscreen=1
         fi
+        # No shell in this session means nothing hides the X cursor Azahar
+        # draws over its window - let Azahar's own "hide on inactivity"
+        # option do it. Left as-is on session end (it is a sane default on
+        # the desktop too).
+        if [[ -f "$AZAHAR_CONF" ]] && grep -q '^hideInactiveMouse=false$' "$AZAHAR_CONF"; then
+            sed -i 's/^hideInactiveMouse=false$/hideInactiveMouse=true/' "$AZAHAR_CONF"
+        fi
     else
         flatpak override --user "$app_id" --socket=wayland >/dev/null 2>&1 || true
     fi

@@ -18,3 +18,12 @@ SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT}=="1", ATTRS{name}=="pmi8998_
 # handled by the line above - passthrough (01-retroid-controller.yaml)
 # already leaves it visible, this just tags which node it is.
 SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Retroid Pocket Gamepad", ENV{NEBEL_WAYDROID_GAMEPAD}="1"
+
+# The MCU reports Back as BTN_BACK (0x116), which sits in the BTN_MOUSE
+# range, so stock udev tags the pad ID_INPUT_MOUSE=1 and libinput picks it up
+# as an ABSOLUTE POINTER (sticks on ABS_X/ABS_Y) - moving a stick then drags
+# a phantom cursor over every libinput session (labwc dual-screen, Plasma).
+# Same treatment as the AYN rule above: hide the raw node from libinput only.
+# InputPlumber, SDL/Steam and the session watchers all read evdev directly
+# and are unaffected.
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Retroid Pocket Gamepad", ENV{LIBINPUT_IGNORE_DEVICE}="1", ENV{ID_INPUT_MOUSE}=""
