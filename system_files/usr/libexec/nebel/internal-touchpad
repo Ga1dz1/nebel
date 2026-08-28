@@ -8,10 +8,13 @@
 # consumers always see logical landscape coordinates. Two output nodes,
 # selected by /etc/nebel/internal-touchpad.conf ENABLED= (default 0):
 #
-#   ENABLED=1  "Nebel Trackpad Screen" - faithful multi-touch pass-through.
-#     InputPlumber (patched, touchscreen mode deck_trackpads) matches this
-#     node, splits it at the midline into Steam Deck LeftPad/RightPad through
-#     deck-uhid, so games can map the panel halves like real Deck trackpads.
+#   ENABLED=1  "Nebel Touchpad" - interim whole-panel pointer.
+#     The InputPlumber Deck LeftPad/RightPad split (222a:0002) still drops
+#     coordinates end to end, so until that chain is fixed the trackpad
+#     mode re-emits the panel as a plain relative mouse: contact moves the
+#     pointer with the button held (drag-style), which gamescope shows as
+#     its regular cursor. Product 0x0004 keeps InputPlumber from claiming
+#     the node.
 #
 #   ENABLED=0  "Nebel Rotated Touchscreen" - single-touch ABS + BTN_TOUCH.
 #     gamescope consumes it directly: the internal panel keeps working as a
@@ -36,9 +39,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-EV_SYN, EV_KEY, EV_ABS = 0x00, 0x01, 0x03
+EV_SYN, EV_KEY, EV_ABS, EV_REL = 0x00, 0x01, 0x03, 0x02
 SYN_REPORT = 0
 BTN_TOUCH = 0x14A
+BTN_LEFT = 0x110
+REL_X, REL_Y = 0x00, 0x01
 ABS_X, ABS_Y = 0x00, 0x01
 ABS_MT_SLOT = 0x2F
 ABS_MT_TRACKING_ID = 0x39
@@ -50,6 +55,7 @@ EVIOCGRAB = 0x40044590
 EVIOCGABS = 0x80184540  # + axis, 6 ints
 UI_SET_EVBIT = 0x40045564
 UI_SET_KEYBIT = 0x40045565
+UI_SET_RELBIT = 0x40045566
 UI_SET_ABSBIT = 0x40045567
 UI_ABS_SETUP = 0x401C5504  # struct uinput_abs_setup { u16 code; pad; 6 s32 }
 UI_DEV_SETUP = 0x405C5503
@@ -59,10 +65,26 @@ UI_DEV_DESTROY = 0x5502
 VENDOR_NEBEL = 0x222A
 PRODUCT_TRACKPAD_SCREEN = 0x0002
 PRODUCT_ROTATED_TOUCHSCREEN = 0x0003
+PRODUCT_TOUCHPAD = 0x0004
 NAME_TRACKPAD_SCREEN = "Nebel Trackpad Screen"
 NAME_ROTATED_TOUCHSCREEN = "Nebel Rotated Touchscreen"
+NAME_TOUCHPAD = "Nebel Touchpad"
 
 MODE_CONF = Path("/etc/nebel/internal-touchpad.conf")
+DEBUG_TOUCH = os.environ.get("NEBEL_TOUCH_DEBUG") == "1"
+_debug_last = 0.0
+
+
+def debug_touch(point, tag):
+    if not DEBUG_TOUCH:
+        return
+    import time
+    global _debug_last
+    now = time.monotonic()
+    if now - _debug_last < 0.5:
+        return
+    _debug_last = now
+    print(f"TOUCHDBG {tag} raw={point}", file=sys.stderr, flush=True)
 
 
 def device_env():
@@ -119,7 +141,24 @@ def rotate_point(orientation, x, y, x_range, y_range):
         return y, x_range[0] + x_range[1] - x
     if orientation == "upsidedown":
         return x_range[0] + x_range[1] - x, y_range[0] + y_range[1] - y
+    if orientation == "mirrorx":
+        # Digitizer native X runs right-to-left while Y runs top-to-bottom
+        # (calibrated corner data on RP Mini V2's ft5x06): a pure horizontal
+        # flip, no axis swap.
+        return x_range[0] + x_range[1] - x, y
     return x, y
+
+
+def rotate_delta(orientation, dx, dy):
+    if orientation == "left":
+        return -dy, dx
+    if orientation == "right":
+        return dy, -dx
+    if orientation == "upsidedown":
+        return -dx, -dy
+    if orientation == "mirrorx":
+        return -dx, dy
+    return dx, dy
 
 
 def output_ranges(orientation, x_range, y_range):
@@ -143,6 +182,21 @@ def open_uinput(name, product, abs_axes):
         fcntl.ioctl(fd, UI_SET_ABSBIT, code)
         setup = struct.pack("H2x6i", code, 0, minimum, maximum, 0, 0, 0)
         fcntl.ioctl(fd, UI_ABS_SETUP, setup)
+    setup = (struct.pack("HHHH", 0x03, VENDOR_NEBEL, product, 1)
+             + name.encode().ljust(80, b"\0") + struct.pack("I", 0))
+    fcntl.ioctl(fd, UI_DEV_SETUP, setup)
+    fcntl.ioctl(fd, UI_DEV_CREATE)
+    return fd
+
+
+def open_uinput_mouse(name, product):
+    fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
+    fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
+    fcntl.ioctl(fd, UI_SET_EVBIT, EV_REL)
+    fcntl.ioctl(fd, UI_SET_KEYBIT, BTN_LEFT)
+    fcntl.ioctl(fd, UI_SET_EVBIT, EV_SYN)
+    fcntl.ioctl(fd, UI_SET_RELBIT, REL_X)
+    fcntl.ioctl(fd, UI_SET_RELBIT, REL_Y)
     setup = (struct.pack("HHHH", 0x03, VENDOR_NEBEL, product, 1)
              + name.encode().ljust(80, b"\0") + struct.pack("I", 0))
     fcntl.ioctl(fd, UI_DEV_SETUP, setup)
@@ -204,6 +258,68 @@ def run_trackpad(touch_fd, out_fd, orientation, x_range, y_range, max_slots):
                 flush()
 
 
+def run_touchpad(touch_fd, out_fd, orientation, x_range, y_range, max_slots):
+    # Interim whole-panel pointer: contact = move with the left button held
+    # (drag-style), so gamescope just shows its regular cursor. Rotation is
+    # irrelevant for deltas; sensitivity maps a full-panel swipe to roughly
+    # two screen widths.
+    span_x = max(x_range[1] - x_range[0], 1)
+    span_y = max(y_range[1] - y_range[0], 1)
+    gain_x = 2200.0 / span_x
+    gain_y = 1400.0 / span_y
+    slot = 0
+    pos = {}  # slot -> [x, y]
+    last = None
+    pressed = False
+    acc_x = 0.0
+    acc_y = 0.0
+
+    def press(value):
+        nonlocal pressed
+        if pressed != value:
+            pressed = value
+            emit(out_fd, EV_KEY, BTN_LEFT, 1 if value else 0)
+
+    while True:
+        for _, _, etype, code, value in read_events(touch_fd):
+            if etype == EV_ABS:
+                if code == ABS_MT_SLOT:
+                    slot = value
+                elif code == ABS_MT_TRACKING_ID:
+                    if value >= 0:
+                        pos.setdefault(slot, [None, None])
+                    else:
+                        pos.pop(slot, None)
+                        if slot == 0:
+                            last = None
+                elif code in (ABS_MT_POSITION_X, ABS_MT_POSITION_Y):
+                    if slot in pos:
+                        pos[slot][0 if code == ABS_MT_POSITION_X else 1] = value
+            elif etype == EV_SYN and code == SYN_REPORT:
+                active = sorted(pos)
+                if not active:
+                    press(False)
+                    last = None
+                    emit(out_fd, EV_SYN, SYN_REPORT, 0)
+                    continue
+                press(True)
+                point = pos[active[0]]
+                if None not in point:
+                    x, y = point
+                    debug_touch((x, y), "touchpad")
+                    if last is not None:
+                        acc_x += (x - last[0]) * gain_x
+                        acc_y += (y - last[1]) * gain_y
+                    last = (x, y)
+                dx, dy = int(acc_x), int(acc_y)
+                if dx or dy:
+                    acc_x -= dx
+                    acc_y -= dy
+                    emit(out_fd, EV_REL, REL_X, dx)
+                    emit(out_fd, EV_REL, REL_Y, dy)
+                emit(out_fd, EV_SYN, SYN_REPORT, 0)
+
+
 def run_touchscreen(touch_fd, out_fd, orientation, x_range, y_range, max_slots):
     # Single-touch reconstruction of the primary (first) contact.
     slot = 0
@@ -234,6 +350,7 @@ def run_touchscreen(touch_fd, out_fd, orientation, x_range, y_range, max_slots):
                 if active:
                     x, y = slots[active[0]]
                     if x is not None and y is not None:
+                        debug_touch((x, y), "touchscreen")
                         rx, ry = rotate_point(orientation, x, y, x_range, y_range)
                         emit(out_fd, EV_ABS, ABS_X, rx)
                         emit(out_fd, EV_ABS, ABS_Y, ry)
@@ -269,12 +386,8 @@ def main():
     out_x_range, out_y_range = output_ranges(orientation, x_range, y_range)
 
     if mode == "trackpad":
-        abs_axes = [(ABS_MT_SLOT, 0, max_slots - 1),
-                    (ABS_MT_TRACKING_ID, 0, 65535),
-                    (ABS_MT_POSITION_X, out_x_range[0], out_x_range[1]),
-                    (ABS_MT_POSITION_Y, out_y_range[0], out_y_range[1])]
-        out_fd = open_uinput(NAME_TRACKPAD_SCREEN, PRODUCT_TRACKPAD_SCREEN, abs_axes)
-        runner = run_trackpad
+        out_fd = open_uinput_mouse(NAME_TOUCHPAD, PRODUCT_TOUCHPAD)
+        runner = run_touchpad
     else:
         abs_axes = [(ABS_X, out_x_range[0], out_x_range[1]),
                     (ABS_Y, out_y_range[0], out_y_range[1])]
