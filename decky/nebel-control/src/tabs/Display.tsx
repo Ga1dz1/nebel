@@ -1,7 +1,7 @@
 import { ButtonItem, Field, PanelSection } from "@decky/ui";
 import { useEffect, useState } from "react";
-import { getDisplayState, restartGamescopeSession, setDisplayConfig, setInternalTouchpad, startDualscreenSession } from "../backend";
-import { SelectEdit, ToggleRow } from "../components/widgets";
+import { getDisplayState, restartGamescopeSession, setDisplayConfig } from "../backend";
+import { SelectEdit } from "../components/widgets";
 import { t } from "../i18n";
 import type { DisplayConnector, DisplayState } from "../types";
 
@@ -111,16 +111,6 @@ export function Display(_props: { qam?: boolean }) {
     persist({ orientation });
   };
 
-  const toggleTouchpad = (enabled: boolean) => {
-    setErrorMessage("");
-    // Applies live when game mode is already on an external display (the
-    // daemon starts/stops the trackpad service itself), otherwise at the
-    // next session start - no restart needed either way.
-    setInternalTouchpad(enabled)
-      .then((value) => setState({ ...state, internalTouchpad: value }))
-      .catch((error) => setErrorMessage(String(error)));
-  };
-
   return (
     <PanelSection title={t("External Display")}>
       <SelectEdit label={t("Primary Display")} value={selectedConnector} options={primaryOptions} onChange={selectPrimary} disabled={saving} />
@@ -131,13 +121,6 @@ export function Display(_props: { qam?: boolean }) {
           {isPortrait(state.width, state.height) && (
             <Field label={t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.")} />
           )}
-          <ToggleRow
-            label={t("Internal screen as touchpad")}
-            description={t("While an external display is primary, the dark internal touchscreen works as a trackpad (correct orientation, tap = click). Off: it is disabled entirely.")}
-            value={state.internalTouchpad}
-            onChange={toggleTouchpad}
-            disabled={saving}
-          />
         </>
       )}
       {externals.length === 0 && (
@@ -147,31 +130,6 @@ export function Display(_props: { qam?: boolean }) {
         <Field label={t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.")} />
       )}
       {errorMessage && <Field label={t("Error: {message}", { message: errorMessage })} />}
-      {externals.some((c) => c.connected) && (
-        <>
-          <Field
-            label={t("Dual-screen emulator mode")}
-            description={t("Restarts into a session that drives BOTH displays at once (game mode itself can only use one): the emulator's top screen goes to the external display, the bottom one - with touch - stays on the internal panel. Made for Azahar (3DS) and melonDS (DS). Quitting the emulator returns to game mode.")}
-          />
-          <div className="nebel-reset-row">
-            <ButtonItem
-              layout="below"
-              disabled={restarting}
-              onClick={() => {
-                setRestarting(true);
-                setErrorMessage("");
-                // Same as the restart below: success tears this session (and
-                // Decky) down, only a failure ever re-enables the button.
-                startDualscreenSession()
-                  .catch((error) => setErrorMessage(String(error)))
-                  .finally(() => setRestarting(false));
-              }}
-            >
-              {t("Start Dual-Screen Session")}
-            </ButtonItem>
-          </div>
-        </>
-      )}
       <div className="nebel-reset-row">
         <ButtonItem
           layout="below"

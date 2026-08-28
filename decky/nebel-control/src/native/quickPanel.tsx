@@ -2,6 +2,7 @@ import { ButtonItem, DropdownItemInternal, ErrorBoundary, PanelSection, afterPat
 import { useEffect, useState } from "react";
 import type { Patch } from "@decky/ui";
 import { getDisplayState, restartGamescopeSession, setDisplayConfig, setStickLedEnabled, setStickLedMaxBrightness } from "../backend";
+import { InternalTouchpadRow } from "../components/InternalTouchpadRow";
 import { SelectEdit, SliderEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import { MonitorRows } from "../tabs/Home";
@@ -209,6 +210,12 @@ function visitQuickSettings(ret: any): any {
         <ErrorBoundary key="nebel-lighting">
           <QuickLightingRows />
         </ErrorBoundary>,
+        // The touchscreen-as-touchpad toggle sits right under the stick
+        // lighting rows; its own boundary so it survives even where stick
+        // lighting is unsupported.
+        <ErrorBoundary key="nebel-touchpad">
+          <InternalTouchpadRow />
+        </ErrorBoundary>,
       ];
       merged = true;
       console.log(LOG, "lighting rows merged into native Other section");
@@ -223,6 +230,9 @@ function visitQuickSettings(ret: any): any {
         <PanelSection>
           <ErrorBoundary>
             <QuickLightingRows />
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <InternalTouchpadRow />
           </ErrorBoundary>
         </PanelSection>
       )}

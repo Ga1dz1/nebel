@@ -74,7 +74,6 @@ const endCalibrationSession = (token) => call("end_calibration_session", token);
 const getDisplayState = () => call("get_display_state");
 const setDisplayConfig = (useExternal, connector, width, height, orientation) => call("set_display_config", useExternal, connector, width, height, orientation);
 const restartGamescopeSession = () => call("restart_gamescope_session");
-const startDualscreenSession = () => call("start_dualscreen_session");
 const setInternalTouchpad = (enabled) => call("set_internal_touchpad", enabled);
 const getSyncState = () => call("get_sync_state");
 const setSyncServiceEnabled = (enabled) => call("set_sync_service_enabled", enabled);
@@ -233,7 +232,7 @@ const uk = {
     "270°": "270°",
     "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "Це портретна панель — оберіть поворот, за якого зображення стає рівним. Застосовується після перезапуску ігрового режиму.",
     "Internal screen as touchpad": "Вбудований екран як тачпад",
-    "While an external display is primary, the dark internal touchscreen works as a trackpad (correct orientation, tap = click). Off: it is disabled entirely.": "Поки основним є зовнішній дисплей, темний вбудований тачскрін працює як тачпад (правильна орієнтація, дотик = клік). Вимкнено: він повністю деактивований.",
+    "The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen.": "Вбудований тачскрін працює як тачпад у стилі Steam Deck: права половина рухає вказівник (дотик = ліва кнопка), ліва — гортання (дотик = права кнопка). Вимкнено: звичайний тачскрін.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Зовнішній дисплей не виявлено. Під’єднайте його (док/USB-C/HDMI), щоб обрати тут.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Цей дисплей зараз не під’єднано — ігровий режим працює на вбудованому екрані, доки його не буде під’єднано знову. Налаштування збережено.",
     "Error: {message}": "Помилка: {message}",
@@ -536,7 +535,7 @@ const ru = {
     "270°": "270°",
     "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "Это портретная панель — выберите поворот, при котором изображение будет ровным. Применяется после перезапуска игрового режима.",
     "Internal screen as touchpad": "Встроенный экран как тачпад",
-    "While an external display is primary, the dark internal touchscreen works as a trackpad (correct orientation, tap = click). Off: it is disabled entirely.": "Пока основной — внешний дисплей, тёмный встроенный тачскрин работает как тачпад (правильная ориентация, касание = клик). Выкл: он полностью отключён.",
+    "The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen.": "Встроенный тачскрин работает как тачпад в стиле Steam Deck: правая половина двигает указатель (касание = ЛКМ), левая — прокрутка (касание = ПКМ). Выкл: обычный тачскрин.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Внешний дисплей не обнаружен. Подключите его (док/USB-C/HDMI), чтобы выбрать здесь.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Этот дисплей сейчас не подключён — игровой режим работает на встроенном экране, пока его не подключат снова. Настройки сохранены.",
     "Error: {message}": "Ошибка: {message}",
@@ -839,7 +838,7 @@ const es = {
     "270°": "270°",
     "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "Es un panel vertical: elige la rotación que deje la imagen derecha. Se aplica al reiniciar el modo de juego.",
     "Internal screen as touchpad": "Pantalla interna como panel táctil",
-    "While an external display is primary, the dark internal touchscreen works as a trackpad (correct orientation, tap = click). Off: it is disabled entirely.": "Mientras la pantalla principal es externa, la pantalla táctil interna apagada funciona como panel táctil (orientación correcta, toque = clic). Desactivado: se deshabilita por completo.",
+    "The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen.": "La pantalla táctil interna funciona como un panel táctil estilo Steam Deck: la mitad derecha mueve el puntero (toque = clic izquierdo), la izquierda desplaza (toque = clic derecho). Desactivado: pantalla táctil normal.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "No se detectó ninguna pantalla externa. Conecta una (dock/USB-C/HDMI) para elegirla aquí.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Esta pantalla no está conectada ahora mismo: el modo de juego funciona en la pantalla interna hasta que se vuelva a conectar. Sus ajustes se conservan.",
     "Error: {message}": "Error: {message}",
@@ -1142,7 +1141,7 @@ const fr = {
     "270°": "270°",
     "This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.": "C'est un panneau portrait - choisissez la rotation qui redresse l'image. Appliqué au redémarrage du mode jeu.",
     "Internal screen as touchpad": "Écran interne comme pavé tactile",
-    "While an external display is primary, the dark internal touchscreen works as a trackpad (correct orientation, tap = click). Off: it is disabled entirely.": "Quand un écran externe est principal, l'écran tactile interne éteint sert de pavé tactile (orientation correcte, toucher = clic). Désactivé : il est complètement coupé.",
+    "The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen.": "L'écran tactile interne fonctionne comme un pavé tactile façon Steam Deck : la moitié droite déplace le pointeur (toucher = clic gauche), la moitié gauche fait défiler (toucher = clic droit). Désactivé : écran tactile normal.",
     "No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.": "Aucun écran externe détecté. Connectez-en un (dock/USB-C/HDMI) pour le choisir ici.",
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Cet écran n'est pas connecté pour le moment : le mode jeu tourne sur l'écran interne jusqu'à ce qu'il soit rebranché. Ses paramètres sont conservés.",
     "Error: {message}": "Erreur : {message}",
@@ -2286,24 +2285,7 @@ function Display(_props) {
     const selectOrientation = (orientation) => {
         persist({ orientation });
     };
-    const toggleTouchpad = (enabled) => {
-        setErrorMessage("");
-        // Applies live when game mode is already on an external display (the
-        // daemon starts/stops the trackpad service itself), otherwise at the
-        // next session start - no restart needed either way.
-        setInternalTouchpad(enabled)
-            .then((value) => setState({ ...state, internalTouchpad: value }))
-            .catch((error) => setErrorMessage(String(error)));
-    };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("External Display"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") })), SP_JSX.jsx(ToggleRow, { label: t("Internal screen as touchpad"), description: t("While an external display is primary, the dark internal touchscreen works as a trackpad (correct orientation, tap = click). Off: it is disabled entirely."), value: state.internalTouchpad, onChange: toggleTouchpad, disabled: saving })] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), externals.some((c) => c.connected) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: t("Dual-screen emulator mode"), description: t("Restarts into a session that drives BOTH displays at once (game mode itself can only use one): the emulator's top screen goes to the external display, the bottom one - with touch - stays on the internal panel. Made for Azahar (3DS) and melonDS (DS). Quitting the emulator returns to game mode.") }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
-                                setRestarting(true);
-                                setErrorMessage("");
-                                // Same as the restart below: success tears this session (and
-                                // Decky) down, only a failure ever re-enables the button.
-                                startDualscreenSession()
-                                    .catch((error) => setErrorMessage(String(error)))
-                                    .finally(() => setRestarting(false));
-                            }, children: t("Start Dual-Screen Session") }) })] })), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("External Display"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") }))] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
                         setRestarting(true);
                         setErrorMessage("");
                         // A successful restart tears down this very session (and Decky
@@ -4146,6 +4128,30 @@ function openCalibration() {
     DFL.showModal(SP_JSX.jsx(CalibrationModal, {}));
 }
 
+// Internal touchscreen as a Steam-Deck-style trackpad (the
+// nebel-internal-touchpad service): right half = pointer / tap = left click,
+// left half = scroll / tap = right click. Works in any session, independent
+// of whether an external display is connected or primary, so it lives with
+// the Controller settings (and in the QAM) rather than the Display tab.
+// Self-contained: fetches its own state, optimistic set with rollback.
+function InternalTouchpadRow() {
+    const [enabled, setEnabled] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        getDisplayState()
+            .then((state) => setEnabled(state.internalTouchpad))
+            .catch(() => { });
+    }, []);
+    if (enabled === null)
+        return null;
+    const onChange = (value) => {
+        setEnabled(value);
+        setInternalTouchpad(value)
+            .then(setEnabled)
+            .catch(() => setEnabled(!value));
+    };
+    return (SP_JSX.jsx(ToggleRow, { label: t("Internal screen as touchpad"), description: t("The internal touchscreen works as a Steam Deck style trackpad: right half moves the pointer (tap = left click), left half scrolls (tap = right click). Off: normal touchscreen."), value: enabled, onChange: onChange }));
+}
+
 function ControllerExtras({ config, setConfig, showEmulation = true }) {
     const setControllerType$1 = async (value) => {
         const previous = config.controllerType || "deck-uhid";
@@ -4158,7 +4164,7 @@ function ControllerExtras({ config, setConfig, showEmulation = true }) {
             setConfig((current) => (current ? { ...current, controllerType: previous } : current));
         }
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Controller"), children: [showEmulation && (SP_JSX.jsx(SelectEdit, { label: t("Emulation"), value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 })), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: t("Launch Calibration") })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Controller"), children: [showEmulation && (SP_JSX.jsx(SelectEdit, { label: t("Emulation"), value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 })), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: t("Launch Calibration") }), SP_JSX.jsx(InternalTouchpadRow, {})] }));
 }
 function SshRow({ config, setConfig }) {
     const setSshEnabled$1 = async (enabled) => {
@@ -4895,6 +4901,7 @@ function visitQuickSettings(ret) {
             section.props.children = [
                 ...(Array.isArray(sc) ? sc : [sc]),
                 SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(QuickLightingRows, {}) }, "nebel-lighting"),
+                SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(InternalTouchpadRow, {}) }, "nebel-touchpad"),
             ];
             merged = true;
             console.log(LOG, "lighting rows merged into native Other section");
@@ -4905,7 +4912,7 @@ function visitQuickSettings(ret) {
     }
     if (!merged)
         console.log(LOG, "native Other section not found, using own panel");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!merged && (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(QuickLightingRows, {}) }) })), SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(QuickDisplayRows, {}) })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!merged && (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(QuickLightingRows, {}) }), SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(InternalTouchpadRow, {}) })] })), SP_JSX.jsx(DFL.ErrorBoundary, { children: SP_JSX.jsx(QuickDisplayRows, {}) })] }));
 }
 // The Perf panel (F) only chooses between sub-components (VR / non-VR /
 // on-frame), so the visitor cascades one level: wrap every function
