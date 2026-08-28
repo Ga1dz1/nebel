@@ -113,7 +113,7 @@ case "${1:-}" in
         ;;
 esac
 
-if [[ ${1:-} == "switch-gamemode" ]] && logout_plasma; then
+if [[ ${1:-} == "switch-gamemode" ]] && pgrep -x plasmashell >/dev/null 2>&1 && logout_plasma; then
     exit 0
 fi
 

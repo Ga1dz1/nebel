@@ -140,7 +140,7 @@ def open_uinput(name, product, abs_axes):
     fcntl.ioctl(fd, UI_SET_KEYBIT, BTN_TOUCH)
     for code, minimum, maximum in abs_axes:
         fcntl.ioctl(fd, UI_SET_ABSBIT, code)
-        setup = struct.pack("H2x6i", code, 0, 0, minimum, maximum, 0, 0, 0)
+        setup = struct.pack("H2x6i", code, 0, minimum, maximum, 0, 0, 0)
         fcntl.ioctl(fd, UI_ABS_SETUP, setup)
     setup = (struct.pack("HHHH", 0x03, VENDOR_NEBEL, product, 1)
              + name.encode().ljust(80, b"\0") + struct.pack("I", 0))
