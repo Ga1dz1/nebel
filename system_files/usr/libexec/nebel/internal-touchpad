@@ -87,6 +87,11 @@ def debug_touch(point, tag):
     print(f"TOUCHDBG {tag} raw={point}", file=sys.stderr, flush=True)
 
 
+def debug_line(text):
+    if DEBUG_TOUCH:
+        print(f"TOUCHDBG {text}", file=sys.stderr, flush=True)
+
+
 def device_env():
     result = subprocess.check_output(["/usr/libexec/nebel/device-env"], text=True, timeout=5)
     env = {}
@@ -197,6 +202,9 @@ def open_uinput_mouse(name, product):
     fcntl.ioctl(fd, UI_SET_EVBIT, EV_SYN)
     fcntl.ioctl(fd, UI_SET_RELBIT, REL_X)
     fcntl.ioctl(fd, UI_SET_RELBIT, REL_Y)
+    fcntl.ioctl(fd, UI_SET_RELBIT, 0x06)  # REL_HWHEEL
+    fcntl.ioctl(fd, UI_SET_RELBIT, 0x08)  # REL_WHEEL
+    fcntl.ioctl(fd, UI_SET_KEYBIT, 0x111)  # BTN_RIGHT
     setup = (struct.pack("HHHH", 0x03, VENDOR_NEBEL, product, 1)
              + name.encode().ljust(80, b"\0") + struct.pack("I", 0))
     fcntl.ioctl(fd, UI_DEV_SETUP, setup)
@@ -259,26 +267,48 @@ def run_trackpad(touch_fd, out_fd, orientation, x_range, y_range, max_slots):
 
 
 def run_touchpad(touch_fd, out_fd, orientation, x_range, y_range, max_slots):
-    # Interim whole-panel pointer: contact = move with the left button held
-    # (drag-style), so gamescope just shows its regular cursor. Rotation is
-    # irrelevant for deltas; sensitivity maps a full-panel swipe to roughly
-    # two screen widths.
+    # Interim whole-panel pointer: one finger moves the pointer with the
+    # left button held (drag-style), two fingers scroll (wheel) and a
+    # two-finger tap right-clicks - the touchpad semantics the toggle UI
+    # promises. Rotation is applied to deltas via rotate_delta; gains are
+    # per raw axis, taken from the screen axis that axis ends up feeding.
+    import time
     span_x = max(x_range[1] - x_range[0], 1)
     span_y = max(y_range[1] - y_range[0], 1)
-    gain_x = 2200.0 / span_x
-    gain_y = 1400.0 / span_y
+    swapped = orientation in ("left", "right")
+    scr_gain_x = 2200.0 / (span_y if swapped else span_x)
+    scr_gain_y = 1400.0 / (span_x if swapped else span_y)
+    raw_gain_x = scr_gain_y if swapped else scr_gain_x
+    raw_gain_y = scr_gain_x if swapped else scr_gain_y
     slot = 0
     pos = {}  # slot -> [x, y]
     last = None
+    last_multi = None
+    multi_start = None
+    multi_moved = 0.0
+    scroll_acc = 0.0
+    hscroll_acc = 0.0
     pressed = False
     acc_x = 0.0
     acc_y = 0.0
 
-    def press(value):
+    def press(button, value):
         nonlocal pressed
         if pressed != value:
             pressed = value
-            emit(out_fd, EV_KEY, BTN_LEFT, 1 if value else 0)
+            emit(out_fd, EV_KEY, button, 1 if value else 0)
+
+    def click(button):
+        emit(out_fd, EV_KEY, button, 1)
+        emit(out_fd, EV_SYN, SYN_REPORT, 0)
+        emit(out_fd, EV_KEY, button, 0)
+
+    def mean_point(active):
+        pts = [pos[s] for s in active if None not in pos.get(s, [None, None])]
+        if not pts:
+            return None
+        return (sum(p[0] for p in pts) / len(pts),
+                sum(p[1] for p in pts) / len(pts))
 
     while True:
         for _, _, etype, code, value in read_events(touch_fd):
@@ -297,24 +327,70 @@ def run_touchpad(touch_fd, out_fd, orientation, x_range, y_range, max_slots):
                         pos[slot][0 if code == ABS_MT_POSITION_X else 1] = value
             elif etype == EV_SYN and code == SYN_REPORT:
                 active = sorted(pos)
+                if len(active) >= 2:
+                    # Multi-contact: scroll + right-click tap, never drag.
+                    press(BTN_LEFT, False)
+                    last = None
+                    point = mean_point(active)
+                    if point is not None:
+                        if last_multi is None:
+                            last_multi = point
+                            multi_start = time.monotonic()
+                            multi_moved = 0.0
+                        else:
+                            mdx, mdy = rotate_delta(
+                                orientation,
+                                (point[0] - last_multi[0]) * raw_gain_x,
+                                (point[1] - last_multi[1]) * raw_gain_y)
+                            multi_moved += abs(mdx) + abs(mdy)
+                            scroll_acc += mdy
+                            hscroll_acc += mdx
+                            last_multi = point
+                    while scroll_acc <= -50:
+                        scroll_acc += 50
+                        emit(out_fd, EV_REL, 0x08, -1)  # REL_WHEEL up
+                    while scroll_acc >= 50:
+                        scroll_acc -= 50
+                        emit(out_fd, EV_REL, 0x08, 1)   # REL_WHEEL down
+                    while hscroll_acc <= -80:
+                        hscroll_acc += 80
+                        emit(out_fd, EV_REL, 0x06, -1)  # REL_HWHEEL left
+                    while hscroll_acc >= 80:
+                        hscroll_acc -= 80
+                        emit(out_fd, EV_REL, 0x06, 1)   # REL_HWHEEL right
+                    emit(out_fd, EV_SYN, SYN_REPORT, 0)
+                    continue
+                if last_multi is not None:
+                    # End of a multi-contact gesture: short and still = right click.
+                    if (multi_start is not None
+                            and time.monotonic() - multi_start < 0.3
+                            and multi_moved < 30):
+                        click(0x111)  # BTN_RIGHT
+                    last_multi = None
+                    multi_start = None
+                    scroll_acc = 0.0
+                    hscroll_acc = 0.0
                 if not active:
-                    press(False)
+                    press(BTN_LEFT, False)
                     last = None
                     emit(out_fd, EV_SYN, SYN_REPORT, 0)
                     continue
-                press(True)
+                press(BTN_LEFT, True)
                 point = pos[active[0]]
                 if None not in point:
                     x, y = point
                     debug_touch((x, y), "touchpad")
                     if last is not None:
-                        acc_x += (x - last[0]) * gain_x
-                        acc_y += (y - last[1]) * gain_y
+                        mdx, mdy = rotate_delta(
+                            orientation, (x - last[0]) * raw_gain_x, (y - last[1]) * raw_gain_y)
+                        acc_x += mdx
+                        acc_y += mdy
                     last = (x, y)
                 dx, dy = int(acc_x), int(acc_y)
                 if dx or dy:
                     acc_x -= dx
                     acc_y -= dy
+                    debug_line(f"rel ori={orientation} dx={dx} dy={dy}")
                     emit(out_fd, EV_REL, REL_X, dx)
                     emit(out_fd, EV_REL, REL_Y, dy)
                 emit(out_fd, EV_SYN, SYN_REPORT, 0)
@@ -366,6 +442,7 @@ def main():
         "NEBEL_INTERNAL_TOUCHPAD_ROTATION",
         env.get("NEBEL_PANEL_ORIENTATION", "normal"))
     mode = read_mode()
+    debug_line(f"start mode={mode} orientation={orientation}")
 
     node = find_touch_event(name_prefix)
     if node is None:
