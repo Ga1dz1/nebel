@@ -1,0 +1,7 @@
+# The Retroid MCU gamepad reports its Back button as BTN_BACK (0x116), which
+# sits in the BTN_MOUSE range. Combined with the sticks on ABS_X/ABS_Y that
+# makes libinput classify the raw pad as an ABSOLUTE POINTER, so moving a
+# stick drags a phantom cursor in every libinput session (labwc dual-screen,
+# Plasma). Real consumers (InputPlumber, SDL/Steam, emulators, the session
+# hotkey watchers) read evdev directly and are unaffected by this ignore.
+ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Retroid Pocket Gamepad", ENV{LIBINPUT_IGNORE_DEVICE}="1"

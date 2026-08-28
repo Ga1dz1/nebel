@@ -185,11 +185,26 @@ fi
         [[ -n "$EXT_MATRIX" ]] && echo "    <device category=\"$t_full\"><calibrationMatrix>$EXT_MATRIX</calibrationMatrix></device>"
     done
     echo '  </libinput>'
-    # Fullscreen both emulator windows on whichever output they land on;
-    # Azahar's own settings remember the per-screen placement afterwards.
+    # Emulator windows: fullscreen wherever they land.
     echo '  <windowRules>'
-    for id in azahar Azahar org.azahar_emu.Azahar melonds melonDS net.kuribo64.melonDS; do
+    for id in melonds melonDS net.kuribo64.melonDS; do
         echo "    <windowRule identifier=\"$id\"><action name=\"ToggleFullscreen\"/></windowRule>"
+    done
+    # Azahar runs two windows: the main one (3DS top screen) belongs on the
+    # addon up top, the secondary one (3DS bottom screen) on the internal
+    # panel below, whose digitizer is the touch input. Rules apply on first
+    # map in document order and a window matches every fitting rule, so:
+    # general rules place BOTH azahar windows on the internal output, then
+    # the matchOnce rule moves only the first-mapped (main) window to the
+    # addon. Fullscreen is NOT toggled here on purpose: Azahar re-applies
+    # its saved Qt window state after mapping, which would silently revert
+    # it - azahar-x11-fullscreen sends the fullscreen client message once
+    # the windows settle (same as pressing F11 by hand).
+    for id in azahar Azahar org.azahar_emu.Azahar; do
+        echo "    <windowRule identifier=\"$id\"><action name=\"MoveToOutput\" output=\"$INTERNAL\"/></windowRule>"
+    done
+    for id in azahar Azahar org.azahar_emu.Azahar; do
+        echo "    <windowRule identifier=\"$id\" matchOnce=\"yes\"><action name=\"MoveToOutput\" output=\"$EXT\"/></windowRule>"
     done
     echo '  </windowRules>'
     echo '</labwc_config>'
@@ -210,10 +225,35 @@ elif [[ -f /etc/nebel/dualscreen-app.conf ]]; then
 fi
 APP_CMD="${APP_CMD:-$APP_CMD_DEFAULT}"
 
-# Flatpak apps often ship with X11-only socket permissions, but this session
-# is Wayland-only - grant the Wayland socket on the fly (idempotent).
+# Flatpak socket fixups for this Wayland-only session:
+# - Azahar's Vulkan Wayland path dies with a linux-drm-syncobj protocol
+#   error under labwc ("surface has been destroyed" when the game window
+#   opens) while KWin tolerates it - run it through XWayland instead.
+# - Other flatpaks often ship X11-only socket permissions - grant the
+#   Wayland socket on the fly (idempotent).
 if [[ "$APP_CMD" =~ flatpak\ run\ ([^\ ]+) ]]; then
-    flatpak override --user "${BASH_REMATCH[1]}" --socket=wayland >/dev/null 2>&1 || true
+    app_id="${BASH_REMATCH[1]}"
+    if [[ "$app_id" == "org.azahar_emu.Azahar" ]]; then
+        flatpak override --user "$app_id" --socket=x11 --nosocket=wayland >/dev/null 2>&1 || true
+        APP_CMD="env QT_QPA_PLATFORM=xcb $APP_CMD"
+        # Compositor-forced fullscreen resizes the window but Qt keeps
+        # drawing the menu/status bars - only Azahar's own fullscreen mode
+        # (F11) hides them. Seed it in the config for this session and
+        # restore the saved value when the session ends. Wait for a leftover
+        # Azahar from the previous session first: it saves the config on
+        # exit and would otherwise overwrite the seeded value.
+        AZAHAR_CONF="$HOME/.var/app/org.azahar_emu.Azahar/config/azahar-emu/qt-config.ini"
+        for _ in $(seq 1 20); do
+            pgrep -x azahar >/dev/null 2>&1 || break
+            sleep 0.5
+        done
+        if [[ -f "$AZAHAR_CONF" ]] && grep -q '^fullscreen=false$' "$AZAHAR_CONF"; then
+            sed -i 's/^fullscreen=false$/fullscreen=true/' "$AZAHAR_CONF"
+            azahar_restore_fullscreen=1
+        fi
+    else
+        flatpak override --user "$app_id" --socket=wayland >/dev/null 2>&1 || true
+    fi
 fi
 
 # labwc runs its <config-dir>/autostart via sh once the Wayland socket is
@@ -223,6 +263,7 @@ cat > "$RUN_DIR/autostart" <<EOF
 #!/bin/sh
 kanshi -c "$RUN_DIR/kanshi.conf" >"$RUN_DIR/kanshi.log" 2>&1 &
 /usr/libexec/nebel/nebel-dualscreen-exit >"$RUN_DIR/exit-watch.log" 2>&1 &
+$( [[ "$APP_CMD" == *azahar* ]] && echo "/usr/libexec/nebel/azahar-x11-fullscreen >/dev/null 2>&1 &" )
 ( sleep 2; $APP_CMD >"$RUN_DIR/app.log" 2>&1; echo "APP_EXIT_CODE=\$?" >>"$RUN_DIR/app.log"; sleep 1; labwc --exit 2>/dev/null || killall labwc ) &
 EOF
 chmod +x "$RUN_DIR/autostart"
@@ -239,3 +280,6 @@ export WLR_NO_HARDWARE_CURSORS=1
 # labwc exited (app quit, exit hotkey, or a crash). The autologin entry was
 # armed to game mode at session start, so sddm's autologin takes us back
 # there on its own - nothing left to do here.
+if [[ "${azahar_restore_fullscreen:-0}" == 1 ]]; then
+    sed -i 's/^fullscreen=true$/fullscreen=false/' "$AZAHAR_CONF"
+fi

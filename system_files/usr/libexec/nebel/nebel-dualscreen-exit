@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exit hotkey watcher for the dual-screen (labwc) session.
+"""Hotkey watcher for the dual-screen (labwc) session.
 
 There is no Steam UI and no desktop shell in this session, so the only way
 out with the gamepad alone is a dedicated chord on the raw Retroid MCU
@@ -9,7 +9,12 @@ node concurrently - same trick as nebel-desktop-hotkeys).
 Exit trigger: Home + Back/Select chord (labwc drops; start-dualscreen then
 returns to game mode). A plain hold of Back was rejected on purpose: every
 button must stay free for emulator input mapping.
+
+A short Back press without Home emits F11 through uinput: in Azahar that
+toggles its real fullscreen mode (hides/shows the menu bar), which is the
+only menu access when the windows cover both screens.
 """
+import fcntl
 import os
 import select
 import struct
@@ -19,7 +24,9 @@ import time
 from pathlib import Path
 
 EV_KEY = 0x01
+EV_SYN = 0x00
 BTN_MODE = 0x13C      # Home
+KEY_F11 = 87
 # The Retroid MCU reports its "Back" button as 0x116 (not the standard
 # BTN_SELECT 0x13A - that is what InputPlumber's target translates it into).
 # Accept both so this also works on units that emit the standard code.
@@ -30,6 +37,12 @@ INPUT_EVENT_SIZE = struct.calcsize(INPUT_EVENT_FMT)
 
 GAMEPAD_NAMES = ("Retroid Pocket Gamepad", "AYN Odin2 Gamepad")
 POLL_INTERVAL_S = 0.05
+
+# uinput ioctl glue for the virtual F11 keyboard.
+UI_SET_EVBIT = 0x40045564
+UI_SET_KEYBIT = 0x40045565
+UI_DEV_SETUP = 0x405C5503   # struct uinput_setup { input_id; name[80]; ff_max }
+UI_DEV_CREATE = 0x5501
 
 
 def find_gamepad():
@@ -43,6 +56,26 @@ def find_gamepad():
     return None
 
 
+def make_f11_device():
+    fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
+    fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
+    fcntl.ioctl(fd, UI_SET_KEYBIT, KEY_F11)
+    name = b"nebel-dualscreen-f11"
+    setup = struct.pack("HHHH80sI", 0x06, 1, 1, 1, name + b"\0" * (80 - len(name)), 0)
+    fcntl.ioctl(fd, UI_DEV_SETUP, setup)
+    fcntl.ioctl(fd, UI_DEV_CREATE)
+    return fd
+
+
+def emit_f11(fd):
+    def ev(ev_type, code, value):
+        os.write(fd, struct.pack(INPUT_EVENT_FMT, 0, 0, ev_type, code, value))
+    ev(EV_KEY, KEY_F11, 1)
+    ev(EV_SYN, 0, 0)
+    ev(EV_KEY, KEY_F11, 0)
+    ev(EV_SYN, 0, 0)
+
+
 def exit_session():
     # labwc exits; the autologin entry was already armed to game mode at
     # session start, so sddm takes us straight back there.
@@ -52,7 +85,9 @@ def exit_session():
 
 def run():
     fd = None
+    ufd = None
     pressed = set()
+    back_had_home = False
     while True:
         if fd is None:
             path = find_gamepad()
@@ -65,6 +100,13 @@ def run():
             except OSError:
                 time.sleep(1)
                 continue
+        if ufd is None:
+            try:
+                ufd = make_f11_device()
+                print("dualscreen-exit: uinput F11 device ready", flush=True)
+            except OSError as exc:
+                print(f"dualscreen-exit: uinput unavailable: {exc}", flush=True)
+                time.sleep(1)
         try:
             while select.select([fd], [], [], 0)[0]:
                 chunk = os.read(fd, INPUT_EVENT_SIZE)
@@ -76,7 +118,19 @@ def run():
                 print(f"dualscreen-exit: key {code:#x} value {value}", flush=True)
                 if value == 1:
                     pressed.add(code)
+                    if BTN_MODE in pressed and code in BTN_BACK_CODES:
+                        back_had_home = True
+                    elif code == BTN_MODE and any(c in pressed for c in BTN_BACK_CODES):
+                        back_had_home = True
                 elif value == 0:
+                    if code in BTN_BACK_CODES and not back_had_home and ufd is not None:
+                        print("dualscreen-exit: Back -> F11", flush=True)
+                        try:
+                            emit_f11(ufd)
+                        except OSError as exc:
+                            print(f"dualscreen-exit: F11 emit failed: {exc}", flush=True)
+                    if code in BTN_BACK_CODES:
+                        back_had_home = False
                     pressed.discard(code)
         except OSError:
             os.close(fd)
@@ -86,6 +140,7 @@ def run():
         back_pressed = any(c in pressed for c in BTN_BACK_CODES)
         if back_pressed and BTN_MODE in pressed:
             print("dualscreen-exit: Home+Back chord fired", flush=True)
+            back_had_home = True
             exit_session()
             for c in BTN_BACK_CODES:
                 pressed.discard(c)
