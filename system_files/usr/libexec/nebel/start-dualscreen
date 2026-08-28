@@ -1,0 +1,139 @@
+#!/usr/bin/bash
+# Dual-screen emulator session for Nebel handhelds.
+#
+# Drives BOTH the internal panel and an external display (Retroid Dual
+# Screen addon) at once - the one thing the gamescope game-mode session
+# physically can't do (single-output compositor and sole DRM master on the
+# MSM card, so "a second compositor next to it" isn't possible either).
+# labwc (wlroots) has no such limitation: two wl_outputs, per-output touch
+# binding, and plain window placement - exactly what dual-screen emulators
+# (Azahar/3DS, melonDS/DS) need: top screen on the external display,
+# bottom (touch) screen on the internal panel.
+#
+# Flow: session-control switch-dualscreen -> sddm -> this script. The app
+# (default: Azahar flatpak, override via /etc/nebel/dualscreen-app.conf)
+# autostarts; when it exits, the session returns to game mode on its own.
+# If no external display is connected there is nothing dual to show -
+# fall straight back to game mode instead of stranding the user.
+set -uo pipefail
+
+eval "$(/usr/libexec/nebel/device-env)"
+
+INTERNAL="${NEBEL_PRIMARY_CONNECTOR:-DSI-1}"
+PANEL_ORIENT="${NEBEL_PANEL_ORIENTATION:-normal}"
+INT_TOUCH="${NEBEL_INTERNAL_TOUCHSCREEN:-}"
+EXT_TOUCHES="${NEBEL_EXTERNAL_TOUCHSCREENS:-}"
+RUN_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}/nebel-dualscreen"
+
+connected() {
+    local f
+    for f in /sys/class/drm/card*-"$1"/status; do
+        [[ -f "$f" ]] || continue
+        [[ "$(cat "$f" 2>/dev/null)" == "connected" ]] && return 0
+    done
+    return 1
+}
+
+# The external connector: prefer the Decky display override's choice,
+# otherwise the first connected non-internal connector.
+EXT=""
+EXT_ORIENT="left"
+if [[ -f /etc/nebel/display-override.conf ]]; then
+    # shellcheck source=/dev/null
+    source /etc/nebel/display-override.conf
+    EXT="${NEBEL_DISPLAY_CONNECTOR:-}"
+    EXT_ORIENT="${NEBEL_DISPLAY_ORIENTATION:-left}"
+fi
+if [[ -z "$EXT" ]] || ! connected "$EXT"; then
+    EXT=""
+    for f in /sys/class/drm/card*-*/status; do
+        [[ -f "$f" ]] || continue
+        [[ "$(cat "$f" 2>/dev/null)" == "connected" ]] || continue
+        name=$(basename "$f")
+        name="${name#*-}"
+        [[ "$name" == "$INTERNAL" || "$name" == Writeback-* ]] && continue
+        EXT="$name"
+        break
+    done
+fi
+
+if [[ -z "$EXT" ]]; then
+    echo "start-dualscreen: no external display connected - back to game mode" >&2
+    exec /usr/libexec/nebel/session-control switch-gamemode
+fi
+
+# wlroots/kanshi transform for our orientation names (90 = counterclockwise
+# per wl_output_transform, matching gamescope's "left").
+wl_transform() {
+    case "$1" in
+        left)     echo 90 ;;
+        right)    echo 270 ;;
+        inverted) echo 180 ;;
+        *)        echo normal ;;
+    esac
+}
+
+# Gamepad as a real controller: user's chosen emulation type as targets and
+# the 1:1 passthrough profile (no mouse/keyboard mapping in this session).
+/usr/libexec/nebel/controller-type apply >/dev/null 2>&1 || true
+for path in $(busctl --system tree org.shadowblip.InputPlumber 2>/dev/null \
+        | grep -oE '/org/shadowblip/InputPlumber/CompositeDevice[0-9]+' | sort -u); do
+    busctl --system call org.shadowblip.InputPlumber "$path" \
+        org.shadowblip.Input.CompositeDevice LoadProfilePath s \
+        /usr/share/inputplumber/profiles/default.yaml >/dev/null 2>&1 || true
+done
+
+mkdir -p "$RUN_DIR"
+
+cat > "$RUN_DIR/kanshi.conf" <<EOF
+profile {
+    output $INTERNAL enable transform $(wl_transform "$PANEL_ORIENT")
+    output $EXT enable transform $(wl_transform "$EXT_ORIENT")
+}
+EOF
+
+# Per-output touch binding: the internal panel's digitizer serves the
+# bottom screen, the addon's digitizer serves the top one. The hwdb
+# calibration matrix (90-nebel-rds-touch.hwdb) still applies underneath.
+{
+    echo '<?xml version="1.0"?>'
+    echo '<labwc_config>'
+    [[ -n "$INT_TOUCH" ]] && echo "  <touch deviceName=\"$INT_TOUCH\" output=\"$INTERNAL\"/>"
+    while IFS= read -r t; do
+        [[ -n "$t" ]] && echo "  <touch deviceName=\"$t\" output=\"$EXT\"/>"
+    done <<< "$(echo "$EXT_TOUCHES" | tr ',' '\n')"
+    # Fullscreen both emulator windows on whichever output they land on;
+    # Azahar's own settings remember the per-screen placement afterwards.
+    echo '  <windowRules>'
+    for id in azahar Azahar org.azahar_emu.Azahar melonds melonDS net.kuribo64.melonDS; do
+        echo "    <windowRule identifier=\"$id\"><action name=\"ToggleFullscreen\"/></windowRule>"
+    done
+    echo '  </windowRules>'
+    echo '</labwc_config>'
+} > "$RUN_DIR/rc.xml"
+
+APP_CMD_DEFAULT='flatpak run org.azahar_emu.Azahar'
+if [[ -f /etc/nebel/dualscreen-app.conf ]]; then
+    # shellcheck source=/dev/null
+    source /etc/nebel/dualscreen-app.conf
+fi
+APP_CMD="${APP_CMD:-$APP_CMD_DEFAULT}"
+
+# labwc runs its <config-dir>/autostart via sh once the Wayland socket is
+# up, so kanshi and the app are launched from there. The trailing watcher
+# drops labwc (and thus the session) when the app exits.
+cat > "$RUN_DIR/autostart" <<EOF
+#!/bin/sh
+kanshi -c "$RUN_DIR/kanshi.conf" &
+( sleep 2; $APP_CMD; sleep 1; labwc --exit 2>/dev/null || killall labwc ) &
+EOF
+chmod +x "$RUN_DIR/autostart"
+
+export QT_QPA_PLATFORM="wayland;xcb"
+export XDG_SESSION_TYPE=wayland
+export XDG_CURRENT_DESKTOP=labwc
+
+/usr/bin/labwc -C "$RUN_DIR"
+
+# App exited (or labwc died) - return to game mode.
+exec /usr/libexec/nebel/session-control switch-gamemode

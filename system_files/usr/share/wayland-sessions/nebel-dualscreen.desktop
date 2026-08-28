@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Nebel Dual-Screen
+Comment=Dual-screen emulator session (internal + external display) for Nebel
+Exec=/usr/libexec/nebel/start-dualscreen
+TryExec=/usr/bin/labwc
+Type=Application

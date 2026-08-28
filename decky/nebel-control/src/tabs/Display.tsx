@@ -1,6 +1,6 @@
 import { ButtonItem, Field, PanelSection } from "@decky/ui";
 import { useEffect, useState } from "react";
-import { getDisplayState, restartGamescopeSession, setDisplayConfig, setInternalTouchpad } from "../backend";
+import { getDisplayState, restartGamescopeSession, setDisplayConfig, setInternalTouchpad, startDualscreenSession } from "../backend";
 import { SelectEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { DisplayConnector, DisplayState } from "../types";
@@ -147,6 +147,31 @@ export function Display(_props: { qam?: boolean }) {
         <Field label={t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.")} />
       )}
       {errorMessage && <Field label={t("Error: {message}", { message: errorMessage })} />}
+      {externals.some((c) => c.connected) && (
+        <>
+          <Field
+            label={t("Dual-screen emulator mode")}
+            description={t("Restarts into a session that drives BOTH displays at once (game mode itself can only use one): the emulator's top screen goes to the external display, the bottom one - with touch - stays on the internal panel. Made for Azahar (3DS) and melonDS (DS). Quitting the emulator returns to game mode.")}
+          />
+          <div className="nebel-reset-row">
+            <ButtonItem
+              layout="below"
+              disabled={restarting}
+              onClick={() => {
+                setRestarting(true);
+                setErrorMessage("");
+                // Same as the restart below: success tears this session (and
+                // Decky) down, only a failure ever re-enables the button.
+                startDualscreenSession()
+                  .catch((error) => setErrorMessage(String(error)))
+                  .finally(() => setRestarting(false));
+              }}
+            >
+              {t("Start Dual-Screen Session")}
+            </ButtonItem>
+          </div>
+        </>
+      )}
       <div className="nebel-reset-row">
         <ButtonItem
           layout="below"

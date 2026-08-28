@@ -118,6 +118,7 @@ export const getDisplayState = () => call<[], DisplayState>("get_display_state")
 export const setDisplayConfig = (useExternal: boolean, connector: string, width: number, height: number, orientation: string) =>
   call<[boolean, string, number, number, string], DisplayState>("set_display_config", useExternal, connector, width, height, orientation);
 export const restartGamescopeSession = () => call<[], { ok: boolean }>("restart_gamescope_session");
+export const startDualscreenSession = () => call<[], { ok: boolean }>("start_dualscreen_session");
 export const setInternalTouchpad = (enabled: boolean) => call<[boolean], boolean>("set_internal_touchpad", enabled);
 export const getSyncState = () => call<[], SyncState>("get_sync_state");
 export const setSyncServiceEnabled = (enabled: boolean) =>

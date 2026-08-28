@@ -14,6 +14,8 @@ dnf5 -y install --nogpgcheck \
 dnf5 -y install --setopt=install_weak_deps=False \
     grim \
     sddm \
+    labwc \
+    kanshi \
     pipewire \
     pipewire-alsa \
     pipewire-pulseaudio \

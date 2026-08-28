@@ -5,8 +5,9 @@ set -euo pipefail
 case "${1:-}" in
     switch-desktop)  session=nebel-plasma.desktop ;;
     switch-gamemode) session=gamescope-session-steam.desktop ;;
+    switch-dualscreen) session=nebel-dualscreen.desktop ;;
     default-gamemode) session=gamescope-session-steam.desktop; default_only=1 ;;
-    *) echo "usage: $0 {switch-desktop|switch-gamemode|default-gamemode}" >&2; exit 1 ;;
+    *) echo "usage: $0 {switch-desktop|switch-gamemode|switch-dualscreen|default-gamemode}" >&2; exit 1 ;;
 esac
 
 SERVICE='org.shadowblip.InputPlumber'
@@ -105,7 +106,7 @@ case "${1:-}" in
     switch-desktop)
         inputplumber_desktop_mode
         ;;
-    switch-gamemode)
+    switch-gamemode|switch-dualscreen)
         inputplumber_gamepad_mode
         ;;
 esac

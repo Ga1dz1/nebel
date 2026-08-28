@@ -341,6 +341,16 @@ def action_restart_gamescope_session(request):
     return {"ok": True}
 
 
+def action_start_dualscreen_session(request):
+    # Dual-screen emulator session (labwc driving internal+external at once,
+    # for Azahar/melonDS). session-control rewrites the sddm autologin and
+    # restarts it; start-dualscreen itself falls back to game mode when no
+    # external display is connected, and the session returns to game mode
+    # when the app exits.
+    run(["/usr/libexec/nebel/session-control", "switch-dualscreen"], timeout=15)
+    return {"ok": True}
+
+
 INTERNAL_TOUCHPAD_CONF = Path("/etc/nebel/internal-touchpad.conf")
 INTERNAL_TOUCHPAD_SERVICE = "nebel-internal-touchpad.service"
 
@@ -760,6 +770,7 @@ ACTIONS = {
     "get_display_config": action_get_display_config,
     "set_display_config": action_set_display_config,
     "restart_gamescope_session": action_restart_gamescope_session,
+    "start_dualscreen_session": action_start_dualscreen_session,
     "get_internal_touchpad": action_get_internal_touchpad,
     "set_internal_touchpad": action_set_internal_touchpad,
 }
