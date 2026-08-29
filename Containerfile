@@ -62,4 +62,16 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     printf '%s\n' "${NEBEL_VERSION}" >/usr/lib/nebel/version && \
     /ctx/build_files/build.sh
 
+# Nebel identity for the Steam Settings -> System page (and anything else
+# reading /etc/os-release): show our version/channel instead of plain Fedora.
+RUN printf '%s\n' \
+    'NAME="Nebel"' \
+    'PRETTY_NAME="Nebel '"${NEBEL_VERSION}"'"' \
+    'VERSION="'"${NEBEL_VERSION}"'"' \
+    'VERSION_ID="'"${NEBEL_VERSION}"'"' \
+    'ID=nebel' \
+    'ID_LIKE="fedora"' \
+    'HOME_URL="https://github.com/Ga1dz1/nebel"' \
+    > /usr/lib/os-release
+
 RUN bootc container lint
