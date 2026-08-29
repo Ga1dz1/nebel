@@ -12,14 +12,36 @@ log() { logger -t nebel-dualscreen-keys -- "$*"; }
 exec 9>/run/user/"$(id -u)"/nebel-dualscreen-keys.lock
 flock -n 9 || { log "already running, exiting"; exit 0; }
 
-volume_device() {
+# Volume keys are split across PMIC inputs on retroid devices: Vol+ sits on
+# gpio-keys, Vol- on pm8941_resin (the second PMIC button channel). Watch
+# every physical device that can carry a volume key; the virtual InputPlumber
+# keyboard also advertises them, but it's an aggregate echo - skip "Input"
+# devices.
+volume_watch() {
+    local dev="$1" name
+    name="$(cat "/sys/class/input/$(basename "$dev")/device/name" 2>/dev/null)" || return 0
+    case "$name" in *InputPlumber*) return 0 ;; esac
+    ( evtest "$dev" 2>/dev/null | while read -r l; do
+        case "$l" in
+            *"(KEY_VOLUMEUP), value 1"*)    out="$(wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ 2>&1)" \
+                                            && log "volume up -> $out" || log "volume up FAILED: $out" ;;
+            *"(KEY_VOLUMEDOWN), value 1"*)  out="$(wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- 2>&1)" \
+                                            && log "volume down -> $out" || log "volume down FAILED: $out" ;;
+        esac
+      done ) &
+    volpids+=($!)
+    log "watching volume on $dev ($name)"
+}
+
+volume_devices() {
     local dev name
     for dev in /dev/input/event*; do
         [[ -e "$dev" ]] || continue
         name="$(cat "/sys/class/input/$(basename "$dev")/device/name" 2>/dev/null)" || continue
-        case "$name" in *gpio-keys*) echo "$dev"; return 0 ;; esac
+        case "$name" in
+            *gpio-keys*|*resin*|*headset*) echo "$dev" ;;
+        esac
     done
-    return 1
 }
 
 power_device() {
@@ -32,19 +54,10 @@ power_device() {
     return 1
 }
 
-vdev="$(volume_device || true)"
-if [[ -n "$vdev" ]]; then
-    log "watching volume on $vdev"
-    ( evtest "$vdev" 2>/dev/null | while read -r l; do
-        case "$l" in
-            *"(KEY_VOLUMEUP), value 1"*)    out="$(wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ 2>&1)" \
-                                            && log "volume up -> $out" || log "volume up FAILED: $out" ;;
-            *"(KEY_VOLUMEDOWN), value 1"*)  out="$(wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- 2>&1)" \
-                                            && log "volume down -> $out" || log "volume down FAILED: $out" ;;
-        esac
-      done ) &
-    volpid=$!
-fi
+volpids=()
+while read -r vdev; do
+    [[ -n "$vdev" ]] && volume_watch "$vdev"
+done < <(volume_devices)
 
 # Swallow the wake press right after a real-suspend resume, same rebound
 # guard as powerbuttond. The wake press lands within a second of resume;
@@ -93,7 +106,7 @@ if [[ -n "$pdev" ]]; then
     powpid=$!
 fi
 
-trap 'kill "${volpid:-}" "${powpid:-}" 2>/dev/null' EXIT INT TERM
+trap 'kill "${volpids[@]:-}" "${powpid:-}" 2>/dev/null' EXIT INT TERM
 # labwc's autostart runs us detached; exit when the compositor is gone so we
 # never keep handling keys in game mode.
 while :; do
