@@ -1,0 +1,74 @@
+#!/bin/bash
+# Media keys for the dual-screen session: the labwc session has no desktop
+# shell and no Steam, so nothing answers the volume buttons and the power
+# key (logind is set to ignore it for powerbuttond's sake in Steam sessions).
+# Short power press sleeps (suspend-dispatch routes to real/fake per device);
+# volume buttons drive the default PipeWire sink. Long power press is ignored.
+set -uo pipefail
+log() { logger -t nebel-dualscreen-keys -- "$*"; }
+
+volume_device() {
+    local dev name
+    for dev in /dev/input/event*; do
+        [[ -e "$dev" ]] || continue
+        name="$(cat "/sys/class/input/$(basename "$dev")/device/name" 2>/dev/null)" || continue
+        case "$name" in *gpio-keys*) echo "$dev"; return 0 ;; esac
+    done
+    return 1
+}
+
+power_device() {
+    local dev name
+    for dev in /dev/input/event*; do
+        [[ -e "$dev" ]] || continue
+        name="$(cat "/sys/class/input/$(basename "$dev")/device/name" 2>/dev/null)" || continue
+        case "$name" in *pwrkey*|*[Pp]ower\ [Bb]utton*) echo "$dev"; return 0 ;; esac
+    done
+    return 1
+}
+
+vdev="$(volume_device || true)"
+if [[ -n "$vdev" ]]; then
+    log "watching volume on $vdev"
+    ( evtest "$vdev" 2>/dev/null | while read -r l; do
+        case "$l" in
+            *"(KEY_VOLUMEUP), value 1"*)    wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ ;;
+            *"(KEY_VOLUMEDOWN), value 1"*)  wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- ;;
+        esac
+      done ) &
+    volpid=$!
+fi
+
+# Swallow the wake press right after a real-suspend resume, same rebound
+# guard as powerbuttond.
+REBOUND_GUARD_MS=30000
+RESUME_FLAG="/run/nebel/real-suspend.resumed-at"
+just_resumed() {
+    local at
+    [[ -r "$RESUME_FLAG" ]] || return 1
+    at="$(cat "$RESUME_FLAG" 2>/dev/null)" || return 1
+    [[ "$at" =~ ^[0-9]+$ ]] || return 1
+    (( ( $(date +%s%3N) - at ) < REBOUND_GUARD_MS ))
+}
+
+pdev="$(power_device || true)"
+if [[ -n "$pdev" ]]; then
+    log "watching power on $pdev"
+    ( evtest "$pdev" 2>/dev/null | while read -r l; do
+        case "$l" in
+            *"(KEY_POWER), value 1"*)
+                if just_resumed; then log "post-resume rebound press ignored"
+                else log "power -> systemctl suspend"; systemctl suspend --no-block; fi ;;
+        esac
+      done ) &
+    powpid=$!
+fi
+
+trap 'kill "${volpid:-}" "${powpid:-}" 2>/dev/null' EXIT INT TERM
+# labwc's autostart runs us detached; exit when the compositor is gone so we
+# never keep handling keys in game mode.
+while :; do
+    pgrep -x labwc >/dev/null 2>&1 || break
+    sleep 2
+done
+log "labwc gone, exiting"
