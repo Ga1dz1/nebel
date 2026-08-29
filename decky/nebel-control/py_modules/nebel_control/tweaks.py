@@ -75,6 +75,21 @@ def save_tweaks(data):
     call("write_config", name="tweaks", text=json.dumps(sanitize_tweaks(data), indent=2, sort_keys=True) + "\n")
 
 
+LSFG_LAYER_MANIFEST = Path("/usr/share/vulkan/lsfg-vk/VkLayer_LSFGVK_frame_generation.json")
+
+
+def lsfg_availability():
+    home = Path.home()
+    lossless_candidates = [
+        home / ".local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll",
+        home / ".steam/steam/steamapps/common/Lossless Scaling/Lossless.dll",
+    ]
+    return {
+        "layer": LSFG_LAYER_MANIFEST.is_file(),
+        "lossless": any(candidate.is_file() for candidate in lossless_candidates),
+    }
+
+
 def load_compat_applied():
     try:
         with COMPAT_APPLIED_STATE.open(encoding="utf-8") as f:

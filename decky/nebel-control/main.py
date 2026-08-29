@@ -58,7 +58,7 @@ from nebel_control.sync import (
     sync_state,
 )
 from nebel_control.system import set_ssh_enabled
-from nebel_control.tweaks import load_compat_applied, save_compat_applied, save_tweaks
+from nebel_control.tweaks import load_compat_applied, lsfg_availability, save_compat_applied, save_tweaks
 
 
 class Plugin:
@@ -79,6 +79,9 @@ class Plugin:
 
     async def get_compat_applied(self):
         return await asyncio.to_thread(load_compat_applied)
+
+    async def get_lsfg_availability(self):
+        return await asyncio.to_thread(lsfg_availability)
 
     async def save_compat_applied(self, appids):
         return await asyncio.to_thread(save_compat_applied, appids)

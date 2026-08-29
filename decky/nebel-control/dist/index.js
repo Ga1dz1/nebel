@@ -27,6 +27,7 @@ const getConfig = () => call("get_config");
 const getInstalledGames = () => call("get_installed_games");
 const savePowerConfig = (data) => call("save_power_config", data);
 const saveTweaks = (data) => call("save_tweaks", data);
+const getLsfgAvailability = () => call("get_lsfg_availability");
 const getCompatApplied = () => call("get_compat_applied");
 let compatAppliedSaveChain = Promise.resolve(undefined);
 const saveCompatApplied = (appids) => {
@@ -148,6 +149,9 @@ const uk = {
     "Custom": "Власний",
     "CPU Cores": "Ядра ЦП",
     "Switches the system power profile for this game and restores it after exit": "Перемикає системний профіль живлення для цієї гри та відновлює його після виходу",
+    "LSFG": "LSFG",
+    "LSFG Multiplier": "Множник LSFG",
+    "Frame generation via Lossless Scaling; requires V-Sync in game": "Генерація кадрів через Lossless Scaling; потрібен V-Sync у грі",
     "Default (any core)": "Типово (будь-яке ядро)",
     "Big cores only (cpu4-7)": "Лише великі ядра (cpu4-7)",
     "Little cores only (cpu0-3)": "Лише малі ядра (cpu0-3)",
@@ -452,6 +456,9 @@ const ru = {
     "Custom": "Свой",
     "CPU Cores": "Ядра ЦП",
     "Switches the system power profile for this game and restores it after exit": "Переключает системный павер-профиль для этой игры и восстанавливает его после выхода",
+    "LSFG": "LSFG",
+    "LSFG Multiplier": "Множитель LSFG",
+    "Frame generation via Lossless Scaling; requires V-Sync in game": "Генерация кадров через Lossless Scaling; требуется V-Sync в игре",
     "Default (any core)": "По умолчанию (любое ядро)",
     "Big cores only (cpu4-7)": "Только большие ядра (cpu4-7)",
     "Little cores only (cpu0-3)": "Только маленькие ядра (cpu0-3)",
@@ -756,6 +763,9 @@ const es = {
     "Custom": "Personalizado",
     "CPU Cores": "Núcleos de CPU",
     "Switches the system power profile for this game and restores it after exit": "Cambia el perfil de energía del sistema para este juego y lo restaura al salir",
+    "LSFG": "LSFG",
+    "LSFG Multiplier": "Multiplicador LSFG",
+    "Frame generation via Lossless Scaling; requires V-Sync in game": "Generación de fotogramas vía Lossless Scaling; requiere V-Sync en el juego",
     "Default (any core)": "Predeterminado (cualquier núcleo)",
     "Big cores only (cpu4-7)": "Solo núcleos grandes (cpu4-7)",
     "Little cores only (cpu0-3)": "Solo núcleos pequeños (cpu0-3)",
@@ -1060,6 +1070,9 @@ const fr = {
     "Custom": "Personnalisé",
     "CPU Cores": "Cœurs CPU",
     "Switches the system power profile for this game and restores it after exit": "Bascule le profil d'énergie système pour ce jeu et le restaure à la sortie",
+    "LSFG": "LSFG",
+    "LSFG Multiplier": "Multiplicateur LSFG",
+    "Frame generation via Lossless Scaling; requires V-Sync in game": "Génération d'images via Lossless Scaling; nécessite le V-Sync dans le jeu",
     "Default (any core)": "Par défaut (n'importe quel cœur)",
     "Big cores only (cpu4-7)": "Gros cœurs uniquement (cpu4-7)",
     "Little cores only (cpu0-3)": "Petits cœurs uniquement (cpu0-3)",
@@ -2511,6 +2524,11 @@ const powerProfileOptions = [
     { data: "balanced", label: "Balanced" },
     { data: "performance", label: "Performance" },
 ];
+const lsfgMultiplierOptions = [
+    { data: "2", label: "x2" },
+    { data: "3", label: "x3" },
+    { data: "4", label: "x4" },
+];
 const fexKnobs = [
     { key: "TSOEnabled", label: "TSO Enabled" },
     { key: "X87ReducedPrecision", label: "X87 Reduced Precision" },
@@ -2544,6 +2562,7 @@ function Games({ config, setConfig, qam, lockedAppid, injected }) {
     const [compatTools, setCompatTools] = SP_REACT.useState([]);
     const [perGameTools, setPerGameTools] = SP_REACT.useState([]);
     const [currentTool, setCurrentTool] = SP_REACT.useState("");
+    const [lsfgAvailability, setLsfgAvailability] = SP_REACT.useState(null);
     const [globalTool, setGlobalTool] = SP_REACT.useState(String(config.tweaks?.global?.windowsCompatTool || DEFAULT_WINDOWS_COMPAT_TOOL));
     const runtimeGame = config.game;
     const games = availableGames(config);
@@ -2596,6 +2615,16 @@ function Games({ config, setConfig, qam, lockedAppid, injected }) {
             if (!cancelled)
                 setCompatTools(tools);
         });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        getLsfgAvailability().then((availability) => {
+            if (!cancelled)
+                setLsfgAvailability(availability);
+        }).catch(() => { });
         return () => {
             cancelled = true;
         };
@@ -2918,7 +2947,7 @@ function Games({ config, setConfig, qam, lockedAppid, injected }) {
                                     patchSettings({ autoApplyCompat: enabled });
                                 } }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!injected && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: perGameMode, options: perGameModeOptions, onChange: onSelectPerGameMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool })] })), forcedTool && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] }))] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (!injected || (forcedTool && isX86Mode)) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
-                                : null] }))] })), !editingDefault && game?.appid ? (SP_JSX.jsx(HeroicSection, { appid: game.appid, forced: gameSettings.heroicForce === true, onToggleForce: (enabled) => patchSettings({ heroicForce: enabled || undefined }) })) : null, !editingDefault && game?.appid ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("Dual-screen mode"), description: t("Launch in the dual-screen session (internal + external display) instead of game mode - for dual-screen emulators like Azahar/melonDS. Requires the external display connected."), checked: values.dualScreen === true, onChange: (enabled) => patchSettings({ dualScreen: enabled || undefined }) }) })) : null, !qam && (!injected || forcedTool) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsxs(Collapsible, { label: t("Advanced"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Power Profile"), value: String(values.powerProfile || ""), options: powerProfileOptions, onChange: (value) => patchSettings({ powerProfile: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Switches the system power profile for this game and restores it after exit") }), (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
+                                : null] }))] })), !editingDefault && game?.appid ? (SP_JSX.jsx(HeroicSection, { appid: game.appid, forced: gameSettings.heroicForce === true, onToggleForce: (enabled) => patchSettings({ heroicForce: enabled || undefined }) })) : null, !editingDefault && game?.appid ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("Dual-screen mode"), description: t("Launch in the dual-screen session (internal + external display) instead of game mode - for dual-screen emulators like Azahar/melonDS. Requires the external display connected."), checked: values.dualScreen === true, onChange: (enabled) => patchSettings({ dualScreen: enabled || undefined }) }) })) : null, !qam && (!injected || forcedTool) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsxs(Collapsible, { label: t("Advanced"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Power Profile"), value: String(values.powerProfile || ""), options: powerProfileOptions, onChange: (value) => patchSettings({ powerProfile: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Switches the system power profile for this game and restores it after exit") }), lsfgAvailability?.layer && lsfgAvailability?.lossless ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("LSFG"), description: t("Frame generation via Lossless Scaling; requires V-Sync in game"), checked: values.lsfg === true, onChange: (enabled) => patchSettings({ lsfg: enabled || undefined }) }), values.lsfg === true ? (SP_JSX.jsx(SelectEdit, { label: t("LSFG Multiplier"), value: String(values.lsfgMultiplier || 2), options: lsfgMultiplierOptions, onChange: (value) => patchSettings({ lsfgMultiplier: Number(value) || undefined }) })) : null] })) : null, (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                                 ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
                                                 : null] }))] }), SP_JSX.jsxs(Collapsible, { label: t("Launch flags"), children: [SP_JSX.jsx(DFL.ToggleField, { label: t("D3D12 feature level 12_1"), description: t("For DirectX 12 games that black-screen or refuse to start"), checked: envPresets.dx12Fl121 === true, onChange: (value) => setEnvPreset("dx12Fl121", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable DirectX 12"), description: t("For games whose DirectX 12 mode crashes - they fall back to DX11"), checked: envPresets.noD3d12 === true, onChange: (value) => setEnvPreset("noD3d12", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WineD3D instead of DXVK"), description: t("For old DirectX 9-11 games that won't start on DXVK"), checked: envPresets.wineD3d === true, onChange: (value) => setEnvPreset("wineD3d", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Old OpenGL compatibility"), description: t("For old OpenGL games that misdetect the graphics driver"), checked: envPresets.oldGlString === true, onChange: (value) => setEnvPreset("oldGlString", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Large address aware (32-bit games)"), description: t("For 32-bit era games crashing with out-of-memory errors"), checked: envPresets.largeAddress === true, onChange: (value) => setEnvPreset("largeAddress", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Mod/launcher DLL override"), description: t("Needed by mod loaders and third-party launchers (winhttp)"), checked: envPresets.winhttpOverride === true, onChange: (value) => setEnvPreset("winhttpOverride", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable fsync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noFsync === true, onChange: (value) => setEnvPreset("noFsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable esync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noEsync === true, onChange: (value) => setEnvPreset("noEsync", value) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Launch switches applied to the game's environment - variables set directly in Launch Options take precedence") })] })] }), !editingDefault && game?.appid && forcedTool ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }

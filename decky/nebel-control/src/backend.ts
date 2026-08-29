@@ -5,6 +5,11 @@ export const getConfig = () => call<[], Config>("get_config");
 export const getInstalledGames = () => call<[], InstalledGame[]>("get_installed_games");
 export const savePowerConfig = (data: PowerConfig) => call<[PowerConfig], Config>("save_power_config", data);
 export const saveTweaks = (data: Tweaks) => call<[Tweaks], Config>("save_tweaks", data);
+export interface LsfgAvailability {
+  layer: boolean;
+  lossless: boolean;
+}
+export const getLsfgAvailability = () => call<[], LsfgAvailability>("get_lsfg_availability");
 export const getCompatApplied = () => call<[], string[]>("get_compat_applied");
 let compatAppliedSaveChain = Promise.resolve<unknown>(undefined);
 export const saveCompatApplied = (appids: string[]) => {

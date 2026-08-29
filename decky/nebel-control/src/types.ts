@@ -39,6 +39,8 @@ export interface GameTweak {
   heroicForce?: boolean;
   dualScreen?: boolean;
   powerProfile?: string;
+  lsfg?: boolean;
+  lsfgMultiplier?: number;
   [key: string]: any;
 }
 

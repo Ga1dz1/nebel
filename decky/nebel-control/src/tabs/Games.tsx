@@ -11,8 +11,8 @@ import {
 } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { saveCompatApplied, listDir, getDepsStatus, installDeps } from "../backend";
-import type { DepsStatus, DirListing } from "../backend";
+import { saveCompatApplied, listDir, getDepsStatus, getLsfgAvailability, installDeps } from "../backend";
+import type { DepsStatus, DirListing, LsfgAvailability } from "../backend";
 import { Collapsible, OpenFullScreenButton, SelectEdit } from "../components/widgets";
 import { HeroicSection } from "../components/HeroicSection";
 import { t } from "../i18n";
@@ -138,6 +138,11 @@ const powerProfileOptions = [
   { data: "balanced", label: "Balanced" },
   { data: "performance", label: "Performance" },
 ];
+const lsfgMultiplierOptions = [
+  { data: "2", label: "x2" },
+  { data: "3", label: "x3" },
+  { data: "4", label: "x4" },
+];
 const fexKnobs = [
   { key: "TSOEnabled", label: "TSO Enabled" },
   { key: "X87ReducedPrecision", label: "X87 Reduced Precision" },
@@ -183,6 +188,7 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
   const [compatTools, setCompatTools] = useState<CompatTool[]>([]);
   const [perGameTools, setPerGameTools] = useState<CompatTool[]>([]);
   const [currentTool, setCurrentTool] = useState("");
+  const [lsfgAvailability, setLsfgAvailability] = useState<LsfgAvailability | null>(null);
   const [globalTool, setGlobalTool] = useState(
     String(config.tweaks?.global?.windowsCompatTool || DEFAULT_WINDOWS_COMPAT_TOOL),
   );
@@ -234,6 +240,15 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
     getProtonTools().then((tools) => {
       if (!cancelled) setCompatTools(tools);
     });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    getLsfgAvailability().then((availability) => {
+      if (!cancelled) setLsfgAvailability(availability);
+    }).catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -640,6 +655,24 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
                 onChange={(value) => patchSettings({ powerProfile: value || undefined })}
               />
               <div className="nebel-compat-note">{t("Switches the system power profile for this game and restores it after exit")}</div>
+              {lsfgAvailability?.layer && lsfgAvailability?.lossless ? (
+                <>
+                  <ToggleField
+                    label={t("LSFG")}
+                    description={t("Frame generation via Lossless Scaling; requires V-Sync in game")}
+                    checked={values.lsfg === true}
+                    onChange={(enabled) => patchSettings({ lsfg: enabled || undefined })}
+                  />
+                  {values.lsfg === true ? (
+                    <SelectEdit
+                      label={t("LSFG Multiplier")}
+                      value={String(values.lsfgMultiplier || 2)}
+                      options={lsfgMultiplierOptions}
+                      onChange={(value) => patchSettings({ lsfgMultiplier: Number(value) || undefined })}
+                    />
+                  ) : null}
+                </>
+              ) : null}
               {(!injected || values.gameEra === "xp") && (
               <Collapsible label={t("Old games (legacy Windows)")}>
                 <SelectEdit
