@@ -328,6 +328,8 @@ class NebelPower:
         }
         fan_config["smoothing"] = clamp(parser.getfloat("fan", "smoothing"), 0.0, 0.99)
         fan_config["pwm_quantum"] = clamp(parser.getint("fan", "pwm_quantum", fallback=1), 1, 255)
+        # 0 disables the stop->start hysteresis (fan may start at any temp).
+        fan_config["fan_on_temp"] = clamp(parser.getint("fan", "fan_on_temp", fallback=0), 0, 120)
         fan_config["min_pwm"] = clamp(fan_config["min_pwm"], 0, 255)
         fan_config["max_pwm"] = clamp(fan_config["max_pwm"], fan_config["min_pwm"], 255)
 
@@ -694,6 +696,12 @@ class NebelPower:
                     weight = self.fan_config["smoothing"]
                     self.smoothed_temp = temp if not self.smoothed_temp else (self.smoothed_temp * weight + temp * (1.0 - weight))
                     target = self.target_pwm(int(self.smoothed_temp))
+                    # Stop->start hysteresis: a stopped fan stays off until
+                    # fan_on_temp, no matter what the curve says in between,
+                    # so it can't flap on/off around the off point.
+                    fan_on_temp = self.fan_config.get("fan_on_temp", 0)
+                    if self.last_pwm == 0 and fan_on_temp and self.smoothed_temp < fan_on_temp:
+                        target = 0
                 else:
                     target = FAN_SAFE_PWM
                 if target > self.last_pwm:
@@ -889,6 +897,14 @@ class NebelPower:
                 self.load_config()
                 self.discover()
                 self.apply_underclock_refs()
+                # The UI (QAM profile dropdown, nebel-control) changes the
+                # profile by editing power.general.default_profile and relying
+                # on Reload to apply it. Without this the reload left
+                # self.profile (restored from the state file) untouched, so
+                # the dropdown was a no-op until the next AC/battery switch.
+                if self.profile != self.default_profile:
+                    self.profile = self.default_profile
+                    self.save_state()
                 self.apply_profile()
                 if self.gpu_level == "manual" and self.manual_gpu_clock:
                     self.set_gpu_manual_clock(self.manual_gpu_clock)
