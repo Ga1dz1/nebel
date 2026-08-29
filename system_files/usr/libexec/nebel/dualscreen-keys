@@ -47,8 +47,9 @@ if [[ -n "$vdev" ]]; then
 fi
 
 # Swallow the wake press right after a real-suspend resume, same rebound
-# guard as powerbuttond.
-REBOUND_GUARD_MS=30000
+# guard as powerbuttond. The wake press lands within a second of resume;
+# 30s of dead power button after every wake is worse than a rare double.
+REBOUND_GUARD_MS=5000
 RESUME_FLAG="/run/nebel/real-suspend.resumed-at"
 just_resumed() {
     local at
