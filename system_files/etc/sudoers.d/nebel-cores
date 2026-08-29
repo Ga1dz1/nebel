@@ -1,0 +1,3 @@
+# Per-game CPU hotplug: the launch wrapper offlines cores outside the game's
+# core set and re-onlines everything when the game exits (sudo -n, user-side).
+nebel ALL=(root) NOPASSWD: /usr/libexec/nebel/nebel-cores

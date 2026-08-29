@@ -94,13 +94,32 @@ def legacy_era(settings):
 
 
 def apply_cpu_affinity(settings):
+    """Pin the game to its core set AND physically offline the other cores
+    for the game's lifetime (via passwordless sudo). Offlined cores vanish
+    from enumeration, so the game genuinely sees only the selected cores.
+    Returns True when cores were switched and must be re-onlined on exit."""
     cores = settings.get("cores")
     if not cores and legacy_era(settings) == "xp":
         cores = "two"  # era preset: old engines break on 8 threads
     core_set = CORE_SETS.get(cores)
     if not core_set:
-        return
+        return False
     os.sched_setaffinity(0, core_set)
+    if not pathlib.Path("/sys/devices/system/cpu/cpu1/online").exists():
+        return False
+    wanted = ",".join(str(c) for c in sorted(core_set))
+    result = subprocess.run(
+        ["sudo", "-n", "/usr/libexec/nebel/nebel-cores", "set", wanted],
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def reset_cpu_cores():
+    subprocess.run(["sudo", "-n", "/usr/libexec/nebel/nebel-cores", "reset"], check=False)
+    # Re-appeared cpufreq policies come back with kernel defaults; re-apply
+    # the active power profile so governors/min-max land on them again.
+    subprocess.run(["nebel-power", "reload"], check=False)
 
 
 def current_power_profile():
@@ -818,11 +837,6 @@ def main():
         print(f"nebel-game-launch: FEX settings skipped: {exc}", file=sys.stderr)
 
     try:
-        apply_cpu_affinity(settings)
-    except OSError as exc:
-        print(f"nebel-game-launch: CPU affinity skipped: {exc}", file=sys.stderr)
-
-    try:
         inject_x86_protocol_libs()
     except Exception as exc:
         print(f"nebel-game-launch: protocol-lib inject skipped: {exc}", file=sys.stderr)
@@ -877,16 +891,28 @@ def main():
     except Exception as exc:
         print(f"nebel-game-launch: power profile skipped: {exc}", file=sys.stderr)
 
-    if restore_profile:
-        # A per-game profile was switched: we own the game's lifetime now, so
-        # wait it out and restore the previous profile on exit. The child
-        # stays in our process group, so Steam's signals still reach it.
+    cores_switched = False
+    try:
+        cores_switched = apply_cpu_affinity(settings)
+    except OSError as exc:
+        print(f"nebel-game-launch: CPU affinity skipped: {exc}", file=sys.stderr)
+
+    if restore_profile or cores_switched:
+        # We changed system state for this game: own its lifetime, then put
+        # everything back. The child stays in our process group, so Steam's
+        # signals still reach it.
         proc = subprocess.Popen(args)
         code = proc.wait()
-        try:
-            subprocess.run(["nebel-power", "profile", restore_profile], timeout=10)
-        except Exception as exc:
-            print(f"nebel-game-launch: profile restore failed: {exc}", file=sys.stderr)
+        if cores_switched:
+            try:
+                reset_cpu_cores()
+            except Exception as exc:
+                print(f"nebel-game-launch: cores restore failed: {exc}", file=sys.stderr)
+        if restore_profile:
+            try:
+                subprocess.run(["nebel-power", "profile", restore_profile], timeout=10)
+            except Exception as exc:
+                print(f"nebel-game-launch: profile restore failed: {exc}", file=sys.stderr)
         raise SystemExit(code)
 
     try:

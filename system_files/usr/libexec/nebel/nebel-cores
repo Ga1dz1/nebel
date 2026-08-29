@@ -1,0 +1,33 @@
+#!/bin/bash
+# Per-game CPU hotplug control. The launch wrapper (user session) calls this
+# via passwordless sudo to physically offline everything outside the game's
+# core set - unlike an affinity mask, offlined cores disappear from the
+# system's CPU enumeration entirely, so games (CPU-Z included) see only the
+# selected cores. cpu0 never goes offline (it is not hotpluggable).
+set -uo pipefail
+
+CMD="${1:-}"
+
+case "$CMD" in
+    set)
+        keep="${2:-}"
+        [[ "$keep" =~ ^[0-7](,[0-7])*$ ]] || { echo "usage: nebel-cores set N[,N...]" >&2; exit 2; }
+        # Online the keep-set first so we never strand the scheduler on a
+        # CPU that is about to go offline.
+        for n in 1 2 3 4 5 6 7; do
+            [[ ",${keep}," == *",${n},"* ]] && echo 1 > "/sys/devices/system/cpu/cpu${n}/online" 2>/dev/null || true
+        done
+        for n in 1 2 3 4 5 6 7; do
+            [[ ",${keep}," == *",${n},"* ]] || echo 0 > "/sys/devices/system/cpu/cpu${n}/online" 2>/dev/null || true
+        done
+        ;;
+    reset)
+        for n in 1 2 3 4 5 6 7; do
+            echo 1 > "/sys/devices/system/cpu/cpu${n}/online" 2>/dev/null || true
+        done
+        ;;
+    *)
+        echo "usage: nebel-cores {set N[,N...]|reset}" >&2
+        exit 2
+        ;;
+esac
