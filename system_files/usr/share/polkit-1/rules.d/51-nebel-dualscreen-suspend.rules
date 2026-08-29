@@ -1,0 +1,11 @@
+// The dualscreen (labwc) session's key daemon handles the power button
+// itself and calls `systemctl suspend` directly. Its processes are detached
+// from the logind session cgroup (nohup/setsid), so polkit sees them as
+// inactive and denies org.freedesktop.login1.suspend. The only local user
+// is the console owner, so grant suspend to the wheel group outright.
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.login1.suspend" &&
+        subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+    }
+});
