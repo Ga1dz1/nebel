@@ -131,6 +131,55 @@ def apply_power_profile(settings):
     return current
 
 
+# lsfg-vk (Lossless Scaling frame generation, Vulkan layer, aarch64 build):
+# https://lsfg-vk.dev. Ships in the image; the frame-generation model itself
+# is extracted at runtime from a legitimately installed Lossless Scaling
+# (Steam app 993090), so without that install the toggle stays inert.
+LSFG_LAYER_DIR = "/usr/share/vulkan/lsfg-vk"
+LSFG_LAYER_NAME = "VK_LAYER_LSFGVK_frame_generation"
+
+
+def find_lossless_dll():
+    home = pathlib.Path.home()
+    candidates = [
+        home / ".local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll",
+        home / ".steam/steam/steamapps/common/Lossless Scaling/Lossless.dll",
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
+def apply_lsfg(settings, env):
+    if not settings.get("lsfg"):
+        return
+    manifest = pathlib.Path(LSFG_LAYER_DIR) / "VkLayer_LSFGVK_frame_generation.json"
+    if not manifest.is_file():
+        print("nebel-game-launch: LSFG layer not installed", file=sys.stderr)
+        return
+    dll = find_lossless_dll()
+    if not dll:
+        print(
+            "nebel-game-launch: LSFG enabled but Lossless Scaling (Steam app 993090) not found",
+            file=sys.stderr,
+        )
+        return
+    env["VK_LAYER_PATH"] = LSFG_LAYER_DIR + (":" + env["VK_LAYER_PATH"] if env.get("VK_LAYER_PATH") else "")
+    env["VK_INSTANCE_LAYERS"] = LSFG_LAYER_NAME + (
+        ":" + env["VK_INSTANCE_LAYERS"] if env.get("VK_INSTANCE_LAYERS") else ""
+    )
+    # Legacy env config: no per-user toml to manage, everything per-game.
+    env["LSFG_LEGACY"] = "1"
+    env["LSFG_DLL_PATH"] = dll
+    multiplier = settings.get("lsfgMultiplier")
+    try:
+        multiplier = int(multiplier)
+    except (TypeError, ValueError):
+        multiplier = 2
+    env["LSFG_MULTIPLIER"] = str(min(4, max(2, multiplier)))
+
+
 def runtime_config_dir():
     # pressure-vessel gives the container a private /tmp and only bind-mounts
     # selected paths, so a config meant for FEX inside the container must live
@@ -793,6 +842,11 @@ def main():
         apply_env_presets(settings, os.environ)
     except Exception as exc:
         print(f"nebel-game-launch: launch flags skipped: {exc}", file=sys.stderr)
+
+    try:
+        apply_lsfg(settings, os.environ)
+    except Exception as exc:
+        print(f"nebel-game-launch: LSFG skipped: {exc}", file=sys.stderr)
 
     try:
         apply_gpu_spoof(settings, os.environ, wined3d)
