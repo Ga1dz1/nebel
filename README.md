@@ -305,6 +305,11 @@ Nebel is completely free and open-source. If you enjoy this custom OS and want t
 
 [![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gaidzi)
 
+For **$6/month on Patreon** you also get early access to the beta and preview
+update channels through a personal supporter key (Nebel Control → System →
+Supporter Key), a monthly roadmap vote, and a place in the
+[credits](SUPPORTERS.md). The stable channel stays free for everyone, forever.
+
 Huge thanks to everyone who helps keep the project moving forward!
 
 ---
@@ -626,6 +631,12 @@ Nebel вміє оновлюватися на місці — без перепр�
 Nebel — це абсолютно безкоштовна прошивка з відкритим кодом. Якщо вам зайшла ця ОС і є бажання підтримати її розвиток (або просто закинути на каву за нічні посиденьки над кодом) — буду дуже вдячний!
 
 [![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gaidzi)
+
+**За $6/міс на Patreon** ви також отримуєте ранній доступ до каналів оновлення
+beta і preview через персональний ключ підтримки (Nebel Control → System →
+Supporter Key), місячне голосування за дорожню карту та місце в
+[кредитах](SUPPORTERS.md). Канал stable залишається безкоштовним для всіх —
+назавжди.
 
 Величезне дякую всім, хто допомагає проєкту рухатися далі!
 

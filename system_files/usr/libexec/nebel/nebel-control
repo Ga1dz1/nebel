@@ -690,6 +690,60 @@ def action_get_ssh_enabled(request):
     return {"enabled": ssh_enabled()}
 
 
+# --- Supporter key (Patreon early access) ---------------------------------
+# The key unlocks the beta/preview update channels; its sha256 lives in the
+# public allowlist supporter-keys.txt in the nebel repo (fetched/cached by
+# nebel_supporter_ok in update-lib). We store only the key on the console.
+SUPPORTER_KEY_PATH = Path("/var/lib/nebel/supporter-key")
+SUPPORTER_KEY_FORMAT = re.compile(r"nbl-[a-z0-9]{4}(-[a-z0-9]{4}){3}")
+
+
+def supporter_valid():
+    result = subprocess.run(
+        ["/bin/bash", "-c", "source /usr/lib/nebel/update-lib; nebel_supporter_ok"],
+        check=False,
+        timeout=30,
+    )
+    return result.returncode == 0
+
+
+def supporter_state():
+    present = SUPPORTER_KEY_PATH.is_file() and SUPPORTER_KEY_PATH.stat().st_size > 0
+    valid = supporter_valid() if present else False
+    masked = ""
+    if present:
+        try:
+            raw = re.sub(r"[\s-]+", "", SUPPORTER_KEY_PATH.read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            raw = ""
+        masked = raw[:6] + "…" + raw[-4:] if len(raw) > 12 else raw
+    # "unlocked" = key present AND hash on the allowlist = beta/preview work.
+    return {"present": present, "valid": valid, "masked": masked, "unlocked": valid}
+
+
+def action_get_supporter_state(request):
+    return supporter_state()
+
+
+def action_set_supporter_key(request):
+    key = str(request.get("key", "")).strip().lower()
+    if not SUPPORTER_KEY_FORMAT.fullmatch(key):
+        raise ValueError("invalid key format (expected nbl-xxxx-xxxx-xxxx)")
+    atomic_write(SUPPORTER_KEY_PATH, key.upper() + "\n")
+    state = supporter_state()
+    # valid=False here means the hash is not on the allowlist yet (new key,
+    # ended pledge, offline) - the UI shows it, the channels stay locked.
+    return state
+
+
+def action_clear_supporter_key(request):
+    try:
+        SUPPORTER_KEY_PATH.unlink()
+    except FileNotFoundError:
+        pass
+    return supporter_state()
+
+
 def action_get_device_env(request):
     return {"env": device_env()}
 
@@ -760,6 +814,9 @@ ACTIONS = {
     "get_controller_type": action_get_controller_type,
     "get_device_env": action_get_device_env,
     "get_ssh_enabled": action_get_ssh_enabled,
+    "get_supporter_state": action_get_supporter_state,
+    "set_supporter_key": action_set_supporter_key,
+    "clear_supporter_key": action_clear_supporter_key,
     "inputplumber_intercept": action_inputplumber_intercept,
     "set_ssh_enabled": action_set_ssh_enabled,
     "set_syncthing_enabled": action_set_syncthing_enabled,

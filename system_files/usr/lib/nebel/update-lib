@@ -13,6 +13,12 @@ NEBEL_SUPPORTER_KEY="/var/lib/nebel/supporter-key"
 NEBEL_SUPPORTER_CACHE="/var/lib/nebel/supporter-keys.cache"
 NEBEL_SUPPORTER_LIST_URL="https://raw.githubusercontent.com/Ga1dz1/nebel/main/supporter-keys.txt"
 
+# Normalized sha256 of a supporter key: case-insensitive, dashes and
+# whitespace ignored, so "nbl-abcd..." == "NBL ABCD..." in any typing.
+nebel_supporter_hash() {
+    tr '[:upper:]' '[:lower:]' < "$NEBEL_SUPPORTER_KEY" | tr -d '[:space:]-' | sha256sum | cut -d' ' -f1
+}
+
 # 0 when a supporter key exists and its sha256 is on the allowlist.
 nebel_supporter_ok() {
     [[ -s "$NEBEL_SUPPORTER_KEY" ]] || return 1
@@ -24,7 +30,7 @@ nebel_supporter_ok() {
             && mv "$list.new" "$list" || rm -f "$list.new"
     fi
     [[ -s "$list" ]] || return 1
-    grep -qix "$(sha256sum "$NEBEL_SUPPORTER_KEY" | cut -d' ' -f1)" "$list"
+    grep -qix "$(nebel_supporter_hash)" "$list"
 }
 
 # Steam's picker speaks Valve's branch tokens; translate to/from our ghcr tags.

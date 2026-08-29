@@ -312,6 +312,15 @@ const uk: Dictionary = {
   "Volume": "Гучність",
   "Brightness": "Яскравість",
   "Menu key": "Клавіша меню",
+  "Supporter Key": "Ключ підтримки",
+  "Supporter key": "Ключ підтримки",
+  "Apply": "Застосувати",
+  "Early access active": "Ранній доступ активний",
+  "Remove key": "Вилучити ключ",
+  "Key accepted - beta and preview update channels unlocked": "Ключ прийнято — канали оновлення beta і preview розблоковано",
+  "Key saved, but it is not on the supporter list yet (check again tomorrow)": "Ключ збережено, але його ще немає у списку підтримки (повторіть перевірку завтра)",
+  "Invalid key format (expected nbl-xxxx-xxxx-xxxx)": "Неправильний формат ключа (очікується nbl-xxxx-xxxx-xxxx)",
+  "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Розблоковує канали оновлення beta і preview. Ключі надаються за підтримки на Patreon — канал stable залишається безкоштовним для всіх.",
 };
 
 const ru: Dictionary = {
@@ -620,6 +629,15 @@ const ru: Dictionary = {
   "Volume": "Громкость",
   "Brightness": "Яркость",
   "Menu key": "Клавиша меню",
+  "Supporter Key": "Ключ поддержки",
+  "Supporter key": "Ключ поддержки",
+  "Apply": "Применить",
+  "Early access active": "Ранний доступ активен",
+  "Remove key": "Удалить ключ",
+  "Key accepted - beta and preview update channels unlocked": "Ключ принят — каналы обновления beta и preview разблокированы",
+  "Key saved, but it is not on the supporter list yet (check again tomorrow)": "Ключ сохранён, но его ещё нет в списке поддержки (проверьте завтра)",
+  "Invalid key format (expected nbl-xxxx-xxxx-xxxx)": "Неправильный формат ключа (ожидается nbl-xxxx-xxxx-xxxx)",
+  "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Разблокирует каналы обновления beta и preview. Ключи выдаются за поддержку на Patreon — канал stable остаётся бесплатным для всех.",
 };
 
 const es: Dictionary = {

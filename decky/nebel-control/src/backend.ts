@@ -21,6 +21,15 @@ export const saveCompatApplied = (appids: string[]) => {
   return request;
 };
 export const setSshEnabled = (enabled: boolean) => call<[boolean], boolean>("set_ssh_enabled", enabled);
+export interface SupporterState {
+  present: boolean;
+  valid: boolean;
+  masked: string;
+  unlocked: boolean;
+}
+export const getSupporterState = () => call<[], SupporterState>("get_supporter_state");
+export const setSupporterKey = (key: string) => call<[string], SupporterState>("set_supporter_key", key);
+export const clearSupporterKey = () => call<[], SupporterState>("clear_supporter_key");
 export const setControllerType = (value: string) => call<[string], string>("set_controller_type", value);
 export const setSharedStorageEnabled = (enabled: boolean) => call<[boolean], boolean>("set_shared_storage_enabled", enabled);
 export interface DirListing {

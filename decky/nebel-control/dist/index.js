@@ -39,6 +39,9 @@ const saveCompatApplied = (appids) => {
     return request;
 };
 const setSshEnabled = (enabled) => call("set_ssh_enabled", enabled);
+const getSupporterState = () => call("get_supporter_state");
+const setSupporterKey = (key) => call("set_supporter_key", key);
+const clearSupporterKey = () => call("clear_supporter_key");
 const setControllerType = (value) => call("set_controller_type", value);
 const setSharedStorageEnabled = (enabled) => call("set_shared_storage_enabled", enabled);
 const listDir = (path) => call("list_dir", path);
@@ -424,6 +427,15 @@ const uk = {
     "Volume": "Гучність",
     "Brightness": "Яскравість",
     "Menu key": "Клавіша меню",
+    "Supporter Key": "Ключ підтримки",
+    "Supporter key": "Ключ підтримки",
+    "Apply": "Застосувати",
+    "Early access active": "Ранній доступ активний",
+    "Remove key": "Вилучити ключ",
+    "Key accepted - beta and preview update channels unlocked": "Ключ прийнято — канали оновлення beta і preview розблоковано",
+    "Key saved, but it is not on the supporter list yet (check again tomorrow)": "Ключ збережено, але його ще немає у списку підтримки (повторіть перевірку завтра)",
+    "Invalid key format (expected nbl-xxxx-xxxx-xxxx)": "Неправильний формат ключа (очікується nbl-xxxx-xxxx-xxxx)",
+    "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Розблоковує канали оновлення beta і preview. Ключі надаються за підтримки на Patreon — канал stable залишається безкоштовним для всіх.",
 };
 const ru = {
     "Loading": "Загрузка",
@@ -731,6 +743,15 @@ const ru = {
     "Volume": "Громкость",
     "Brightness": "Яркость",
     "Menu key": "Клавиша меню",
+    "Supporter Key": "Ключ поддержки",
+    "Supporter key": "Ключ поддержки",
+    "Apply": "Применить",
+    "Early access active": "Ранний доступ активен",
+    "Remove key": "Удалить ключ",
+    "Key accepted - beta and preview update channels unlocked": "Ключ принят — каналы обновления beta и preview разблокированы",
+    "Key saved, but it is not on the supporter list yet (check again tomorrow)": "Ключ сохранён, но его ещё нет в списке поддержки (проверьте завтра)",
+    "Invalid key format (expected nbl-xxxx-xxxx-xxxx)": "Неправильный формат ключа (ожидается nbl-xxxx-xxxx-xxxx)",
+    "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Разблокирует каналы обновления beta и preview. Ключи выдаются за поддержку на Patreon — канал stable остаётся бесплатным для всех.",
 };
 const es = {
     "Loading": "Cargando",
@@ -4237,8 +4258,48 @@ function SharedStorageRow({ config, setConfig }) {
     };
     return (SP_JSX.jsx(ToggleRow, { label: t("Mount shared storage"), description: t("Mount NEBEL_SHARED partition at ~/Shared"), value: !!config.sharedStorageEnabled, onChange: setSharedStorageEnabled$1 }));
 }
+function SupporterKeySection() {
+    const [state, setState] = SP_REACT.useState(null);
+    const [draft, setDraft] = SP_REACT.useState("");
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [message, setMessage] = SP_REACT.useState("");
+    SP_REACT.useEffect(() => {
+        getSupporterState().then(setState).catch(() => { });
+    }, []);
+    const apply = async () => {
+        if (!draft.trim()) {
+            return;
+        }
+        setBusy(true);
+        try {
+            const next = await setSupporterKey(draft);
+            setState(next);
+            setDraft("");
+            setMessage(next.unlocked
+                ? t("Key accepted - beta and preview update channels unlocked")
+                : t("Key saved, but it is not on the supporter list yet (check again tomorrow)"));
+        }
+        catch (error) {
+            setMessage(t("Invalid key format (expected nbl-xxxx-xxxx-xxxx)"));
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    const clear = async () => {
+        setBusy(true);
+        try {
+            setState(await clearSupporterKey());
+            setMessage("");
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Supporter Key"), children: [state?.unlocked ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { children: [t("Early access active"), " \u00B7 ", state.masked] }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: clear, disabled: busy, children: t("Remove key") })] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.TextField, { label: t("Supporter key"), value: draft, onChange: (e) => setDraft(e.target.value) }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: apply, disabled: busy || !draft.trim(), children: t("Apply") })] })), message && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { children: message }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { opacity: 0.7, fontSize: "12px" }, children: t("Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.") }) })] }));
+}
 function SystemExtras({ config, setConfig, showStorage = true }) {
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("System"), children: [SP_JSX.jsx(SshRow, { config: config, setConfig: setConfig }), showStorage && SP_JSX.jsx(SharedStorageRow, { config: config, setConfig: setConfig })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("System"), children: [SP_JSX.jsx(SshRow, { config: config, setConfig: setConfig }), showStorage && SP_JSX.jsx(SharedStorageRow, { config: config, setConfig: setConfig }), showStorage && SP_JSX.jsx(SupporterKeySection, {})] }));
 }
 function System({ config, setConfig, qam }) {
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ControllerExtras, { config: config, setConfig: setConfig, showEmulation: !qam }), SP_JSX.jsx(SystemExtras, { config: config, setConfig: setConfig, showStorage: !qam }), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));

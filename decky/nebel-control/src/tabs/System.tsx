@@ -1,6 +1,8 @@
-import { ButtonItem, PanelSection } from "@decky/ui";
+import { ButtonItem, PanelSection, PanelSectionRow, TextField } from "@decky/ui";
+import { useEffect, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { setControllerType as applyControllerType, setSharedStorageEnabled as applySharedStorageEnabled, setSshEnabled as applySshEnabled } from "../backend";
+import { setControllerType as applyControllerType, setSharedStorageEnabled as applySharedStorageEnabled, setSshEnabled as applySshEnabled, clearSupporterKey, getSupporterState, setSupporterKey } from "../backend";
+import type { SupporterState } from "../backend";
 import { openCalibration } from "../components/Calibration";
 import { InternalTouchpadRow } from "../components/InternalTouchpadRow";
 import { OpenFullScreenButton, SelectEdit, ToggleRow } from "../components/widgets";
@@ -83,6 +85,82 @@ export function SharedStorageRow({ config, setConfig }: {
   );
 }
 
+export function SupporterKeySection() {
+  const [state, setState] = useState<SupporterState | null>(null);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    getSupporterState().then(setState).catch(() => {});
+  }, []);
+
+  const apply = async () => {
+    if (!draft.trim()) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const next = await setSupporterKey(draft);
+      setState(next);
+      setDraft("");
+      setMessage(
+        next.unlocked
+          ? t("Key accepted - beta and preview update channels unlocked")
+          : t("Key saved, but it is not on the supporter list yet (check again tomorrow)")
+      );
+    } catch (error) {
+      setMessage(t("Invalid key format (expected nbl-xxxx-xxxx-xxxx)"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clear = async () => {
+    setBusy(true);
+    try {
+      setState(await clearSupporterKey());
+      setMessage("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <PanelSection title={t("Supporter Key")}>
+      {state?.unlocked ? (
+        <>
+          <PanelSectionRow>
+            <div>{t("Early access active")} · {state.masked}</div>
+          </PanelSectionRow>
+          <ButtonItem layout="below" onClick={clear} disabled={busy}>{t("Remove key")}</ButtonItem>
+        </>
+      ) : (
+        <>
+          <PanelSectionRow>
+            <TextField
+              label={t("Supporter key")}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+          </PanelSectionRow>
+          <ButtonItem layout="below" onClick={apply} disabled={busy || !draft.trim()}>{t("Apply")}</ButtonItem>
+        </>
+      )}
+      {message && (
+        <PanelSectionRow>
+          <div>{message}</div>
+        </PanelSectionRow>
+      )}
+      <PanelSectionRow>
+        <div style={{ opacity: 0.7, fontSize: "12px" }}>
+          {t("Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.")}
+        </div>
+      </PanelSectionRow>
+    </PanelSection>
+  );
+}
+
 export function SystemExtras({ config, setConfig, showStorage = true }: {
   config: Config;
   setConfig: Dispatch<SetStateAction<Config | null>>;
@@ -92,6 +170,7 @@ export function SystemExtras({ config, setConfig, showStorage = true }: {
     <PanelSection title={t("System")}>
       <SshRow config={config} setConfig={setConfig} />
       {showStorage && <SharedStorageRow config={config} setConfig={setConfig} />}
+      {showStorage && <SupporterKeySection />}
     </PanelSection>
   );
 }

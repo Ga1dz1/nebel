@@ -58,6 +58,7 @@ from nebel_control.sync import (
     sync_state,
 )
 from nebel_control.system import set_ssh_enabled
+from nebel_control import supporter
 from nebel_control.tweaks import load_compat_applied, lsfg_availability, save_compat_applied, save_tweaks
 
 
@@ -88,6 +89,15 @@ class Plugin:
 
     async def set_ssh_enabled(self, enabled):
         return await asyncio.to_thread(set_ssh_enabled, enabled)
+
+    async def get_supporter_state(self):
+        return await asyncio.to_thread(supporter.get_state)
+
+    async def set_supporter_key(self, key):
+        return await asyncio.to_thread(supporter.set_key, key)
+
+    async def clear_supporter_key(self):
+        return await asyncio.to_thread(supporter.clear_key)
 
     async def set_controller_type(self, value):
         return await asyncio.to_thread(set_controller_type, value)

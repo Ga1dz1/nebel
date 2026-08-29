@@ -24,6 +24,16 @@ booted=$(nebel_tag_from_ref "$booted_ref")
 desired=$(nebel_desired_channel "$booted")
 case "$booted_ref" in ostree-image-signed:*) verified=1 ;; *) verified=0 ;; esac
 
+# Supporter gating: non-stable channels need a valid key (entered via
+# Nebel Control). Fail soft - report "no update" and fall back to the booted
+# channel rather than nagging or erroring in the Steam UI.
+if [ "${desired}" != "stable" ] && ! nebel_supporter_ok; then
+    echo "nebel-update: '${desired}' channel needs a supporter key, staying on '${booted}'" >&2
+    mkdir -p "$(dirname "${NEBEL_CHANNEL_STATE}")" 2>/dev/null
+    printf '%s\n' "${booted}" > "${NEBEL_CHANNEL_STATE}" 2>/dev/null
+    exit 7
+fi
+
 # Registry migration: installs whose bootc origin still points at the old
 # armada repo move to the nebel repo, keeping the configured channel tag.
 migrating=0

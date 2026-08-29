@@ -1,0 +1,9 @@
+# Nebel OS supporter key allowlist (public).
+#
+# One sha256 per line - the hash of a supporter key (normalized: lowercase,
+# dashes/whitespace stripped). Keys themselves are NEVER committed here; the
+# maintainer generates a key with tools/supporter-keygen.sh, sends the key to
+# the patron (Patreon DM), and commits only its hash to this file.
+# Keys are removed when a pledge ends; consoles refresh this list once a day.
+# selftest (2026-08-29)
+1d8875cbdb40a7db5e5df11ac08ad338bdafffc927ac1f31502cfeec727ec6b6
