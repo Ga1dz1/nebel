@@ -7,6 +7,11 @@
 set -uo pipefail
 log() { logger -t nebel-dualscreen-keys -- "$*"; }
 
+# start-dualscreen may relaunch us; only one daemon may hold the keys or
+# every press gets answered N times.
+exec 9>/run/user/"$(id -u)"/nebel-dualscreen-keys.lock
+flock -n 9 || { log "already running, exiting"; exit 0; }
+
 volume_device() {
     local dev name
     for dev in /dev/input/event*; do
@@ -32,8 +37,10 @@ if [[ -n "$vdev" ]]; then
     log "watching volume on $vdev"
     ( evtest "$vdev" 2>/dev/null | while read -r l; do
         case "$l" in
-            *"(KEY_VOLUMEUP), value 1"*)    wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ ;;
-            *"(KEY_VOLUMEDOWN), value 1"*)  wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- ;;
+            *"(KEY_VOLUMEUP), value 1"*)    out="$(wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ 2>&1)" \
+                                            && log "volume up -> $out" || log "volume up FAILED: $out" ;;
+            *"(KEY_VOLUMEDOWN), value 1"*)  out="$(wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- 2>&1)" \
+                                            && log "volume down -> $out" || log "volume down FAILED: $out" ;;
         esac
       done ) &
     volpid=$!
@@ -58,7 +65,8 @@ if [[ -n "$pdev" ]]; then
         case "$l" in
             *"(KEY_POWER), value 1"*)
                 if just_resumed; then log "post-resume rebound press ignored"
-                else log "power -> systemctl suspend"; systemctl suspend --no-block; fi ;;
+                elif out="$(systemctl suspend --no-block 2>&1)"; then log "power -> systemctl suspend"
+                else log "power suspend FAILED: $out"; fi ;;
         esac
       done ) &
     powpid=$!
