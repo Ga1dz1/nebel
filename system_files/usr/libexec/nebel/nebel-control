@@ -396,18 +396,15 @@ def action_set_internal_touchpad(request):
     atomic_write(INTERNAL_TOUCHPAD_CONF, f"ENABLED={1 if enabled else 0}\n")
     # The daemon re-reads the conf on restart and picks its output node
     # itself (trackpad split vs rotated touchscreen), so the toggle is just
-    # a restart - a mode switch, never a kill switch. But the service may
-    # only run while an external display owns game mode: on the internal
-    # panel it would grab the digitizer and kill normal touch, so without
-    # the marker we stop it (if running) and make sure the raw touchscreen
-    # is live.
+    # a restart - a mode switch, never a kill switch. The service may always
+    # run while the toggle is on, with or without an external display: it
+    # only owns the digitizer when it actually grabs it, and the user asked
+    # for the touchpad mode to be usable standalone (the OFF branch still
+    # stops it and restores raw touch).
     name = device_env().get("NEBEL_INTERNAL_TOUCHSCREEN", "")
     if name:
         run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
-    if _external_primary_active():
-        run(USER_SYSTEMCTL + ["restart", INTERNAL_TOUCHPAD_SERVICE])
-    else:
-        run(USER_SYSTEMCTL + ["stop", INTERNAL_TOUCHPAD_SERVICE])
+    run(USER_SYSTEMCTL + ["restart", INTERNAL_TOUCHPAD_SERVICE])
     return {"enabled": enabled}
 
 
