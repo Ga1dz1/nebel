@@ -103,6 +103,34 @@ def apply_cpu_affinity(settings):
     os.sched_setaffinity(0, core_set)
 
 
+def current_power_profile():
+    try:
+        out = subprocess.run(
+            ["nebel-power", "status"], capture_output=True, text=True, timeout=5
+        ).stdout
+    except Exception:
+        return None
+    for line in out.splitlines():
+        if line.startswith("profile="):
+            return line.split("=", 1)[1].strip().lower() or None
+    return None
+
+
+def apply_power_profile(settings):
+    """Per-game power profile: switch before the game, return the profile to
+    restore after it exits (None = nothing switched, nothing to restore)."""
+    profile = str(settings.get("powerProfile") or "").lower()
+    if profile not in ("eco", "balanced", "performance"):
+        return None
+    current = current_power_profile()
+    if current == profile:
+        return None
+    if subprocess.run(["nebel-power", "profile", profile], timeout=10).returncode != 0:
+        print(f"nebel-game-launch: power profile {profile} rejected", file=sys.stderr)
+        return None
+    return current
+
+
 def runtime_config_dir():
     # pressure-vessel gives the container a private /tmp and only bind-mounts
     # selected paths, so a config meant for FEX inside the container must live
@@ -788,6 +816,24 @@ def main():
         apply_memory_limit(settings)
     except (OSError, ValueError) as exc:
         print(f"nebel-game-launch: memory limit skipped: {exc}", file=sys.stderr)
+
+    restore_profile = None
+    try:
+        restore_profile = apply_power_profile(settings)
+    except Exception as exc:
+        print(f"nebel-game-launch: power profile skipped: {exc}", file=sys.stderr)
+
+    if restore_profile:
+        # A per-game profile was switched: we own the game's lifetime now, so
+        # wait it out and restore the previous profile on exit. The child
+        # stays in our process group, so Steam's signals still reach it.
+        proc = subprocess.Popen(args)
+        code = proc.wait()
+        try:
+            subprocess.run(["nebel-power", "profile", restore_profile], timeout=10)
+        except Exception as exc:
+            print(f"nebel-game-launch: profile restore failed: {exc}", file=sys.stderr)
+        raise SystemExit(code)
 
     try:
         os.execv(args[0], args)

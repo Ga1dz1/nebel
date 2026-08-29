@@ -132,6 +132,12 @@ const cpuAffinityOptions = [
   { data: "one", label: t("Single core (cpu4)") },
   { data: "two", label: t("Two cores (cpu4-5)") },
 ];
+const powerProfileOptions = [
+  { data: "", label: t("Default") },
+  { data: "eco", label: "Eco" },
+  { data: "balanced", label: "Balanced" },
+  { data: "performance", label: "Performance" },
+];
 const fexKnobs = [
   { key: "TSOEnabled", label: "TSO Enabled" },
   { key: "X87ReducedPrecision", label: "X87 Reduced Precision" },
@@ -627,6 +633,13 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
                 options={cpuAffinityOptions}
                 onChange={(value) => patchSettings({ cores: value || undefined })}
               />
+              <SelectEdit
+                label={t("Power Profile")}
+                value={String(values.powerProfile || "")}
+                options={powerProfileOptions}
+                onChange={(value) => patchSettings({ powerProfile: value || undefined })}
+              />
+              <div className="nebel-compat-note">{t("Switches the system power profile for this game and restores it after exit")}</div>
               {(!injected || values.gameEra === "xp") && (
               <Collapsible label={t("Old games (legacy Windows)")}>
                 <SelectEdit

@@ -38,6 +38,7 @@ export interface GameTweak {
   envPresets?: Record<string, boolean>;
   heroicForce?: boolean;
   dualScreen?: boolean;
+  powerProfile?: string;
   [key: string]: any;
 }
 
