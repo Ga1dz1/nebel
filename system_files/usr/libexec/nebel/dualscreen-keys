@@ -50,13 +50,32 @@ fi
 # guard as powerbuttond. The wake press lands within a second of resume;
 # 30s of dead power button after every wake is worse than a rare double.
 REBOUND_GUARD_MS=5000
+# Re-suspending while the previous resume is still settling (USB dock
+# touch re-enumeration, bluetooth firmware reload) is what hung a real
+# V1 mini on wake - refuse a second suspend this soon after resume.
+RESUSPEND_GUARD_MS=30000
+
 RESUME_FLAG="/run/nebel/real-suspend.resumed-at"
-just_resumed() {
-    local at
+resumed_ms_ago() {
+    local at now
     [[ -r "$RESUME_FLAG" ]] || return 1
     at="$(cat "$RESUME_FLAG" 2>/dev/null)" || return 1
     [[ "$at" =~ ^[0-9]+$ ]] || return 1
-    (( ( $(date +%s%3N) - at ) < REBOUND_GUARD_MS ))
+    now="$(date +%s%3N)"
+    echo $(( now - at ))
+    return 0
+}
+
+just_resumed() {
+    local ago
+    ago="$(resumed_ms_ago)" || return 1
+    (( ago < REBOUND_GUARD_MS ))
+}
+
+too_soon_to_resuspend() {
+    local ago
+    ago="$(resumed_ms_ago)" || return 1
+    (( ago < RESUSPEND_GUARD_MS ))
 }
 
 pdev="$(power_device || true)"
@@ -66,6 +85,7 @@ if [[ -n "$pdev" ]]; then
         case "$l" in
             *"(KEY_POWER), value 1"*)
                 if just_resumed; then log "post-resume rebound press ignored"
+                elif too_soon_to_resuspend; then log "resumed <30s ago, suspend refused"
                 elif out="$(systemctl suspend --no-block 2>&1)"; then log "power -> systemctl suspend"
                 else log "power suspend FAILED: $out"; fi ;;
         esac
