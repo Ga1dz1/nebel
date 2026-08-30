@@ -79,7 +79,10 @@ LSFG_LAYER_MANIFEST = Path("/usr/share/vulkan/lsfg-vk/VkLayer_LSFGVK_frame_gener
 
 
 def lsfg_availability():
-    home = Path.home()
+    # The decky backend runs as root (PluginLoader service), so Path.home()
+    # points at /root and never finds the user's Steam install. Use the
+    # session home like sync.py/steam.py do.
+    home = Path("/var/home/nebel")
     lossless_candidates = [
         home / ".local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll",
         home / ".steam/steam/steamapps/common/Lossless Scaling/Lossless.dll",
