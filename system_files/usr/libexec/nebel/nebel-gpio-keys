@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""RP6 gpio-keys splitter (VolUp + back paddles).
+
+The Retroid Pocket 6 routes three buttons through one gpio-keys node:
+key-volume-up plus the two back paddles (key-paddle-left/right, exposed as
+BTN_C/BTN_Z). The BTN_* codes make udev classify the node as a joystick,
+which libinput refuses to initialize, so KEY_VOLUMEUP never reached
+gamescope/Steam and VolUp was dead in game mode. The paddles also cannot be
+hwdb-remapped: gpio-keys has no sparse keymap, so EVIOCSKEYCODE fails with
+EINVAL.
+
+This daemon grabs the physical node and re-emits the events on a clean
+virtual keyboard:
+  KEY_VOLUMEUP -> KEY_VOLUMEUP   (gamescope/Steam volume handling)
+  BTN_C        -> KEY_F14        (left paddle, mappable in Steam Input)
+  BTN_Z        -> KEY_F15        (right paddle)
+
+The physical node is hidden from libinput/SDL via
+70-nebel-rp6-gpio-keys.rules (LIBINPUT_IGNORE_DEVICE), so there is no
+double input.
+
+Devices without a gpio-keys node keep scanning quietly (RP5/Flip/Mini
+route their buttons differently), so the unit is safe to enable globally.
+"""
+import fcntl
+import os
+import select
+import struct
+import sys
+import time
+from pathlib import Path
+
+EV_SYN = 0x00
+EV_KEY = 0x01
+
+KEY_VOLUMEUP = 0x73
+BTN_C = 0x132
+BTN_Z = 0x135
+KEY_F14 = 184
+KEY_F15 = 185
+
+KEY_MAP = {
+    KEY_VOLUMEUP: KEY_VOLUMEUP,
+    BTN_C: KEY_F14,
+    BTN_Z: KEY_F15,
+}
+
+# _IOW('E', 0x90, int) - the full ioctl, raw 0x90 gets EINVAL from the kernel
+EVIOCGRAB = (1 << 30) | (4 << 16) | (ord("E") << 8) | 0x90
+INPUT_EVENT_FMT = "llHHi"
+INPUT_EVENT_SIZE = struct.calcsize(INPUT_EVENT_FMT)
+
+# uinput ioctls (standard Linux values)
+UINPUT_IOCTL_BASE = ord("U")
+_IOC_WRITE = 1
+_IOC_NRBITS = 8
+_IOC_TYPEBITS = 8
+_IOC_SIZEBITS = 14
+_IOC_DIRBITS = 2
+_IOC_NRSHIFT = 0
+_IOC_TYPESHIFT = _IOC_NRSHIFT + _IOC_NRBITS
+_IOC_SIZESHIFT = _IOC_TYPESHIFT + _IOC_TYPEBITS
+_IOC_DIRSHIFT = _IOC_SIZESHIFT + _IOC_SIZEBITS
+
+
+def _IOC(direction, type_, nr, size):
+    return (direction << _IOC_DIRSHIFT) | (size << _IOC_SIZESHIFT) | (type_ << _IOC_TYPESHIFT) | (nr << _IOC_NRSHIFT)
+
+
+def _IOW(type_, nr, size):
+    return _IOC(_IOC_WRITE, type_, nr, size)
+
+
+UI_SET_EVBIT = _IOW(UINPUT_IOCTL_BASE, 100, 4)
+UI_SET_KEYBIT = _IOW(UINPUT_IOCTL_BASE, 101, 4)
+UI_DEV_SETUP = _IOW(UINPUT_IOCTL_BASE, 3, 92)
+UI_DEV_CREATE = _IOC(0, UINPUT_IOCTL_BASE, 1, 0)
+
+DEVICE_NAME = b"gpio-keys"
+
+
+def find_gpio_keys():
+    for ev in sorted(Path("/sys/class/input").glob("event*")):
+        try:
+            name = (ev / "device" / "name").read_text().strip()
+            phys = (ev / "device" / "phys").read_text().strip()
+        except OSError:
+            continue
+        if name == "gpio-keys" and phys == "gpio-keys/input0":
+            return "/dev/input/" + ev.name
+    return None
+
+
+class VirtualKeyboard:
+    def __init__(self):
+        self.fd = None
+
+    def open(self):
+        fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
+        fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
+        for code in set(KEY_MAP.values()):
+            fcntl.ioctl(fd, UI_SET_KEYBIT, code)
+        setup = struct.pack(
+            "HHHH80sI",
+            0x0019,  # BUS_HOST, same as the physical node
+            0x0001,
+            0x0001,
+            1,
+            DEVICE_NAME,
+            0,
+        )
+        fcntl.ioctl(fd, UI_DEV_SETUP, setup)
+        fcntl.ioctl(fd, UI_DEV_CREATE)
+        self.fd = fd
+
+    def close(self):
+        if self.fd is not None:
+            try:
+                os.close(self.fd)
+            except OSError:
+                pass
+            self.fd = None
+
+    def emit(self, type_, code, value):
+        now = time.time()
+        sec = int(now)
+        usec = int((now - sec) * 1_000_000)
+        os.write(self.fd, struct.pack(INPUT_EVENT_FMT, sec, usec, type_, code, value))
+
+
+def main():
+    print("nebel-gpio-keys: waiting for gpio-keys node", file=sys.stderr)
+    source_path = None
+    while source_path is None:
+        source_path = find_gpio_keys()
+        if source_path is None:
+            time.sleep(5)
+    print(f"nebel-gpio-keys: found {source_path}", file=sys.stderr)
+
+    while True:
+        virt = VirtualKeyboard()
+        src = None
+        try:
+            virt.open()
+            src = os.open(source_path, os.O_RDONLY | os.O_NONBLOCK)
+            fcntl.ioctl(src, EVIOCGRAB, 1)
+            print("nebel-gpio-keys: grabbed, virtual device up", file=sys.stderr)
+            while True:
+                ready, _, _ = select.select([src], [], [], 5)
+                if not ready:
+                    continue
+                data = os.read(src, INPUT_EVENT_SIZE * 16)
+                for off in range(0, len(data), INPUT_EVENT_SIZE):
+                    _, _, ev_type, code, value = struct.unpack(
+                        INPUT_EVENT_FMT, data[off : off + INPUT_EVENT_SIZE]
+                    )
+                    if ev_type == EV_KEY and code in KEY_MAP:
+                        virt.emit(EV_KEY, KEY_MAP[code], value)
+                        virt.emit(EV_SYN, 0, 0)
+        except OSError as exc:
+            print(f"nebel-gpio-keys: {exc}, reconnecting", file=sys.stderr)
+            time.sleep(2)
+        finally:
+            if src is not None:
+                try:
+                    os.close(src)
+                except OSError:
+                    pass
+            virt.close()
+            # The physical node may be gone for good (reboot/kernel change):
+            # re-scan instead of trusting the stale path.
+            if find_gpio_keys() != source_path:
+                source_path = None
+                while source_path is None:
+                    time.sleep(5)
+                    source_path = find_gpio_keys()
+                print(f"nebel-gpio-keys: re-found {source_path}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

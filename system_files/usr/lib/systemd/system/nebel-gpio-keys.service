@@ -1,0 +1,13 @@
+[Unit]
+Description=Nebel RP6 gpio-keys splitter (VolUp + paddles)
+# Runs on every device; the daemon scans for the gpio-keys node and idles
+# on hardware that routes buttons differently (RP5/Flip/Mini).
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/nebel/nebel-gpio-keys
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

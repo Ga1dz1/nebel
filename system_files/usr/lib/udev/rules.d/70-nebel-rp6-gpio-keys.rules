@@ -1,0 +1,11 @@
+# Retroid Pocket 6 gpio-keys (VolUp + back paddles as BTN_C/BTN_Z): the
+# BTN_* codes make udev classify the node as a joystick, which libinput
+# refuses to initialize - so KEY_VOLUMEUP never reached gamescope/Steam.
+# The node is owned by the nebel-gpio-keys splitter daemon (VolUp passthrough
+# + paddles re-emitted as KEY_F14/KEY_F15 on a virtual keyboard), so hide it
+# from libinput/SDL entirely. The daemon re-emits everything; the virtual
+# device is what gamescope/Steam see.
+#
+# Devices without this node are unaffected (rule matches name+phys pair).
+
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="gpio-keys", ATTRS{phys}=="gpio-keys/input0", ENV{ID_INPUT_JOYSTICK}="", ENV{ID_INPUT_KEY}="1", ENV{LIBINPUT_IGNORE_DEVICE}="1", TAG-="uaccess", TAG-="seat", MODE="0000"
