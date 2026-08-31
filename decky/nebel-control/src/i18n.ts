@@ -7,6 +7,10 @@ export type Locale = "en" | "uk" | "ru" | "es" | "fr";
 type Dictionary = Record<string, string>;
 
 const uk: Dictionary = {
+  "Internal screen": "Вбудований екран",
+  "Touchscreen": "Сенсорний екран",
+  "Touchpad (pointer)": "Тачпад (вказівник)",
+  "Steam trackpads": "Трекпади Steam",
   "Loading": "Завантаження",
   "Default": "За замовчуванням",
   "Reset to Default": "Скинути до типових",
@@ -324,6 +328,10 @@ const uk: Dictionary = {
 };
 
 const ru: Dictionary = {
+  "Internal screen": "Встроенный экран",
+  "Touchscreen": "Сенсорный экран",
+  "Touchpad (pointer)": "Тачпад (указатель)",
+  "Steam trackpads": "Трекпады Steam",
   "Loading": "Загрузка",
   "Default": "По умолчанию",
   "Reset to Default": "Сбросить к настройкам по умолчанию",
@@ -641,6 +649,10 @@ const ru: Dictionary = {
 };
 
 const es: Dictionary = {
+  "Internal screen": "Pantalla interna",
+  "Touchscreen": "Pantalla táctil",
+  "Touchpad (pointer)": "Panel táctil (puntero)",
+  "Steam trackpads": "Trackpads de Steam",
   "Loading": "Cargando",
   "Default": "Predeterminado",
   "Reset to Default": "Restablecer valores predeterminados",
@@ -949,6 +961,10 @@ const es: Dictionary = {
 };
 
 const fr: Dictionary = {
+  "Internal screen": "Écran interne",
+  "Touchscreen": "Écran tactile",
+  "Touchpad (pointer)": "Pavé tactile (pointeur)",
+  "Steam trackpads": "Trackpads Steam",
   "Loading": "Chargement",
   "Default": "Par défaut",
   "Reset to Default": "Réinitialiser par défaut",

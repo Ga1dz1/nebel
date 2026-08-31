@@ -230,8 +230,8 @@ class Plugin:
     async def start_dualscreen_session(self):
         return await asyncio.to_thread(start_dualscreen_session)
 
-    async def set_internal_touchpad(self, enabled):
-        return await asyncio.to_thread(set_internal_touchpad, enabled)
+    async def set_internal_touchpad(self, mode):
+        return await asyncio.to_thread(set_internal_touchpad, mode)
 
     async def set_stick_led_notify(self, enabled):
         return await asyncio.to_thread(set_stick_led_notify, enabled)

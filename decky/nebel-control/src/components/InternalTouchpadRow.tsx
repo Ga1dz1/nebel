@@ -1,33 +1,43 @@
 import { useEffect, useState } from "react";
 import { getDisplayState, setInternalTouchpad } from "../backend";
 import { t } from "../i18n";
-import { ToggleRow } from "./widgets";
+import { SelectEdit } from "./widgets";
 
-// Internal touchscreen as a Steam-Deck-style trackpad (the
-// nebel-internal-touchpad service): right half = pointer / tap = left click,
-// left half = scroll / tap = right click. Works in any session, independent
-// of whether an external display is connected or primary, so it lives with
-// the Controller settings (and in the QAM) rather than the Display tab.
+// Internal touchscreen mode (the nebel-internal-touchpad service):
+//   0 = plain touchscreen (rotated to match the panel),
+//   1 = whole-panel pointer (tap = left click, two-finger tap = right click),
+//   2 = Steam Deck trackpads: InputPlumber splits the panel at the midline
+//       into LeftPad/RightPad on the deck-uhid target, so Steam controller
+//       layouts can bind them like real Deck pads.
+// Works in any session, independent of whether an external display is
+// connected or primary, so it lives with the Controller settings (and in the
+// QAM) rather than the Display tab.
 // Self-contained: fetches its own state, optimistic set with rollback.
 export function InternalTouchpadRow() {
-  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [mode, setMode] = useState<number | null>(null);
   useEffect(() => {
     getDisplayState()
-      .then((state) => setEnabled(state.internalTouchpad))
+      .then((state) => setMode(state.internalTouchpad))
       .catch(() => {});
   }, []);
-  if (enabled === null) return null;
-  const onChange = (value: boolean) => {
-    setEnabled(value);
+  if (mode === null) return null;
+  const onChange = (data: string) => {
+    const value = Number(data);
+    const previous = mode;
+    setMode(value);
     setInternalTouchpad(value)
-      .then(setEnabled)
-      .catch(() => setEnabled(!value));
+      .then(setMode)
+      .catch(() => setMode(previous));
   };
   return (
-    <ToggleRow
-      label={t("Internal screen as touchpad")}
-      description={t("The internal touchscreen works as Steam Deck style trackpads: both halves move the pointer (tap = left click), two-finger tap = right click, two-finger drag = scroll. Off: normal touchscreen.")}
-      value={enabled}
+    <SelectEdit
+      label={t("Internal screen")}
+      value={String(mode)}
+      options={[
+        { data: "0", label: t("Touchscreen") },
+        { data: "1", label: t("Touchpad (pointer)") },
+        { data: "2", label: t("Steam trackpads") },
+      ]}
       onChange={onChange}
     />
   );

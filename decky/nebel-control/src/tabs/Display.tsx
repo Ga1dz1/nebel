@@ -1,6 +1,7 @@
 import { ButtonItem, Field, PanelSection } from "@decky/ui";
 import { useEffect, useState } from "react";
 import { getDisplayState, restartGamescopeSession, setDisplayConfig } from "../backend";
+import { InternalTouchpadRow } from "../components/InternalTouchpadRow";
 import { SelectEdit } from "../components/widgets";
 import { t } from "../i18n";
 import type { DisplayConnector, DisplayState } from "../types";
@@ -112,7 +113,11 @@ export function Display(_props: { qam?: boolean }) {
   };
 
   return (
-    <PanelSection title={t("External Display")}>
+    <>
+      <PanelSection title={t("Internal Screen")}>
+        <InternalTouchpadRow />
+      </PanelSection>
+      <PanelSection title={t("External Display")}>
       <SelectEdit label={t("Primary Display")} value={selectedConnector} options={primaryOptions} onChange={selectPrimary} disabled={saving} />
       {state.useExternal && (
         <>
@@ -151,5 +156,6 @@ export function Display(_props: { qam?: boolean }) {
         </ButtonItem>
       </div>
     </PanelSection>
+    </>
   );
 }

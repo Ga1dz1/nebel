@@ -374,26 +374,37 @@ def _external_primary_active():
         return False
 
 
-def _internal_touchpad_enabled():
-    # Default OFF (plain touchscreen), matching the daemon's own default:
-    # the Deck-trackpad split is opt-in until the InputPlumber deck chain is
-    # confirmed working end to end.
+INTERNAL_TOUCHPAD_MODES = (0, 1, 2)
+
+
+def _internal_touchpad_mode():
+    # 0 = plain rotated touchscreen, 1 = whole-panel pointer (interim
+    # fallback), 2 = Deck trackpads split via InputPlumber. Default 0,
+    # matching the daemon's own default.
     try:
         for line in INTERNAL_TOUCHPAD_CONF.read_text(encoding="utf-8").splitlines():
             if line.startswith("ENABLED="):
-                return line.split("=", 1)[1].strip() != "0"
-    except OSError:
+                mode = int(line.split("=", 1)[1].strip())
+                return mode if mode in INTERNAL_TOUCHPAD_MODES else 0
+    except (OSError, ValueError):
         pass
-    return False
+    return 0
 
 
 def action_get_internal_touchpad(request):
-    return {"enabled": _internal_touchpad_enabled()}
+    mode = _internal_touchpad_mode()
+    return {"enabled": mode != 0, "mode": mode}
 
 
 def action_set_internal_touchpad(request):
-    enabled = bool(request.get("enabled"))
-    atomic_write(INTERNAL_TOUCHPAD_CONF, f"ENABLED={1 if enabled else 0}\n")
+    if "mode" in request:
+        mode = int(request.get("mode"))
+        if mode not in INTERNAL_TOUCHPAD_MODES:
+            raise ValueError("invalid internal touchpad mode")
+    else:
+        # Legacy boolean callers: on = whole-panel pointer.
+        mode = 1 if bool(request.get("enabled")) else 0
+    atomic_write(INTERNAL_TOUCHPAD_CONF, f"ENABLED={mode}\n")
     # The daemon re-reads the conf on restart and picks its output node
     # itself (trackpad split vs rotated touchscreen), so the toggle is just
     # a restart - a mode switch, never a kill switch. The service may always
@@ -405,7 +416,7 @@ def action_set_internal_touchpad(request):
     if name:
         run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
     run(USER_SYSTEMCTL + ["restart", INTERNAL_TOUCHPAD_SERVICE])
-    return {"enabled": enabled}
+    return {"enabled": mode != 0, "mode": mode}
 
 
 def action_set_controller_type(request):

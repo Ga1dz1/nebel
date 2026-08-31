@@ -4,7 +4,6 @@ import type { Dispatch, SetStateAction } from "react";
 import { setControllerType as applyControllerType, setSharedStorageEnabled as applySharedStorageEnabled, setSshEnabled as applySshEnabled, clearSupporterKey, getSupporterState, setSupporterKey } from "../backend";
 import type { SupporterState } from "../backend";
 import { openCalibration } from "../components/Calibration";
-import { InternalTouchpadRow } from "../components/InternalTouchpadRow";
 import { OpenFullScreenButton, SelectEdit, ToggleRow } from "../components/widgets";
 import { t } from "../i18n";
 import type { Config } from "../types";
@@ -35,7 +34,6 @@ export function ControllerExtras({ config, setConfig, showEmulation = true }: {
         />
       )}
       <ButtonItem layout="below" onClick={openCalibration}>{t("Launch Calibration")}</ButtonItem>
-      <InternalTouchpadRow />
     </PanelSection>
   );
 }

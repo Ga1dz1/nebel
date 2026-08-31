@@ -78,7 +78,7 @@ const endCalibrationSession = (token) => call("end_calibration_session", token);
 const getDisplayState = () => call("get_display_state");
 const setDisplayConfig = (useExternal, connector, width, height, orientation) => call("set_display_config", useExternal, connector, width, height, orientation);
 const restartGamescopeSession = () => call("restart_gamescope_session");
-const setInternalTouchpad = (enabled) => call("set_internal_touchpad", enabled);
+const setInternalTouchpad = (mode) => call("set_internal_touchpad", mode);
 const getSyncState = () => call("get_sync_state");
 const setSyncServiceEnabled = (enabled) => call("set_sync_service_enabled", enabled);
 const syncAddDevice = (deviceId, name) => call("sync_add_device", deviceId, name);
@@ -122,6 +122,10 @@ function useDebouncedSave(options) {
 }
 
 const uk = {
+    "Internal screen": "Вбудований екран",
+    "Touchscreen": "Сенсорний екран",
+    "Touchpad (pointer)": "Тачпад (вказівник)",
+    "Steam trackpads": "Трекпади Steam",
     "Loading": "Завантаження",
     "Default": "За замовчуванням",
     "Reset to Default": "Скинути до типових",
@@ -438,6 +442,10 @@ const uk = {
     "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Розблоковує канали оновлення beta і preview. Ключі надаються за підтримки на Patreon — канал stable залишається безкоштовним для всіх.",
 };
 const ru = {
+    "Internal screen": "Встроенный экран",
+    "Touchscreen": "Сенсорный экран",
+    "Touchpad (pointer)": "Тачпад (указатель)",
+    "Steam trackpads": "Трекпады Steam",
     "Loading": "Загрузка",
     "Default": "По умолчанию",
     "Reset to Default": "Сбросить к настройкам по умолчанию",
@@ -754,6 +762,10 @@ const ru = {
     "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Разблокирует каналы обновления beta и preview. Ключи выдаются за поддержку на Patreon — канал stable остаётся бесплатным для всех.",
 };
 const es = {
+    "Internal screen": "Pantalla interna",
+    "Touchscreen": "Pantalla táctil",
+    "Touchpad (pointer)": "Panel táctil (puntero)",
+    "Steam trackpads": "Trackpads de Steam",
     "Loading": "Cargando",
     "Default": "Predeterminado",
     "Reset to Default": "Restablecer valores predeterminados",
@@ -1061,6 +1073,10 @@ const es = {
     "Menu key": "Tecla de menú",
 };
 const fr = {
+    "Internal screen": "Écran interne",
+    "Touchscreen": "Écran tactile",
+    "Touchpad (pointer)": "Pavé tactile (pointeur)",
+    "Steam trackpads": "Trackpads Steam",
     "Loading": "Chargement",
     "Default": "Par défaut",
     "Reset to Default": "Réinitialiser par défaut",
@@ -2232,6 +2248,40 @@ function SliderEdit({ label, value, min, max, step, onChange, format, valueSuffi
     return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "nebel-slider-field", children: SP_JSX.jsx(DFL.SliderField, { label: label, value: Number.isFinite(numeric) ? numeric : min, min: min, max: max, step: step, showValue: true, valueSuffix: valueSuffix, onChange: (next) => onChange(format ? format(next) : next) }) }) }));
 }
 
+// Internal touchscreen mode (the nebel-internal-touchpad service):
+//   0 = plain touchscreen (rotated to match the panel),
+//   1 = whole-panel pointer (tap = left click, two-finger tap = right click),
+//   2 = Steam Deck trackpads: InputPlumber splits the panel at the midline
+//       into LeftPad/RightPad on the deck-uhid target, so Steam controller
+//       layouts can bind them like real Deck pads.
+// Works in any session, independent of whether an external display is
+// connected or primary, so it lives with the Controller settings (and in the
+// QAM) rather than the Display tab.
+// Self-contained: fetches its own state, optimistic set with rollback.
+function InternalTouchpadRow() {
+    const [mode, setMode] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        getDisplayState()
+            .then((state) => setMode(state.internalTouchpad))
+            .catch(() => { });
+    }, []);
+    if (mode === null)
+        return null;
+    const onChange = (data) => {
+        const value = Number(data);
+        const previous = mode;
+        setMode(value);
+        setInternalTouchpad(value)
+            .then(setMode)
+            .catch(() => setMode(previous));
+    };
+    return (SP_JSX.jsx(SelectEdit, { label: t("Internal screen"), value: String(mode), options: [
+            { data: "0", label: t("Touchscreen") },
+            { data: "1", label: t("Touchpad (pointer)") },
+            { data: "2", label: t("Steam trackpads") },
+        ], onChange: onChange }));
+}
+
 // gamescope only ever drives one embedded output at a time (--prefer-output
 // picks the first available from a priority list at startup, there's no
 // live multi-monitor/hotplug re-pick) - so "primary display" here means
@@ -2323,18 +2373,18 @@ function Display(_props) {
     const selectOrientation = (orientation) => {
         persist({ orientation });
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("External Display"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") }))] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
-                        setRestarting(true);
-                        setErrorMessage("");
-                        // A successful restart tears down this very session (and Decky
-                        // with it), so there's nothing to update on success - only a
-                        // failure ever reaches this component again, and the button
-                        // must re-enable then or a failed restart looks identical to a
-                        // silently-still-in-progress one with no way to retry.
-                        restartGamescopeSession()
-                            .catch((error) => setErrorMessage(String(error)))
-                            .finally(() => setRestarting(false));
-                    }, children: t("Apply & Restart Game Mode") }) })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Internal Screen"), children: SP_JSX.jsx(InternalTouchpadRow, {}) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("External Display"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") }))] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
+                                setRestarting(true);
+                                setErrorMessage("");
+                                // A successful restart tears down this very session (and Decky
+                                // with it), so there's nothing to update on success - only a
+                                // failure ever reaches this component again, and the button
+                                // must re-enable then or a failed restart looks identical to a
+                                // silently-still-in-progress one with no way to retry.
+                                restartGamescopeSession()
+                                    .catch((error) => setErrorMessage(String(error)))
+                                    .finally(() => setRestarting(false));
+                            }, children: t("Apply & Restart Game Mode") }) })] })] }));
 }
 
 function HeroicSection({ appid, forced, onToggleForce }) {
@@ -4188,30 +4238,6 @@ function openCalibration() {
     DFL.showModal(SP_JSX.jsx(CalibrationModal, {}));
 }
 
-// Internal touchscreen as a Steam-Deck-style trackpad (the
-// nebel-internal-touchpad service): right half = pointer / tap = left click,
-// left half = scroll / tap = right click. Works in any session, independent
-// of whether an external display is connected or primary, so it lives with
-// the Controller settings (and in the QAM) rather than the Display tab.
-// Self-contained: fetches its own state, optimistic set with rollback.
-function InternalTouchpadRow() {
-    const [enabled, setEnabled] = SP_REACT.useState(null);
-    SP_REACT.useEffect(() => {
-        getDisplayState()
-            .then((state) => setEnabled(state.internalTouchpad))
-            .catch(() => { });
-    }, []);
-    if (enabled === null)
-        return null;
-    const onChange = (value) => {
-        setEnabled(value);
-        setInternalTouchpad(value)
-            .then(setEnabled)
-            .catch(() => setEnabled(!value));
-    };
-    return (SP_JSX.jsx(ToggleRow, { label: t("Internal screen as touchpad"), description: t("The internal touchscreen works as Steam Deck style trackpads: both halves move the pointer (tap = left click), two-finger tap = right click, two-finger drag = scroll. Off: normal touchscreen."), value: enabled, onChange: onChange }));
-}
-
 function ControllerExtras({ config, setConfig, showEmulation = true }) {
     const setControllerType$1 = async (value) => {
         const previous = config.controllerType || "deck-uhid";
@@ -4224,7 +4250,7 @@ function ControllerExtras({ config, setConfig, showEmulation = true }) {
             setConfig((current) => (current ? { ...current, controllerType: previous } : current));
         }
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Controller"), children: [showEmulation && (SP_JSX.jsx(SelectEdit, { label: t("Emulation"), value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 })), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: t("Launch Calibration") }), SP_JSX.jsx(InternalTouchpadRow, {})] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Controller"), children: [showEmulation && (SP_JSX.jsx(SelectEdit, { label: t("Emulation"), value: config.controllerType || "deck-uhid", options: config.controllerTypes || [], onChange: setControllerType$1 })), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openCalibration, children: t("Launch Calibration") })] }));
 }
 function SshRow({ config, setConfig }) {
     const setSshEnabled$1 = async (enabled) => {

@@ -17,7 +17,7 @@ def display_state():
         "height": config.get("height", 0),
         "orientation": config.get("orientation") or "normal",
         "remembered": remembered if isinstance(remembered, dict) else {},
-        "internalTouchpad": bool(call("get_internal_touchpad").get("enabled")),
+        "internalTouchpad": int(call("get_internal_touchpad").get("mode", 0)),
     }
 
 
@@ -48,6 +48,6 @@ def start_dualscreen_session():
     return {"ok": True}
 
 
-def set_internal_touchpad(enabled):
-    result = call("set_internal_touchpad", enabled=bool(enabled))
-    return bool(result.get("enabled"))
+def set_internal_touchpad(mode):
+    result = call("set_internal_touchpad", mode=int(mode))
+    return int(result.get("mode", 0))

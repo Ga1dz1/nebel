@@ -162,7 +162,7 @@ export interface DisplayState {
   height: number;
   orientation: string;
   remembered: Record<string, RememberedDisplay>;
-  internalTouchpad: boolean;
+  internalTouchpad: number;
 }
 
 export type Capture = Record<string, { center: number; min: number; max: number; range: number }>;
