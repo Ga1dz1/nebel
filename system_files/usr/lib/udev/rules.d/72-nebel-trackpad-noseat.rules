@@ -1,0 +1,7 @@
+# "Nebel Trackpad Screen" (uinput 222a:0002) is InputPlumber's SOURCE for the
+# Deck trackpad split - not a session input device. If it lands on the logind
+# seat, gamescope grabs it first and InputPlumber's attach fails EBUSY (the
+# trackpads then silently do nothing). Keep it off the seat; ID_INPUT_*
+# classification stays intact so InputPlumber still picks the touchscreen
+# driver with the deck_trackpads mode.
+ACTION=="add|change", SUBSYSTEM=="input", ATTRS{id/vendor}=="222a", ATTRS{id/product}=="0002", TAG-="seat", TAG-="uaccess"

@@ -67,6 +67,17 @@ source_devices:
     # that hardware, but the same reasoning about grab behavior applies
     # regardless of which exact device is behind the node.
     passthrough: true
+  - group: gamepad
+    # RP6 back paddles: routed through gpio-keys (BTN_C/BTN_Z), not the MCU.
+    # nebel-gpio-keys grabs that node and re-emits the paddles on a virtual
+    # uinput node (Nebel ids 0x222A:0x0004); ayn_mcu translates them into
+    # Deck RightPaddle1/LeftPaddle1 (R4/L4 in Steam). The node is virtual,
+    # so it also needs the manager whitelist entry (inputplumber patch 0005).
+    evdev:
+      vendor_id: "222a"
+      product_id: "0004"
+      handler: event*
+    capability_map_id: ayn_mcu
 
 # Optional configuration for the composite device
 options:

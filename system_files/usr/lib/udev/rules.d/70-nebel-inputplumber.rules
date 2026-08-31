@@ -1,4 +1,7 @@
-# Steam needs group access to the deck-uhid hidraw node.
+# Steam needs group access to the deck-uhid hidraw node. InputPlumber
+# emulates a real Steam Deck (28DE:1205) since patch 0006; 28DE:12F0 is the
+# old generic PID kept for downgrade compatibility.
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", KERNELS=="0003:28DE:1205.*", GROUP="input", MODE="0660"
 KERNEL=="hidraw*", SUBSYSTEM=="hidraw", KERNELS=="0003:28DE:12F0.*", GROUP="input", MODE="0660"
 
 # InputPlumber shares the raw AYN gamepad with Waydroid. Keep desktop input

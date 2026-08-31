@@ -1,0 +1,4 @@
+# UCSI (USB-C PD) power_supply не должна будить SoC из suspend:
+# PD-линк с зарядкой периодически «трещит» (renegotiation/notify),
+# что приводит к немедленному пробуждению после засыпания на зарядке.
+ACTION=="add|change", SUBSYSTEM=="power_supply", KERNEL=="ucsi-source-psy-*", ATTR{power/wakeup}="disabled"

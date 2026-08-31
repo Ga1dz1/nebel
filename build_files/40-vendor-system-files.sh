@@ -46,6 +46,7 @@ systemctl enable nebel-abl-update.service
 systemctl enable nebel-desktop-hotkeys.service
 systemctl enable nebel-led-notify.service
 systemctl enable nebel-steamui-watchdog.service
+systemctl enable nebel-gpio-keys.service
 # Disabled - see git history: suspected of causing a full, unrecoverable
 # system hang (not just gamescope) on Desktop <-> Gaming Mode transitions.
 # An unthrottled (kernel.sched_rt_runtime_us=-1, reverted alongside this)

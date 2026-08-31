@@ -26,6 +26,12 @@
 # the next internal-primary session. Pure stdlib on purpose: no
 # python-evdev dependency in the image.
 #
+# ENABLED=2 "Nebel Trackpad Screen" (222a:0002) - faithful MT pass-through;
+#   InputPlumber's deck_trackpads mode (patch 0003) splits it at the midline
+#   into Deck LeftPad/RightPad for the deck-uhid target. This is the real
+#   Steam-trackpads chain; ENABLED=1 stays as the mouse-emulation fallback
+#   until the chain is confirmed end to end.
+#
 # Absolute rotation mirrors gamescope's own touchscreen transform
 # (apply_touchscreen_orientation, panel native -> logical):
 #   normal:      ( x,  y)        left (90):   (ymin+ymax-y, x)
@@ -125,7 +131,7 @@ def abs_info(fd, axis):
 
 def read_mode():
     override = os.environ.get("NEBEL_INTERNAL_TOUCHPAD_MODE")
-    if override in ("trackpad", "touchscreen"):
+    if override in ("trackpad", "touchscreen", "deck"):
         return override
     # Default OFF (plain touchscreen): the Deck-trackpad split is opt-in
     # until the InputPlumber deck chain is confirmed working end to end.
@@ -136,6 +142,8 @@ def read_mode():
                 enabled = line.split("=", 1)[1].strip()
     except OSError:
         pass
+    if enabled == "2":
+        return "deck"
     return "trackpad" if enabled != "0" else "touchscreen"
 
 
@@ -184,6 +192,31 @@ def open_uinput(name, product, abs_axes):
     fcntl.ioctl(fd, UI_SET_EVBIT, EV_ABS)
     fcntl.ioctl(fd, UI_SET_KEYBIT, BTN_TOUCH)
     for code, minimum, maximum in abs_axes:
+        fcntl.ioctl(fd, UI_SET_ABSBIT, code)
+        setup = struct.pack("H2x6i", code, 0, minimum, maximum, 0, 0, 0)
+        fcntl.ioctl(fd, UI_ABS_SETUP, setup)
+    setup = (struct.pack("HHHH", 0x03, VENDOR_NEBEL, product, 1)
+             + name.encode().ljust(80, b"\0") + struct.pack("I", 0))
+    fcntl.ioctl(fd, UI_DEV_SETUP, setup)
+    fcntl.ioctl(fd, UI_DEV_CREATE)
+    return fd
+
+
+def open_uinput_mt(name, product, x_range, y_range, max_slots):
+    # MT pass-through node for InputPlumber's deck_trackpads mode: the
+    # composite config matches it by vendor/product (222a:0002) and splits it
+    # into Deck LeftPad/RightPad. Needs the full MT axis set (slot, tracking
+    # id, position) or evdev consumers ignore the contacts.
+    fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
+    fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
+    fcntl.ioctl(fd, UI_SET_EVBIT, EV_ABS)
+    fcntl.ioctl(fd, UI_SET_EVBIT, EV_SYN)
+    fcntl.ioctl(fd, UI_SET_KEYBIT, BTN_TOUCH)
+    axes = [(ABS_MT_SLOT, 0, max(max_slots - 1, 0)),
+            (ABS_MT_TRACKING_ID, 0, 65535),
+            (ABS_MT_POSITION_X, x_range[0], x_range[1]),
+            (ABS_MT_POSITION_Y, y_range[0], y_range[1])]
+    for code, minimum, maximum in axes:
         fcntl.ioctl(fd, UI_SET_ABSBIT, code)
         setup = struct.pack("H2x6i", code, 0, minimum, maximum, 0, 0, 0)
         fcntl.ioctl(fd, UI_ABS_SETUP, setup)
@@ -291,6 +324,12 @@ def run_touchpad(touch_fd, out_fd, orientation, x_range, y_range, max_slots):
     pressed = False
     acc_x = 0.0
     acc_y = 0.0
+    # Tap-to-click: a single contact moves the pointer only; the left click
+    # fires on release if the touch was short and nearly still. Pressing
+    # BTN_LEFT on touch-down (the old behavior) turned every move into a
+    # drag - "mouse over a button, try to move away, button gets clicked".
+    single_start = None
+    single_moved = 0.0
 
     def press(button, value):
         nonlocal pressed
@@ -372,19 +411,29 @@ def run_touchpad(touch_fd, out_fd, orientation, x_range, y_range, max_slots):
                     hscroll_acc = 0.0
                 if not active:
                     press(BTN_LEFT, False)
+                    # End of a single contact: short and still = left click.
+                    if (single_start is not None
+                            and time.monotonic() - single_start < 0.3
+                            and single_moved < 30):
+                        click(BTN_LEFT)
+                    single_start = None
+                    single_moved = 0.0
                     last = None
                     emit(out_fd, EV_SYN, SYN_REPORT, 0)
                     continue
-                press(BTN_LEFT, True)
                 point = pos[active[0]]
                 if None not in point:
                     x, y = point
                     debug_touch((x, y), "touchpad")
-                    if last is not None:
+                    if last is None:
+                        single_start = time.monotonic()
+                        single_moved = 0.0
+                    else:
                         mdx, mdy = rotate_delta(
                             orientation, (x - last[0]) * raw_gain_x, (y - last[1]) * raw_gain_y)
                         acc_x += mdx
                         acc_y += mdy
+                        single_moved += abs(mdx) + abs(mdy)
                     last = (x, y)
                 dx, dy = int(acc_x), int(acc_y)
                 if dx or dy:
@@ -462,7 +511,11 @@ def main():
     max_slots = max(slot_range[1] + 1, 1)
     out_x_range, out_y_range = output_ranges(orientation, x_range, y_range)
 
-    if mode == "trackpad":
+    if mode == "deck":
+        out_fd = open_uinput_mt(NAME_TRACKPAD_SCREEN, PRODUCT_TRACKPAD_SCREEN,
+                                out_x_range, out_y_range, max_slots)
+        runner = run_trackpad
+    elif mode == "trackpad":
         out_fd = open_uinput_mouse(NAME_TOUCHPAD, PRODUCT_TOUCHPAD)
         runner = run_touchpad
     else:

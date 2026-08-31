@@ -123,6 +123,25 @@ if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
     fi
 fi
 
+# Trackpad mode standalone (no external display): the session-start cleanup
+# above always stops the pass-through daemon because in the internal-primary
+# layout gamescope already applies the panel orientation itself, so the
+# daemon's rotated-touchscreen mode would double-rotate. But with the
+# touchpad toggle ON (ENABLED=1 mouse fallback / ENABLED=2 Deck trackpads)
+# the user explicitly asked for the panel to act as trackpads instead of a
+# touchscreen - start the daemon here too. With the toggle OFF the raw
+# digitizer stays with gamescope untouched.
+if [[ -n "${NEBEL_INTERNAL_TOUCHSCREEN:-}" ]] \
+    && ! systemctl --user is-active --quiet nebel-internal-touchpad.service; then
+    tp_enabled=0
+    if [[ -r /etc/nebel/internal-touchpad.conf ]]; then
+        tp_enabled="$(sed -n 's/^ENABLED=//p' /etc/nebel/internal-touchpad.conf | head -1)"
+    fi
+    if [[ "${tp_enabled:-0}" != "0" && -n "${tp_enabled:-}" ]]; then
+        systemctl --user start nebel-internal-touchpad.service 2>/dev/null || true
+    fi
+fi
+
 # The 1024-sample PipeWire quantum SM8250 needs is set by nebel-device-quirks
 # (system-level, before pipewire/wireplumber ever start - there's no pw-metadata
 # binary on this image to poke it at session time, and it wouldn't need to be

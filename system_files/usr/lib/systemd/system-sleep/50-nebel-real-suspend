@@ -165,6 +165,28 @@ resume_inputplumber() {
     systemctl start inputplumber
 }
 
+# InputPlumber can lose its VIRTUAL (uinput/uhid) target devices across a real
+# suspend while looking perfectly healthy otherwise (observed on RPmini: the
+# composite device was still up with the source grabbed, but the deck-uhid
+# node Steam actually reads was gone -> gamepad dead in Steam until a manual
+# restart). Cheap generic check: a running inputplumber must own at least one
+# virtual input device with a joystick handler (physical gamepads live under
+# /devices/platform/, targets under /devices/virtual/); if none is there,
+# restart it. Steam re-detects the controller when it reappears.
+resume_inputplumber_check() {
+    systemctl is-active --quiet inputplumber || return 0
+    sleep 2
+    local js
+    for js in /sys/class/input/js*; do
+        [[ -e "$js" ]] || continue
+        case "$(readlink -f "$js/device" 2>/dev/null)" in
+            /devices/virtual/*) return 0 ;;
+        esac
+    done
+    log "inputplumber virtual gamepad missing after resume, restarting"
+    systemctl restart inputplumber
+}
+
 # SD card: with a card in the slot, SM8550 (RP6) aborts deep suspend 1-2s
 # after entry - no wakeup source is ever recorded (every wakeup_count stays
 # 0); the SoC simply never reaches the deep state while the card device is
@@ -324,7 +346,12 @@ case "$1" in
 
         resume_radios
         resume_inputplumber
+        resume_inputplumber_check
         resume_sdcards
+        # Force a power_supply re-read so UPower/Steam don't show a stale
+        # "Charging" (or not) state when a plug/unplug uevent raced with the
+        # suspend window.
+        udevadm trigger --subsystem-match=power_supply --action=change 2>/dev/null || true
         rm -rf "$SAVE_DIR"
         as_session wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 2>/dev/null || true
         log "post-resume done"
