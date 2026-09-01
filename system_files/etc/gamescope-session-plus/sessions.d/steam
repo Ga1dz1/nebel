@@ -14,6 +14,31 @@ if [[ -n "${NEBEL_PANEL_REFRESH_RATES:-}" ]]; then
         unset STEAM_DISPLAY_REFRESH_LIMITS
     fi
 fi
+
+# Upstream /usr/share sessions.d/steam (sourced before this file)
+# unconditionally exports STEAM_GAMESCOPE_HDR_SUPPORTED=1, while real HDR
+# (--hdr-enabled) only engages when ENABLE_GAMESCOPE_HDR=1. With HDR merely
+# advertised, games that support it (BG3 at the loading->menu transition is
+# the reproducer) build 10-bit A2R10G10B10 swapchains; committing those
+# through the rotation shader onto a non-HDR DSI panel hard-wedges the DPU
+# and the SoC resets instantly with no kernel log. Advertise HDR only when
+# it is actually enabled.
+if [[ "${ENABLE_GAMESCOPE_HDR:-}" != "1" ]]; then
+    unset STEAM_GAMESCOPE_HDR_SUPPORTED
+fi
+
+# Same pattern for VRR: the session script advertises adaptive sync to Steam
+# (STEAM_GAMESCOPE_VRR_SUPPORTED=1) while gamescope itself is launched without
+# --adaptive-sync and the DSI panels on these handhelds are fixed-rate. A
+# game that takes the advertised path (BG3 again: last log line before the
+# reset is "Swapchain received new refresh cycle: 33.33ms") makes gamescope
+# change frame pacing mid-flight on a panel that cannot do it - same DPU
+# wedge, same instant reset. Only advertise VRR when gamescope actually got
+# the flag (ADAPTIVE_SYNC is the session's own toggle for that).
+if [[ "${ADAPTIVE_SYNC:-}" != "1" ]]; then
+    unset STEAM_GAMESCOPE_VRR_SUPPORTED
+fi
+
 USE_ROTATION_SHADER="${NEBEL_GAMESCOPE_USE_ROTATION_SHADER:-0}"
 # Gamescope only lights up the primary panel; silence the secondary
 # touchscreen so fingers on the dark glass don't move Steam's cursor.
