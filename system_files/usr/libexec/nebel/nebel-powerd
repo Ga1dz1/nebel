@@ -25,6 +25,24 @@ FACTORY_CONFIG_FILE = Path("/usr/share/nebel/power-profiles.conf")
 CONFIG_FILE = Path("/etc/nebel/power-profiles.conf")
 FAN_SAFE_PWM = 128
 
+# Battery-voltage GPU ceiling ladder (SM8250 / RP Mini V2 only). The
+# Mini's battery is saggy: heavy game loads (BG3 loading is the canonical
+# reproducer) spike the rails below the PMIC cut-off and hard-reset the
+# SoC - no kernel log, instant reboot. Empirically each GPU rung is only
+# safe above a resting-VBAT floor: 800 MHz crashed at 4.02-4.08 V (also on
+# the charger) but ran 33+ min at 4.11-4.20 V; 670 MHz crashed at
+# 3.92-3.95 V; 587 MHz crashed at 3.86 V. Sustained synthetic load with
+# 2x the average current does NOT crash - it is the spikes, so the ceiling
+# must follow resting VBAT, not the charger online flag.
+# (min_vbat_uv, gpu_ceiling_hz), first match top-down; 0 = no cap.
+VBAT_GPU_CAP_CLASS = "SM8250"
+VBAT_GPU_CAPS = (
+    (4_100_000, 0),
+    (4_000_000, 670_000_000),
+    (3_900_000, 587_000_000),
+    (0, 490_000_000),
+)
+
 
 def normalize_profile(profile):
     value = profile.strip().lower()
@@ -194,6 +212,7 @@ class NebelPower:
         # a later change) would clobber whatever profile the user actually
         # had before this daemon last restarted, right at startup.
         self.ac_online = None
+        self.last_gpu_cap = None
         self.load_config()
         self.profile = self.default_profile
         self.discover()
@@ -581,12 +600,48 @@ class NebelPower:
             self.set_gpu_manual_clock(self.manual_gpu_clock)
         self.fan_tick()
 
+    def battery_gpu_cap(self):
+        if self.cpu_device_class() != VBAT_GPU_CAP_CLASS:
+            return 0
+        try:
+            supplies = sorted(Path("/sys/class/power_supply").glob("*"))
+        except OSError:
+            return 0
+        for supply in supplies:
+            try:
+                if (supply / "type").read_text().strip() != "Battery":
+                    continue
+                raw = read_text(supply / "voltage_now")
+            except OSError:
+                continue
+            if raw.isdigit():
+                vbat = int(raw)
+                for min_vbat, cap in VBAT_GPU_CAPS:
+                    if vbat >= min_vbat:
+                        return cap
+        return 0
+
+    def clamp_gpu_target(self, freqs, target):
+        cap = self.battery_gpu_cap()
+        if cap:
+            return min(target, self.choose_at_most(freqs, cap))
+        return target
+
+    def reapply_gpu(self):
+        if not self.gpu:
+            return
+        if self.gpu_level == "manual" and self.manual_gpu_clock:
+            self.set_gpu_manual_clock(self.manual_gpu_clock)
+        else:
+            self.apply_gpu_auto()
+
     def apply_gpu_auto(self, settings=None):
         freqs = self.gpu_freqs()
         if not freqs:
             return
         settings = settings or self.profile_settings()
-        max_freq = self.choose_at_most(freqs, int(freqs[-1] * settings["gpu_max"]))
+        max_freq = self.clamp_gpu_target(
+            freqs, self.choose_at_most(freqs, int(freqs[-1] * settings["gpu_max"])))
         if settings["cpu_governor"] == "performance":
             # simple_ondemand ramps the GPU clock up/down reactively based on
             # load, which has some lag - fine for battery-conscious profiles,
@@ -610,11 +665,15 @@ class NebelPower:
         if not freqs:
             return 0
         hz = self.closest(freqs, mhz * 1000000)
+        # Keep the user's requested clock as state; clamp only what actually
+        # gets written, so the full value is restored once the charger is
+        # back (battery GPU cap).
+        self.manual_gpu_clock = hz // 1000000
+        hz = self.clamp_gpu_target(freqs, hz)
         write_text(self.gpu / "min_freq", freqs[0])
         write_text(self.gpu / "governor", "userspace")
         write_text(self.gpu / "max_freq", hz)
         write_text(self.gpu / "min_freq", hz)
-        self.manual_gpu_clock = hz // 1000000
         return self.manual_gpu_clock
 
     def read_temps(self):
@@ -757,20 +816,32 @@ class NebelPower:
 
     def power_source_tick(self):
         try:
-            if not self.auto_profile:
-                return True
             online = self.power_source_online()
-            if online is None:
-                return True
-            if self.ac_online is not None and online != self.ac_online:
-                target = self.auto_profile_ac if online else self.auto_profile_battery
-                if target != self.profile:
-                    self.profile = target
-                    self.apply_profile()
-                    self.save_state()
-                    if self.connection:
-                        self.emit_properties({"Profile": GLib.Variant("s", self.label_for(self.profile))})
-            self.ac_online = online
+            if online is not None:
+                if self.ac_online is not None and online != self.ac_online:
+                    if self.auto_profile:
+                        target = self.auto_profile_ac if online else self.auto_profile_battery
+                        if target != self.profile:
+                            self.profile = target
+                            self.apply_profile()
+                            self.save_state()
+                            if self.connection:
+                                self.emit_properties({"Profile": GLib.Variant("s", self.label_for(self.profile))})
+                # GPU limits also depend on live inputs (battery VBAT
+                # ladder), so re-apply on the first observation and on any
+                # source change even when the profile itself does not
+                # switch (manual profile and/or manual GPU clock).
+                if self.ac_online is None or online != self.ac_online:
+                    self.reapply_gpu()
+                self.ac_online = online
+            # The VBAT-band GPU ceiling moves with the battery level
+            # independently of the charger state; re-apply on band change.
+            cap = self.battery_gpu_cap()
+            if self.last_gpu_cap is None:
+                self.last_gpu_cap = cap
+            elif cap != self.last_gpu_cap:
+                self.last_gpu_cap = cap
+                self.reapply_gpu()
         except Exception as exc:
             print(f"nebel-powerd: power source tick failed: {exc}", file=sys.stderr)
         return True
