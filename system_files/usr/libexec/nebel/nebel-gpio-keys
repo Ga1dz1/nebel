@@ -25,8 +25,9 @@ The physical node is hidden from libinput/SDL via
 70-nebel-rp6-gpio-keys.rules (LIBINPUT_IGNORE_DEVICE), so there is no
 double input.
 
-Devices without a gpio-keys node keep scanning quietly (RP5/Flip/Mini
-route their buttons differently), so the unit is safe to enable globally.
+Devices without paddle buttons on their gpio-keys node (RP5/Flip/Mini route
+their buttons differently) keep scanning quietly without grabbing anything,
+so the unit is safe to enable globally.
 """
 import fcntl
 import os
@@ -95,6 +96,24 @@ VIRTUAL_DEVICES = [
 DEVICE_NAME = b"gpio-keys"
 
 
+def node_has_paddles(ev):
+    """True only if the gpio-keys node actually carries the RP6 back paddles
+    (BTN_C/BTN_Z). Other devices (RP Mini...) route plain volume/power keys
+    through a node with the same name/phys; grabbing those would steal their
+    buttons and expose a phantom gamepad, so capability-check first."""
+    try:
+        caps = int(
+            (ev / "device" / "capabilities" / "key")
+            .read_text()
+            .strip()
+            .replace(" ", ""),
+            16,
+        )
+    except (OSError, ValueError):
+        return False
+    return bool((caps >> BTN_C) & 1) or bool((caps >> BTN_Z) & 1)
+
+
 def find_gpio_keys():
     for ev in sorted(Path("/sys/class/input").glob("event*")):
         try:
@@ -102,7 +121,7 @@ def find_gpio_keys():
             phys = (ev / "device" / "phys").read_text().strip()
         except OSError:
             continue
-        if name == "gpio-keys" and phys == "gpio-keys/input0":
+        if name == "gpio-keys" and phys == "gpio-keys/input0" and node_has_paddles(ev):
             return "/dev/input/" + ev.name
     return None
 

@@ -2275,11 +2275,17 @@ function InternalTouchpadRow() {
             .then(setMode)
             .catch(() => setMode(previous));
     };
-    return (SP_JSX.jsx(SelectEdit, { label: t("Internal screen"), value: String(mode), options: [
-            { data: "0", label: t("Touchscreen") },
-            { data: "1", label: t("Touchpad (pointer)") },
-            { data: "2", label: t("Steam trackpads") },
-        ], onChange: onChange }));
+    // Steam-trackpads mode is a 1.3.8 beta feature; the stable UI only offers
+    // the plain touchscreen and the interim pointer touchpad. If the config
+    // already holds mode 2 (a beta install), keep it displayable.
+    const options = [
+        { data: "0", label: t("Touchscreen") },
+        { data: "1", label: t("Touchpad (pointer)") },
+    ];
+    if (mode === 2) {
+        options.push({ data: "2", label: t("Steam trackpads") });
+    }
+    return (SP_JSX.jsx(SelectEdit, { label: t("Internal screen"), value: String(mode), options: options, onChange: onChange }));
 }
 
 // gamescope only ever drives one embedded output at a time (--prefer-output

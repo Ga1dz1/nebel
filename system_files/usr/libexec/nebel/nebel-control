@@ -405,17 +405,18 @@ def action_set_internal_touchpad(request):
         # Legacy boolean callers: on = whole-panel pointer.
         mode = 1 if bool(request.get("enabled")) else 0
     atomic_write(INTERNAL_TOUCHPAD_CONF, f"ENABLED={mode}\n")
-    # The daemon re-reads the conf on restart and picks its output node
-    # itself (trackpad split vs rotated touchscreen), so the toggle is just
-    # a restart - a mode switch, never a kill switch. The service may always
-    # run while the toggle is on, with or without an external display: it
-    # only owns the digitizer when it actually grabs it, and the user asked
-    # for the touchpad mode to be usable standalone (the OFF branch still
-    # stops it and restores raw touch).
+    # Mode 0 means "plain touchscreen": gamescope owns the digitizer and
+    # applies the panel orientation itself in the internal-primary layout,
+    # so the daemon's rotated pass-through must NOT run (it double-rotates
+    # and steals the touch). The trackpad modes (1/2) are a user-requested
+    # takeover and may run standalone, with or without an external display.
     name = device_env().get("NEBEL_INTERNAL_TOUCHSCREEN", "")
     if name:
         run(["/usr/libexec/nebel/touchscreen-inhibit", name, "0"])
-    run(USER_SYSTEMCTL + ["restart", INTERNAL_TOUCHPAD_SERVICE])
+    if mode == 0:
+        run(USER_SYSTEMCTL + ["stop", INTERNAL_TOUCHPAD_SERVICE])
+    else:
+        run(USER_SYSTEMCTL + ["restart", INTERNAL_TOUCHPAD_SERVICE])
     return {"enabled": mode != 0, "mode": mode}
 
 
