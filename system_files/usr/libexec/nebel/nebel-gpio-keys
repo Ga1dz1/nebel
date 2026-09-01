@@ -221,6 +221,13 @@ def main():
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["--check"]:
+        # udev PROGRAM helper: exit 0 iff this event node is the RP6
+        # gpio-keys (carries the back paddles). Usage: --check <event sysfs
+        # dir>; the rule passes /sys$DEVPATH of the event node.
+        sys.exit(
+            0 if len(sys.argv) == 3 and node_has_paddles(Path(sys.argv[2])) else 1
+        )
     try:
         main()
     except KeyboardInterrupt:
