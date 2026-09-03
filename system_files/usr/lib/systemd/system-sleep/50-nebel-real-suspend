@@ -173,6 +173,20 @@ resume_inputplumber() {
 # virtual input device with a joystick handler (physical gamepads live under
 # /devices/platform/, targets under /devices/virtual/); if none is there,
 # restart it. Steam re-detects the controller when it reappears.
+#
+# Additionally: after a LONG sleep (hours), the gamepad stack has been seen
+# dead even with the virtual node present (both RPmini and RP6, reported
+# 2026-09-03) - some state deeper than the sysfs-visible one doesn't survive.
+# Root cause TBD; until then, any sleep longer than the threshold restarts
+# inputplumber unconditionally. Steam picks the controller back up within a
+# second or two, so the cost of a redundant restart after short sleeps avoided
+# by the threshold is nil, and the cost after long ones is invisible.
+LONG_SLEEP_INPUTPLUMBER_RESTART_SEC=900
+
+suspend_epoch_record() {
+    date +%s > "$SAVE_DIR/epoch"
+}
+
 resume_inputplumber_check() {
     systemctl is-active --quiet inputplumber || return 0
     sleep 2
@@ -180,7 +194,18 @@ resume_inputplumber_check() {
     for js in /sys/class/input/js*; do
         [[ -e "$js" ]] || continue
         case "$(readlink -f "$js/device" 2>/dev/null)" in
-            /devices/virtual/*) return 0 ;;
+            /devices/virtual/*)
+                # Virtual target present - but a long sleep can still have
+                # killed the stack behind it; restart if we slept long.
+                local then=0 now
+                now="$(date +%s)"
+                [[ -r "$SAVE_DIR/epoch" ]] && then="$(cat "$SAVE_DIR/epoch" 2>/dev/null || echo 0)"
+                if (( now - then >= LONG_SLEEP_INPUTPLUMBER_RESTART_SEC )); then
+                    log "long sleep ($(( (now - then) / 60 ))min), restarting inputplumber as a precaution"
+                    systemctl restart inputplumber
+                fi
+                return 0
+                ;;
         esac
     done
     log "inputplumber virtual gamepad missing after resume, restarting"
@@ -266,6 +291,7 @@ case "$1" in
         # aborts the WHOLE suspend, so this needs to be clear before any of
         # the rest of this hook (or the kernel's own suspend) bothers.
         suspend_inputplumber_if_vhci
+        suspend_epoch_record
         suspend_sdcards
         # Quiesce CPU/GPU clocks and stop the fan before the kernel freezes
         # userspace; on resume the matching call restores the profile.

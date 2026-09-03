@@ -40,6 +40,18 @@ if [[ "${NEBEL_SOC_CLASS:-}" == "SM8550" ]]; then
     echo 1 >/sys/devices/system/cpu/cpu0/cpuidle/state1/disable
 fi
 
+# RP6: force s2idle for NEBEL_SUSPEND_MODE=mem. The device profiles all intend
+# s2idle (see the comments in system_files/usr/lib/nebel/devices/*.conf), and
+# SM8250 kernels only have s2idle so those devices get it automatically - but
+# the SM8550 kernel advertises "s2idle [deep]" and silently escalates mem to
+# deep. Live-tested 2026-09-03: deep on RP6 either bounces 0-15s after entry
+# (systemd path) or hangs on wake entirely (bare rtcwake: slept solid at ~3W,
+# then ignored the power key until a hard reset), while s2idle sleeps cleanly
+# through the full hook stack and wakes on RTC and the power key.
+if [[ "${NEBEL_DEVICE_ID:-}" == "retroid-pocket-6" ]]; then
+    echo s2idle >/sys/power/mem_sleep
+fi
+
 # SM8250's qdsp6 DSP path crackles at nebel's shared 512-sample default (see
 # /usr/share/pipewire/*.conf.d/99-nebel-buffers.conf); ROCKNIX's own kernel
 # patch (0012-ASoC-qcom-q6asm-dai) and pipewire-pulse defaults both use 1024.
