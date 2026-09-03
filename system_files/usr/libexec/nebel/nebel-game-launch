@@ -7,6 +7,7 @@
 import json
 import os
 import pathlib
+import re
 import resource
 import shlex
 import shutil
@@ -159,12 +160,22 @@ LSFG_LAYER_NAME = "VK_LAYER_LSFGVK_frame_generation"
 
 
 def find_lossless_dll():
+    # Scan every Steam library folder (internal storage AND any SD-card
+    # library), not just the two default home paths - Lossless Scaling
+    # installed to the card library is invisible otherwise, and the decky
+    # toggle never appears.
     home = pathlib.Path.home()
-    candidates = [
-        home / ".local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll",
-        home / ".steam/steam/steamapps/common/Lossless Scaling/Lossless.dll",
-    ]
-    for candidate in candidates:
+    roots = {home / ".local/share/Steam", home / ".steam/steam"}
+    for root in list(roots):
+        for library_file in (root / "steamapps" / "libraryfolders.vdf", root / "config" / "libraryfolders.vdf"):
+            try:
+                text = library_file.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            for match in re.finditer(r'"path"\s+"([^"]+)"', text):
+                roots.add(pathlib.Path(match.group(1).replace("\\\\", "\\")))
+    for root in sorted(roots):
+        candidate = root / "steamapps" / "common" / "Lossless Scaling" / "Lossless.dll"
         if candidate.is_file():
             return str(candidate)
     return None
@@ -191,6 +202,11 @@ def apply_lsfg(settings, env):
     # Legacy env config: no per-user toml to manage, everything per-game.
     env["LSFG_LEGACY"] = "1"
     env["LSFG_DLL_PATH"] = dll
+    # Gamescope's own WSI intercepts swapchain creation and breaks the layer
+    # ordering lsfg-vk relies on (ROCKNIX hit the same and ships the same
+    # guard): with frame gen on, the game's Vulkan must go straight to the
+    # driver.
+    env.setdefault("ENABLE_GAMESCOPE_WSI", "0")
     multiplier = settings.get("lsfgMultiplier")
     try:
         multiplier = int(multiplier)
@@ -571,6 +587,32 @@ def apply_env_presets(settings, env):
             env.setdefault(name, value)
 
 
+# Command-line presets: arguments appended to the game's own command line, as
+# opposed to PRESET_ENV above which feeds its environment. These exist mostly
+# to skip third-party launchers and intro videos that hang or waste minutes
+# under Proton/FEX. The toggle keys live in the same envPresets map in the
+# per-game settings.
+PRESET_ARGS = {
+    "skipLauncherLarian": ["--skip-launcher"],  # Baldur's Gate 3, Divinity: Original Sin 2
+    "skipIntroVid": ["-novid"],                 # Source engine and many others
+}
+
+
+def extra_launch_args(settings):
+    args = []
+    presets = settings.get("envPresets")
+    if isinstance(presets, dict):
+        for key, argv in PRESET_ARGS.items():
+            if presets.get(key):
+                args.extend(argv)
+    extra = settings.get("extraArgs")
+    if extra:
+        # Free-form field for launchers/engines without a preset; shlex so
+        # quoted arguments survive.
+        args.extend(shlex.split(str(extra)))
+    return args
+
+
 def apply_memory_limit(settings):
     try:
         mb = int(settings.get("memoryLimitMB") or 0)
@@ -807,6 +849,11 @@ def main():
         settings = merged_settings(load_tweaks(contract["defaults"]), game_id)
     except Exception as exc:
         print(f"nebel-game-launch: failed to apply settings: {exc}", file=sys.stderr)
+
+    try:
+        args = args + extra_launch_args(settings)
+    except Exception as exc:
+        print(f"nebel-game-launch: extra launch args skipped: {exc}", file=sys.stderr)
 
     # "Dual-screen mode" flag (Decky per-game properties): hand this game's
     # command to the labwc dual-screen session instead of running it under

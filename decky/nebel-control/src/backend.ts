@@ -152,3 +152,14 @@ export const syncDismissDevice = (deviceId: string) => call<[string], SyncState>
 export const syncAcceptFolder = (folderId: string) => call<[string], SyncState>("sync_accept_folder", folderId);
 export const syncDismissFolder = (folderId: string, deviceId: string) =>
   call<[string, string], SyncState>("sync_dismiss_folder", folderId, deviceId);
+export interface RomSystem { id: string; label: string; dir: string; count: number }
+export interface RomsScan { root: string; systems: RomSystem[] }
+export interface RomsImportResult { added: string[]; skipped: string[]; error: string }
+export interface RomsArtworkResult { matched: number; missed: string[]; error: string }
+export const romsScan = () => call<[], RomsScan>("roms_scan");
+export const romsImport = () => call<[], RomsImportResult>("roms_import");
+export const romsArtwork = () => call<[], RomsArtworkResult>("roms_artwork");
+export interface SgdbKeyState { present: boolean; masked: string }
+export const getSgdbKeyState = () => call<[], SgdbKeyState>("get_sgdb_key_state");
+export const setSgdbKey = (key: string) => call<[string], SgdbKeyState>("set_sgdb_key", key);
+export const syncNow = () => call<[], { ok: boolean; scanned: number }>("sync_now");

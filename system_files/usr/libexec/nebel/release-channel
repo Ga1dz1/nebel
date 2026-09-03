@@ -1,0 +1,40 @@
+#!/bin/bash
+# Rewrite /etc/os-release (normally a symlink into read-only /usr) as a real
+# file whose VARIANT/VARIANT_ID reflect the channel of the actually-booted
+# OTA image tag (stable/beta/testing), so Steam's Settings -> System page
+# shows the channel the device is really on - including after switching
+# branches without a rebuild. Everything else is copied from
+# /usr/lib/os-release untouched.
+set -uo pipefail
+
+src=/usr/lib/os-release
+dst=/etc/os-release
+
+channel=stable
+ref="$(rpm-ostree status --json 2>/dev/null | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    for d in data.get("deployments", []):
+        if d.get("booted"):
+            print(d.get("container-image-reference", ""))
+            break
+except Exception:
+    pass
+' 2>/dev/null)"
+tag="${ref##*:}"
+case "$tag" in
+    testing) channel=testing ;;
+    beta)    channel=beta ;;
+esac
+
+# Title-case for display: stable -> Stable.
+variant="$(tr '[:lower:]' '[:upper:]' <<< "${channel:0:1}")${channel:1}"
+
+tmp="$(mktemp /etc/.os-release.XXXXXX)" || exit 0
+sed -e "s/^VARIANT=.*/VARIANT=\"${variant}\"/" \
+    -e "s/^VARIANT_ID=.*/VARIANT_ID=${channel}/" \
+    "$src" > "$tmp" || { rm -f "$tmp"; exit 0; }
+chmod 644 "$tmp"
+mv -f "$tmp" "$dst"
+echo "release-channel: /etc/os-release VARIANT=${variant}"

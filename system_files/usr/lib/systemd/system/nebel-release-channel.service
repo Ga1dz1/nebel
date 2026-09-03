@@ -1,0 +1,17 @@
+[Unit]
+Description=nebel os-release channel branding
+DefaultDependencies=no
+After=local-fs.target
+Before=display-manager.service
+# rpm-ostree must be up to know which deployment is booted
+After=rpm-ostreed.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/nebel/release-channel
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

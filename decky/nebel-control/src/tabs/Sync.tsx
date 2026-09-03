@@ -6,6 +6,7 @@ import {
   ModalRoot,
   PanelSection,
   PanelSectionRow,
+  ButtonItem,
   showModal,
 } from "@decky/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +19,7 @@ import {
   syncDiscoveredDevices,
   syncDismissDevice,
   syncDismissFolder,
+  syncNow,
   syncRemoveCustomFolder,
   syncRemoveDevice,
   syncSetFolderEnabled,
@@ -237,6 +239,17 @@ export function Sync({ qam }: { qam?: boolean }) {  const [state, setState] = us
             label={t("Status")}
             description={t("{connected} of {total} device(s) connected", { connected: connectedCount, total: state.devices.length })}
           />
+        )}
+        {state.serviceActive && (
+          <PanelSectionRow>
+            <ButtonItem
+              layout="below"
+              disabled={busy}
+              onClick={() => void run(async () => { await syncNow(); await refresh(); })}
+            >
+              {t("Sync now")}
+            </ButtonItem>
+          </PanelSectionRow>
         )}
         {!!error && <Field label={t("Error")} description={error} />}
       </PanelSection>

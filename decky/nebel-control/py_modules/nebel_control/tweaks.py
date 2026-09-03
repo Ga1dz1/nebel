@@ -1,5 +1,6 @@
 import copy
 import json
+import re
 from pathlib import Path
 
 from .privileged import call
@@ -81,11 +82,23 @@ LSFG_LAYER_MANIFEST = Path("/usr/share/vulkan/lsfg-vk/VkLayer_LSFGVK_frame_gener
 def lsfg_availability():
     # The decky backend runs as root (PluginLoader service), so Path.home()
     # points at /root and never finds the user's Steam install. Use the
-    # session home like sync.py/steam.py do.
+    # session home like sync.py/steam.py do. Scan every Steam library folder
+    # (internal storage AND any SD-card library), not just the default home
+    # paths - Lossless Scaling installed to the card library is invisible
+    # otherwise, and the per-game toggle never appears.
     home = Path("/var/home/nebel")
+    roots = {home / ".local/share/Steam", home / ".steam/steam"}
+    for root in list(roots):
+        for library_file in (root / "steamapps" / "libraryfolders.vdf", root / "config" / "libraryfolders.vdf"):
+            try:
+                text = library_file.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            for match in re.finditer(r'"path"\s+"([^"]+)"', text):
+                roots.add(Path(match.group(1).replace("\\\\", "\\")))
     lossless_candidates = [
-        home / ".local/share/Steam/steamapps/common/Lossless Scaling/Lossless.dll",
-        home / ".steam/steam/steamapps/common/Lossless Scaling/Lossless.dll",
+        root / "steamapps" / "common" / "Lossless Scaling" / "Lossless.dll"
+        for root in sorted(roots)
     ]
     return {
         "layer": LSFG_LAYER_MANIFEST.is_file(),

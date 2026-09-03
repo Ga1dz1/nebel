@@ -1,4 +1,5 @@
 from pathlib import Path
+import binascii
 import struct
 
 STEAM_ROOT = Path("/var/home/nebel/.local/share/Steam")
@@ -8,6 +9,44 @@ STEAM_APPS_DIR = STEAM_ROOT / "steamapps"
 def _read_cstring(buf, pos):
     end = buf.index(b"\x00", pos)
     return buf[pos:end].decode("utf-8", errors="replace"), end + 1
+
+
+def _write_cstring(text):
+    return text.encode("utf-8") + b"\x00"
+
+
+# Mirror of _vdf_parse_map: nested maps, strings, int32. That covers every
+# field Steam writes into a shortcuts.vdf entry.
+def _vdf_write_map(buf, mapping):
+    for name, value in mapping.items():
+        if isinstance(value, dict):
+            buf += b"\x00" + _write_cstring(name)
+            buf = _vdf_write_map(buf, value)
+            buf += b"\x08"
+        elif isinstance(value, int):
+            buf += b"\x02" + _write_cstring(name) + struct.pack("<i", value)
+        else:
+            buf += b"\x01" + _write_cstring(name) + _write_cstring(str(value))
+    return buf
+
+
+# Steam derives a non-Steam app's id from the Exe + AppName strings exactly as
+# stored in shortcuts.vdf (quotes included); the high bit marks it non-Steam.
+def shortcut_appid(exe, name):
+    crc = binascii.crc32((exe + name).encode("utf-8")) & 0xFFFFFFFF
+    appid = crc | 0x80000000
+    return appid - 0x100000000 if appid >= 0x80000000 else appid
+
+
+def _user_config_dir():
+    # Steam keeps an "anonymous"/"0" userdata entry alongside the real account.
+    for user_dir in sorted(STEAM_ROOT.glob("userdata/*")):
+        if user_dir.name in ("0", "anonymous", "ac"):
+            continue
+        config_dir = user_dir / "config"
+        if config_dir.is_dir():
+            return config_dir
+    return None
 
 
 # Minimal binary VDF reader - covers the field types shortcuts.vdf uses
@@ -84,6 +123,80 @@ def shortcut_entry(appid):
             if isinstance(raw_appid, int) and str(raw_appid & 0xFFFFFFFF) == str(appid):
                 return entry
     return None
+
+
+def add_shortcuts(games):
+    """Append non-Steam shortcuts, skipping ones already present.
+
+    games: list of {"name", "exe", "args", "startdir"} where exe/startdir are
+    bare paths. Returns (added, skipped) name lists. Steam only re-reads
+    shortcuts.vdf on startup, so the caller should tell the user to restart
+    game mode for the new entries to appear.
+    """
+    config_dir = _user_config_dir()
+    if config_dir is None:
+        raise RuntimeError("no Steam user config found")
+    vdf_file = config_dir / "shortcuts.vdf"
+    shortcuts = {}
+    if vdf_file.exists():
+        root, _ = _vdf_parse_map(vdf_file.read_bytes(), 0)
+        shortcuts = root.get("shortcuts") or {}
+    known = set()
+    next_index = 0
+    for key, entry in shortcuts.items():
+        if not isinstance(entry, dict):
+            continue
+        known.add(((entry.get("Exe") or ""), entry.get("AppName") or ""))
+        try:
+            next_index = max(next_index, int(key) + 1)
+        except (TypeError, ValueError):
+            pass
+    added, skipped = [], []
+    for game in games:
+        exe = f'"{game["exe"]}"'
+        name = game["name"]
+        if (exe, name) in known:
+            skipped.append(name)
+            continue
+        options = game.get("args") or ""
+        entry = {
+            "appid": shortcut_appid(exe, name),
+            "AppName": name,
+            "Exe": exe,
+            "StartDir": f'"{game.get("startdir") or str(Path(game["exe"]).parent)}"',
+            "icon": "",
+            "ShortcutPath": "",
+            "LaunchOptions": options,
+            "IsHidden": 0,
+            "AllowDesktopConfig": 1,
+            "AllowOverlay": 1,
+            "OpenVR": 0,
+            "Devkit": 0,
+            "DevkitGameID": "",
+            "DevkitOverrideAppID": 0,
+            "LastPlayTime": 0,
+            "FlatpakAppID": "",
+            "tags": {},
+        }
+        shortcuts[str(next_index)] = entry
+        next_index += 1
+        known.add((exe, name))
+        added.append(name)
+    if not added:
+        return added, skipped
+    backup = vdf_file.with_suffix(".vdf.nebel-bak")
+    if vdf_file.exists() and not backup.exists():
+        backup.write_bytes(vdf_file.read_bytes())
+    buf = _vdf_write_map(b"", {"shortcuts": shortcuts}) + b"\x08"
+    vdf_file.write_bytes(buf)
+    return added, skipped
+
+
+def grid_dir():
+    config_dir = _user_config_dir()
+    if config_dir is None:
+        return None
+    return config_dir / "grid"
 
 
 def installed_games():

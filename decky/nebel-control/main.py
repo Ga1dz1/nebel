@@ -41,6 +41,7 @@ from nebel_control.lighting import (
     set_stick_led_flip,
 )
 from nebel_control.monitor import set_overlay_enabled, system_monitor
+from nebel_control.roms import fetch_artwork, import_roms, scan_roms as roms_scan, sgdb_key_state, set_sgdb_key
 from nebel_control.power import save_power_config
 from nebel_control.shared_storage import set_shared_storage_enabled
 from nebel_control.steam import installed_games
@@ -55,6 +56,7 @@ from nebel_control.sync import (
     remove_device,
     set_folder_enabled,
     set_service_enabled,
+    sync_now,
     sync_state,
 )
 from nebel_control.system import set_ssh_enabled
@@ -83,6 +85,21 @@ class Plugin:
 
     async def get_lsfg_availability(self):
         return await asyncio.to_thread(lsfg_availability)
+
+    async def roms_scan(self):
+        return await asyncio.to_thread(roms_scan)
+
+    async def roms_import(self):
+        return await asyncio.to_thread(roms_import)
+
+    async def roms_artwork(self):
+        return await asyncio.to_thread(fetch_artwork)
+
+    async def get_sgdb_key_state(self):
+        return await asyncio.to_thread(sgdb_key_state)
+
+    async def set_sgdb_key(self, key):
+        return await asyncio.to_thread(set_sgdb_key, key)
 
     async def save_compat_applied(self, appids):
         return await asyncio.to_thread(save_compat_applied, appids)
@@ -145,6 +162,9 @@ class Plugin:
 
     async def set_sync_service_enabled(self, enabled):
         return await asyncio.to_thread(set_service_enabled, enabled)
+
+    async def sync_now(self):
+        return await asyncio.to_thread(sync_now)
 
     async def sync_add_device(self, device_id, name):
         return await asyncio.to_thread(add_device, device_id, name)

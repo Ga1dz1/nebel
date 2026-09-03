@@ -33,6 +33,7 @@ systemctl enable nebel-gamepad-autocal.service
 systemctl enable nebel-controller-type.service
 systemctl enable inputplumber.service
 systemctl enable nebel-device-quirks.service
+systemctl enable nebel-release-channel.service
 systemctl enable nebel-first-boot-reboot.service
 systemctl enable nebel-stick-led.service
 systemctl enable nebel-brightness-sync.service

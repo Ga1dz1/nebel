@@ -6,6 +6,7 @@ import {
   Field,
   ModalRoot,
   PanelSection,
+  TextField,
   ToggleField,
   showModal,
 } from "@decky/ui";
@@ -672,6 +673,8 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
                     />
                   ) : null}
                 </>
+              ) : lsfgAvailability?.layer ? (
+                <div className="nebel-compat-note">{t("LSFG: frame generation unlocks here once Lossless Scaling is installed from Steam")}</div>
               ) : null}
               {(!injected || values.gameEra === "xp") && (
               <Collapsible label={t("Old games (legacy Windows)")}>
@@ -743,6 +746,13 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
               <ToggleField label={t("Mod/launcher DLL override")} description={t("Needed by mod loaders and third-party launchers (winhttp)")} checked={envPresets.winhttpOverride === true} onChange={(value) => setEnvPreset("winhttpOverride", value)} />
               <ToggleField label={t("Disable fsync")} description={t("For games that hang at startup or in anti-cheat init")} checked={envPresets.noFsync === true} onChange={(value) => setEnvPreset("noFsync", value)} />
               <ToggleField label={t("Disable esync")} description={t("For games that hang at startup or in anti-cheat init")} checked={envPresets.noEsync === true} onChange={(value) => setEnvPreset("noEsync", value)} />
+              <ToggleField label={t("Skip Larian launcher")} description={t("Baldur's Gate 3 and Divinity: Original Sin 2 - goes straight into the game")} checked={envPresets.skipLauncherLarian === true} onChange={(value) => setEnvPreset("skipLauncherLarian", value)} />
+              <ToggleField label={t("Skip intro videos")} description={t("Passes -novid for Source-engine and other games that stall on intro videos")} checked={envPresets.skipIntroVid === true} onChange={(value) => setEnvPreset("skipIntroVid", value)} />
+              <TextField
+                label={t("Extra launch arguments")}
+                value={values.extraArgs || ""}
+                onChange={(e) => patchSettings({ extraArgs: e.target.value || undefined })}
+              />
               <div className="nebel-compat-note">{t("Launch switches applied to the game's environment - variables set directly in Launch Options take precedence")}</div>
             </Collapsible>
           </PanelSection>

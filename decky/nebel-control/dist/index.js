@@ -90,6 +90,12 @@ const syncRemoveCustomFolder = (folderId) => call("sync_remove_custom_folder", f
 const syncDismissDevice = (deviceId) => call("sync_dismiss_device", deviceId);
 const syncAcceptFolder = (folderId) => call("sync_accept_folder", folderId);
 const syncDismissFolder = (folderId, deviceId) => call("sync_dismiss_folder", folderId, deviceId);
+const romsScan = () => call("roms_scan");
+const romsImport = () => call("roms_import");
+const romsArtwork = () => call("roms_artwork");
+const getSgdbKeyState = () => call("get_sgdb_key_state");
+const setSgdbKey = (key) => call("set_sgdb_key", key);
+const syncNow = () => call("sync_now");
 
 function useDebouncedSave(options) {
     const { config, field, snapshot, save, setConfig, onError, delay = 900 } = options;
@@ -159,6 +165,7 @@ const uk = {
     "LSFG": "LSFG",
     "LSFG Multiplier": "Множник LSFG",
     "Frame generation via Lossless Scaling; requires V-Sync in game": "Генерація кадрів через Lossless Scaling; потрібен V-Sync у грі",
+    "LSFG: frame generation unlocks here once Lossless Scaling is installed from Steam": "LSFG: генерація кадрів з'явиться тут після встановлення Lossless Scaling зі Steam",
     "Default (any core)": "Типово (будь-яке ядро)",
     "Big cores only (cpu4-7)": "Лише великі ядра (cpu4-7)",
     "Little cores only (cpu0-3)": "Лише малі ядра (cpu0-3)",
@@ -198,6 +205,11 @@ const uk = {
     "Needed by mod loaders and third-party launchers (winhttp)": "Потрібно завантажувачам модів і стороннім лаунчерам (winhttp)",
     "For games that hang at startup or in anti-cheat init": "Для ігор, що зависають при запуску або в античиті",
     "Launch switches applied to the game's environment - variables set directly in Launch Options take precedence": "Прапорці, що застосовуються до середовища гри - змінні, задані напряму в параметрах запуску, мають пріоритет",
+    "Skip Larian launcher": "Пропустити лаунчер Larian",
+    "Baldur's Gate 3 and Divinity: Original Sin 2 - goes straight into the game": "Baldur's Gate 3 та Divinity: Original Sin 2 - одразу в гру",
+    "Skip intro videos": "Пропустити вступні ролики",
+    "Passes -novid for Source-engine and other games that stall on intro videos": "Передає -novid для ігор на Source та інших, що зависають на вступних роликах",
+    "Extra launch arguments": "Додаткові аргументи запуску",
     "Default (Proton's built-in)": "Типова (вбудована в Proton)",
     "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Старіші збірки можуть допомогти на відеокартах Adreno, де новіші DXVK/VKD3D не запускаються, — типово використовується версія, вбудована в Proton",
     "Dependencies": "Залежності",
@@ -338,6 +350,7 @@ const uk = {
     "Sync": "Синхронізація",
     "Syncthing is not installed in this OS image": "Syncthing не встановлено в цьому образі ОС",
     "Sync service": "Служба синхронізації",
+    "Sync now": "Синхронізувати зараз",
     "Running": "Працює",
     "Stopped": "Зупинено",
     "This device ID": "ID цього пристрою",
@@ -377,6 +390,22 @@ const uk = {
     "TabLighting": "Світло",
     "TabSync": "Синк",
     "TabSystem": "Система",
+    "TabRoms": "ROM-и",
+    "ROM library": "Бібліотека ROM",
+    "ROM folder": "Тека ROM",
+    "Put games into per-system subfolders; systems appear here once their emulator is installed": "Складайте ігри в підтеки за системами; системи з'являються тут, коли встановлено їхній емулятор",
+    "No emulators or ROM folders found": "Емуляторів або тек з ROM не знайдено",
+    "Importing...": "Імпорт...",
+    "Import to Steam library": "Імпортувати в бібліотеку Steam",
+    "Downloading...": "Завантаження...",
+    "Fetch covers": "Завантажити обкладинки",
+    "Imported {added}, already present {skipped}. Restart game mode to see the new games.": "Додано {added}, уже є {skipped}. Перезапустіть ігровий режим, щоб побачити нові ігри.",
+    "Covers downloaded: {matched}, not found: {missed}.": "Обкладинок завантажено: {matched}, не знайдено: {missed}.",
+    "Covers": "Обкладинки",
+    "SteamGridDB key": "Ключ SteamGridDB",
+    "SteamGridDB API key (optional)": "API-ключ SteamGridDB (необов'язково)",
+    "Save key": "Зберегти ключ",
+    "SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "У SteamGridDB є повноцінні обкладинки для PS2, GameCube і Switch - безкоштовний ключ береться на steamgriddb.com. Без нього використовуються мініатюри libretro.",
     "Quick toggles": "Швидкі перемикачі",
     "Open full screen": "Відкрити на весь екран",
     "Control Center": "Центр керування",
@@ -479,6 +508,7 @@ const ru = {
     "LSFG": "LSFG",
     "LSFG Multiplier": "Множитель LSFG",
     "Frame generation via Lossless Scaling; requires V-Sync in game": "Генерация кадров через Lossless Scaling; требуется V-Sync в игре",
+    "LSFG: frame generation unlocks here once Lossless Scaling is installed from Steam": "LSFG: генерация кадров появится здесь после установки Lossless Scaling из Steam",
     "Default (any core)": "По умолчанию (любое ядро)",
     "Big cores only (cpu4-7)": "Только большие ядра (cpu4-7)",
     "Little cores only (cpu0-3)": "Только маленькие ядра (cpu0-3)",
@@ -518,6 +548,11 @@ const ru = {
     "Needed by mod loaders and third-party launchers (winhttp)": "Нужно загрузчикам модов и сторонним лаунчерам (winhttp)",
     "For games that hang at startup or in anti-cheat init": "Для игр, зависающих при запуске или в античите",
     "Launch switches applied to the game's environment - variables set directly in Launch Options take precedence": "Ключи, применяемые к окружению игры - переменные, заданные напрямую в параметрах запуска, имеют приоритет",
+    "Skip Larian launcher": "Пропустить лаунчер Larian",
+    "Baldur's Gate 3 and Divinity: Original Sin 2 - goes straight into the game": "Baldur's Gate 3 и Divinity: Original Sin 2 - сразу в игру",
+    "Skip intro videos": "Пропустить вступительные ролики",
+    "Passes -novid for Source-engine and other games that stall on intro videos": "Передаёт -novid для игр на Source и других, зависающих на вступительных роликах",
+    "Extra launch arguments": "Дополнительные аргументы запуска",
     "Default (Proton's built-in)": "По умолчанию (встроенная в Proton)",
     "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Старые сборки могут помочь на GPU Adreno, где новые DXVK/VKD3D не запускаются, — по умолчанию используется версия, встроенная в Proton",
     "Dependencies": "Зависимости",
@@ -658,6 +693,7 @@ const ru = {
     "Sync": "Синхронизация",
     "Syncthing is not installed in this OS image": "Syncthing не установлен в этом образе ОС",
     "Sync service": "Служба синхронизации",
+    "Sync now": "Синхронизировать сейчас",
     "Running": "Работает",
     "Stopped": "Остановлено",
     "This device ID": "ID этого устройства",
@@ -697,6 +733,22 @@ const ru = {
     "TabLighting": "Свет",
     "TabSync": "Синк",
     "TabSystem": "Система",
+    "TabRoms": "Ромы",
+    "ROM library": "Библиотека ROM",
+    "ROM folder": "Папка ROM",
+    "Put games into per-system subfolders; systems appear here once their emulator is installed": "Складывайте игры в подпапки по системам; системы появляются здесь, когда установлен их эмулятор",
+    "No emulators or ROM folders found": "Эмуляторы или папки с ROM не найдены",
+    "Importing...": "Импорт...",
+    "Import to Steam library": "Импортировать в библиотеку Steam",
+    "Downloading...": "Загрузка...",
+    "Fetch covers": "Скачать обложки",
+    "Imported {added}, already present {skipped}. Restart game mode to see the new games.": "Добавлено {added}, уже есть {skipped}. Перезапустите игровой режим, чтобы увидеть новые игры.",
+    "Covers downloaded: {matched}, not found: {missed}.": "Обложек скачано: {matched}, не найдено: {missed}.",
+    "Covers": "Обложки",
+    "SteamGridDB key": "Ключ SteamGridDB",
+    "SteamGridDB API key (optional)": "API-ключ SteamGridDB (необязательно)",
+    "Save key": "Сохранить ключ",
+    "SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "В SteamGridDB есть полноценные обложки для PS2, GameCube и Switch - бесплатный ключ берётся на steamgriddb.com. Без него используются миниатюры libretro.",
     "Quick toggles": "Быстрые переключатели",
     "Open full screen": "Открыть на весь экран",
     "Control Center": "Центр управления",
@@ -799,6 +851,7 @@ const es = {
     "LSFG": "LSFG",
     "LSFG Multiplier": "Multiplicador LSFG",
     "Frame generation via Lossless Scaling; requires V-Sync in game": "Generación de fotogramas vía Lossless Scaling; requiere V-Sync en el juego",
+    "LSFG: frame generation unlocks here once Lossless Scaling is installed from Steam": "LSFG: la generación de fotogramas se desbloquea aquí al instalar Lossless Scaling desde Steam",
     "Default (any core)": "Predeterminado (cualquier núcleo)",
     "Big cores only (cpu4-7)": "Solo núcleos grandes (cpu4-7)",
     "Little cores only (cpu0-3)": "Solo núcleos pequeños (cpu0-3)",
@@ -838,6 +891,11 @@ const es = {
     "Needed by mod loaders and third-party launchers (winhttp)": "Necesario para cargadores de mods y launchers de terceros (winhttp)",
     "For games that hang at startup or in anti-cheat init": "Para juegos que se cuelgan al arrancar o en el anticheat",
     "Launch switches applied to the game's environment - variables set directly in Launch Options take precedence": "Interruptores aplicados al entorno del juego - las variables definidas directamente en las opciones de lanzamiento tienen prioridad",
+    "Skip Larian launcher": "Omitir el lanzador de Larian",
+    "Baldur's Gate 3 and Divinity: Original Sin 2 - goes straight into the game": "Baldur's Gate 3 y Divinity: Original Sin 2 - entra directamente al juego",
+    "Skip intro videos": "Omitir vídeos de introducción",
+    "Passes -novid for Source-engine and other games that stall on intro videos": "Pasa -novid para juegos de Source y otros que se atascan en los vídeos de introducción",
+    "Extra launch arguments": "Argumentos de lanzamiento adicionales",
     "Default (Proton's built-in)": "Predeterminada (integrada en Proton)",
     "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Las versiones antiguas pueden ayudar en GPU Adreno donde las nuevas DXVK/VKD3D no arrancan; la predeterminada es la integrada en Proton",
     "Dependencies": "Dependencias",
@@ -978,6 +1036,7 @@ const es = {
     "Sync": "Sincronización",
     "Syncthing is not installed in this OS image": "Syncthing no está instalado en esta imagen del SO",
     "Sync service": "Servicio de sincronización",
+    "Sync now": "Sincronizar ahora",
     "Running": "En ejecución",
     "Stopped": "Detenido",
     "This device ID": "ID de este dispositivo",
@@ -1017,6 +1076,23 @@ const es = {
     "TabLighting": "Luces",
     "TabSync": "Sync",
     "TabSystem": "Sistema",
+    "TabRoms": "ROMs",
+    "ROM library": "Biblioteca de ROM",
+    "ROM folder": "Carpeta de ROM",
+    "Put games into per-system subfolders; systems appear here once their emulator is installed": "Guarda los juegos en subcarpetas por sistema; los sistemas aparecen aquí cuando su emulador está instalado",
+    "No emulators or ROM folders found": "No se encontraron emuladores ni carpetas de ROM",
+    "Importing...": "Importando...",
+    "Import to Steam library": "Importar a la biblioteca de Steam",
+    "Downloading...": "Descargando...",
+    "Fetch covers": "Descargar carátulas",
+    "Imported {added}, already present {skipped}. Restart game mode to see the new games.": "Añadidos {added}, ya presentes {skipped}. Reinicia el modo de juego para ver los nuevos juegos.",
+    "Covers downloaded: {matched}, not found: {missed}.": "Carátulas descargadas: {matched}, no encontradas: {missed}.",
+    "Covers": "Carátulas",
+    "SteamGridDB key": "Clave de SteamGridDB",
+    "SteamGridDB API key (optional)": "Clave API de SteamGridDB (opcional)",
+    "Save key": "Guardar clave",
+    "Remove key": "Eliminar clave",
+    "SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "SteamGridDB tiene carátulas completas para PS2, GameCube y Switch - la clave gratuita se obtiene en steamgriddb.com. Sin ella se usan las miniaturas de libretro.",
     "Quick toggles": "Interruptores rápidos",
     "Open full screen": "Abrir a pantalla completa",
     "Control Center": "Centro de control",
@@ -1110,6 +1186,7 @@ const fr = {
     "LSFG": "LSFG",
     "LSFG Multiplier": "Multiplicateur LSFG",
     "Frame generation via Lossless Scaling; requires V-Sync in game": "Génération d'images via Lossless Scaling; nécessite le V-Sync dans le jeu",
+    "LSFG: frame generation unlocks here once Lossless Scaling is installed from Steam": "LSFG : la génération d'images se débloque ici après l'installation de Lossless Scaling depuis Steam",
     "Default (any core)": "Par défaut (n'importe quel cœur)",
     "Big cores only (cpu4-7)": "Gros cœurs uniquement (cpu4-7)",
     "Little cores only (cpu0-3)": "Petits cœurs uniquement (cpu0-3)",
@@ -1149,6 +1226,11 @@ const fr = {
     "Needed by mod loaders and third-party launchers (winhttp)": "Requis par les chargeurs de mods et launchers tiers (winhttp)",
     "For games that hang at startup or in anti-cheat init": "Pour les jeux qui bloquent au démarrage ou dans l'anticheat",
     "Launch switches applied to the game's environment - variables set directly in Launch Options take precedence": "Options appliquées à l'environnement du jeu - les variables définies directement dans les options de lancement sont prioritaires",
+    "Skip Larian launcher": "Ignorer le lanceur Larian",
+    "Baldur's Gate 3 and Divinity: Original Sin 2 - goes straight into the game": "Baldur's Gate 3 et Divinity: Original Sin 2 - accède directement au jeu",
+    "Skip intro videos": "Ignorer les vidéos d'intro",
+    "Passes -novid for Source-engine and other games that stall on intro videos": "Passe -novid pour les jeux Source et autres qui bloquent sur les vidéos d'intro",
+    "Extra launch arguments": "Arguments de lancement supplémentaires",
     "Default (Proton's built-in)": "Par défaut (intégrée à Proton)",
     "Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version": "Les versions anciennes peuvent aider sur les GPU Adreno où les DXVK/VKD3D récents refusent de démarrer ; par défaut, la version intégrée à Proton est utilisée",
     "Dependencies": "Dépendances",
@@ -1289,6 +1371,7 @@ const fr = {
     "Sync": "Synchronisation",
     "Syncthing is not installed in this OS image": "Syncthing n'est pas installé dans cette image de l'OS",
     "Sync service": "Service de synchronisation",
+    "Sync now": "Synchroniser maintenant",
     "Running": "En cours d'exécution",
     "Stopped": "Arrêté",
     "This device ID": "ID de cet appareil",
@@ -1328,6 +1411,23 @@ const fr = {
     "TabLighting": "Lumière",
     "TabSync": "Sync",
     "TabSystem": "Système",
+    "TabRoms": "ROMs",
+    "ROM library": "Bibliothèque de ROM",
+    "ROM folder": "Dossier ROM",
+    "Put games into per-system subfolders; systems appear here once their emulator is installed": "Rangez les jeux dans des sous-dossiers par système ; les systèmes apparaissent ici une fois leur émulateur installé",
+    "No emulators or ROM folders found": "Aucun émulateur ni dossier de ROM trouvé",
+    "Importing...": "Importation...",
+    "Import to Steam library": "Importer dans la bibliothèque Steam",
+    "Downloading...": "Téléchargement...",
+    "Fetch covers": "Télécharger les jaquettes",
+    "Imported {added}, already present {skipped}. Restart game mode to see the new games.": "Ajoutés {added}, déjà présents {skipped}. Redémarrez le mode jeu pour voir les nouveaux jeux.",
+    "Covers downloaded: {matched}, not found: {missed}.": "Jaquettes téléchargées : {matched}, introuvables : {missed}.",
+    "Covers": "Jaquettes",
+    "SteamGridDB key": "Clé SteamGridDB",
+    "SteamGridDB API key (optional)": "Clé API SteamGridDB (optionnel)",
+    "Save key": "Enregistrer la clé",
+    "Remove key": "Supprimer la clé",
+    "SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "SteamGridDB propose de vraies jaquettes pour PS2, GameCube et Switch - la clé gratuite s'obtient sur steamgriddb.com. Sans elle, les miniatures libretro sont utilisées.",
     "Quick toggles": "Raccourcis rapides",
     "Open full screen": "Ouvrir en plein écran",
     "Control Center": "Centre de contrôle",
@@ -1415,6 +1515,7 @@ const tabIcons = {
     Lighting: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5" }), SP_JSX.jsx("path", { d: "M9 18h6" }), SP_JSX.jsx("path", { d: "M10 22h4" })] }) })),
     Sync: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M21 12a9 9 0 0 1-15.5 6.2L3 16" }), SP_JSX.jsx("path", { d: "M3 12a9 9 0 0 1 15.5-6.2L21 8" }), SP_JSX.jsx("path", { d: "M3 11v5h5" }), SP_JSX.jsx("path", { d: "M21 13V8h-5" })] }) })),
     System: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" }), SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "3" })] }) })),
+    Roms: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "10" }), SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "3" })] }) })),
 };
 
 const apps = () => window.SteamClient?.Apps;
@@ -3024,9 +3125,9 @@ function Games({ config, setConfig, qam, lockedAppid, injected }) {
                                     patchSettings({ autoApplyCompat: enabled });
                                 } }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: defaultResolution, options: resolutionOptions, onChange: setSteamDefaultResolution }), !qam && (SP_JSX.jsx(DFL.ToggleField, { label: t("Performance Overlay"), description: t("FPS/CPU/GPU/temps overlay via gamescope's built-in --mangoapp - applies on next session restart"), checked: tweaks.global.mangoapp === true, onChange: (enabled) => patchSettings({ mangoapp: enabled }) }))] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!injected && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Mode"), value: perGameMode, options: perGameModeOptions, onChange: onSelectPerGameMode }), SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Compatibility Tool"), value: currentTool, options: perGameToolOptions, onChange: onSelectPerGameTool })] })), forcedTool && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { labelBelow: true, label: t("Game Era"), value: String(values.gameEra || ""), options: gameEraOptions, onChange: (value) => patchSettings({ gameEra: value || undefined }) }), values.gameEra === "xp" ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("XP era presets Windows version, old-DirectX renderer and two CPU cores - fine-tune under Advanced") })) : null, SP_JSX.jsx(SelectEdit, { label: t("Game Resolution"), value: resolution, options: resolutionOptions, onChange: setSteamResolution })] }))] })), resolutionMessage ? SP_JSX.jsx(DFL.Field, { label: t("Status"), description: resolutionMessage }) : null, !qam && (!injected || (forcedTool && isX86Mode)) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("FEX Preset"), value: fexValue, options: fexOptions, onChange: onSelectFex }), isCustom
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
-                                : null] }))] })), !editingDefault && game?.appid ? (SP_JSX.jsx(HeroicSection, { appid: game.appid, forced: gameSettings.heroicForce === true, onToggleForce: (enabled) => patchSettings({ heroicForce: enabled || undefined }) })) : null, !editingDefault && game?.appid ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("Dual-screen mode"), description: t("Launch in the dual-screen session (internal + external display) instead of game mode - for dual-screen emulators like Azahar/melonDS. Requires the external display connected."), checked: values.dualScreen === true, onChange: (enabled) => patchSettings({ dualScreen: enabled || undefined }) }) })) : null, !qam && (!injected || forcedTool) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsxs(Collapsible, { label: t("Advanced"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Power Profile"), value: String(values.powerProfile || ""), options: powerProfileOptions, onChange: (value) => patchSettings({ powerProfile: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Switches the system power profile for this game and restores it after exit") }), lsfgAvailability?.layer && lsfgAvailability?.lossless ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("LSFG"), description: t("Frame generation via Lossless Scaling; requires V-Sync in game"), checked: values.lsfg === true, onChange: (enabled) => patchSettings({ lsfg: enabled || undefined }) }), values.lsfg === true ? (SP_JSX.jsx(SelectEdit, { label: t("LSFG Multiplier"), value: String(values.lsfgMultiplier || 2), options: lsfgMultiplierOptions, onChange: (value) => patchSettings({ lsfgMultiplier: Number(value) || undefined }) })) : null] })) : null, (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
+                                : null] }))] })), !editingDefault && game?.appid ? (SP_JSX.jsx(HeroicSection, { appid: game.appid, forced: gameSettings.heroicForce === true, onToggleForce: (enabled) => patchSettings({ heroicForce: enabled || undefined }) })) : null, !editingDefault && game?.appid ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("Dual-screen mode"), description: t("Launch in the dual-screen session (internal + external display) instead of game mode - for dual-screen emulators like Azahar/melonDS. Requires the external display connected."), checked: values.dualScreen === true, onChange: (enabled) => patchSettings({ dualScreen: enabled || undefined }) }) })) : null, !qam && (!injected || forcedTool) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsxs(Collapsible, { label: t("Advanced"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Power Profile"), value: String(values.powerProfile || ""), options: powerProfileOptions, onChange: (value) => patchSettings({ powerProfile: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Switches the system power profile for this game and restores it after exit") }), lsfgAvailability?.layer && lsfgAvailability?.lossless ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("LSFG"), description: t("Frame generation via Lossless Scaling; requires V-Sync in game"), checked: values.lsfg === true, onChange: (enabled) => patchSettings({ lsfg: enabled || undefined }) }), values.lsfg === true ? (SP_JSX.jsx(SelectEdit, { label: t("LSFG Multiplier"), value: String(values.lsfgMultiplier || 2), options: lsfgMultiplierOptions, onChange: (value) => patchSettings({ lsfgMultiplier: Number(value) || undefined }) })) : null] })) : lsfgAvailability?.layer ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("LSFG: frame generation unlocks here once Lossless Scaling is installed from Steam") })) : null, (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                                 ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
-                                                : null] }))] }), SP_JSX.jsxs(Collapsible, { label: t("Launch flags"), children: [SP_JSX.jsx(DFL.ToggleField, { label: t("D3D12 feature level 12_1"), description: t("For DirectX 12 games that black-screen or refuse to start"), checked: envPresets.dx12Fl121 === true, onChange: (value) => setEnvPreset("dx12Fl121", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable DirectX 12"), description: t("For games whose DirectX 12 mode crashes - they fall back to DX11"), checked: envPresets.noD3d12 === true, onChange: (value) => setEnvPreset("noD3d12", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WineD3D instead of DXVK"), description: t("For old DirectX 9-11 games that won't start on DXVK"), checked: envPresets.wineD3d === true, onChange: (value) => setEnvPreset("wineD3d", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Old OpenGL compatibility"), description: t("For old OpenGL games that misdetect the graphics driver"), checked: envPresets.oldGlString === true, onChange: (value) => setEnvPreset("oldGlString", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Large address aware (32-bit games)"), description: t("For 32-bit era games crashing with out-of-memory errors"), checked: envPresets.largeAddress === true, onChange: (value) => setEnvPreset("largeAddress", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Mod/launcher DLL override"), description: t("Needed by mod loaders and third-party launchers (winhttp)"), checked: envPresets.winhttpOverride === true, onChange: (value) => setEnvPreset("winhttpOverride", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable fsync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noFsync === true, onChange: (value) => setEnvPreset("noFsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable esync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noEsync === true, onChange: (value) => setEnvPreset("noEsync", value) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Launch switches applied to the game's environment - variables set directly in Launch Options take precedence") })] })] }), !editingDefault && game?.appid && forcedTool ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+                                                : null] }))] }), SP_JSX.jsxs(Collapsible, { label: t("Launch flags"), children: [SP_JSX.jsx(DFL.ToggleField, { label: t("D3D12 feature level 12_1"), description: t("For DirectX 12 games that black-screen or refuse to start"), checked: envPresets.dx12Fl121 === true, onChange: (value) => setEnvPreset("dx12Fl121", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable DirectX 12"), description: t("For games whose DirectX 12 mode crashes - they fall back to DX11"), checked: envPresets.noD3d12 === true, onChange: (value) => setEnvPreset("noD3d12", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WineD3D instead of DXVK"), description: t("For old DirectX 9-11 games that won't start on DXVK"), checked: envPresets.wineD3d === true, onChange: (value) => setEnvPreset("wineD3d", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Old OpenGL compatibility"), description: t("For old OpenGL games that misdetect the graphics driver"), checked: envPresets.oldGlString === true, onChange: (value) => setEnvPreset("oldGlString", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Large address aware (32-bit games)"), description: t("For 32-bit era games crashing with out-of-memory errors"), checked: envPresets.largeAddress === true, onChange: (value) => setEnvPreset("largeAddress", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Mod/launcher DLL override"), description: t("Needed by mod loaders and third-party launchers (winhttp)"), checked: envPresets.winhttpOverride === true, onChange: (value) => setEnvPreset("winhttpOverride", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable fsync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noFsync === true, onChange: (value) => setEnvPreset("noFsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable esync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noEsync === true, onChange: (value) => setEnvPreset("noEsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Skip Larian launcher"), description: t("Baldur's Gate 3 and Divinity: Original Sin 2 - goes straight into the game"), checked: envPresets.skipLauncherLarian === true, onChange: (value) => setEnvPreset("skipLauncherLarian", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Skip intro videos"), description: t("Passes -novid for Source-engine and other games that stall on intro videos"), checked: envPresets.skipIntroVid === true, onChange: (value) => setEnvPreset("skipIntroVid", value) }), SP_JSX.jsx(DFL.TextField, { label: t("Extra launch arguments"), value: values.extraArgs || "", onChange: (e) => patchSettings({ extraArgs: e.target.value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Launch switches applied to the game's environment - variables set directly in Launch Options take precedence") })] })] }), !editingDefault && game?.appid && forcedTool ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
 // Per-game winetricks verbs ("Dependencies"): installs run in a backend
 // worker thread, so the UI polls deps_status while busy instead of blocking.
@@ -3940,6 +4041,75 @@ function Power({ config, setConfig }) {
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Edit Power Profile"), children: SP_JSX.jsx(SelectEdit, { value: profile, options: profiles, onChange: setProfile }) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Profile Settings"), children: [SP_JSX.jsx(SelectEdit, { label: t("Fan Curve"), value: p.fan_curve, options: fanCurves, onChange: (v) => setProfileValue("fan_curve", v) }), supportsUnderclockPresets ? (SP_JSX.jsx(SelectEdit, { label: t("CPU Underclock"), value: underclockLevel, options: underclocks, onChange: (v) => setProfileValue("cpu_underclock", v) })) : (SP_JSX.jsx(SliderEdit, { label: t("CPU Max (%)"), value: Math.round(Number(p.cpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setProfileValue("cpu_max", (v / 100).toFixed(2)) })), SP_JSX.jsx(SliderEdit, { label: t("GPU Min (%)"), value: Math.round(Number(p.gpu_min || 0) * 100), min: 0, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_min", (v / 100).toFixed(2)) }), SP_JSX.jsx(SliderEdit, { label: t("GPU Max (%)"), value: Math.round(Number(p.gpu_max || 0) * 100), min: 35, max: 100, step: 1, onChange: (v) => setGpuValue("gpu_max", (v / 100).toFixed(2)) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetProfile, children: t("Reset to Default") }) })] }), stickLed && (SP_JSX.jsx(DFL.PanelSection, { title: t("Stick Lighting"), children: SP_JSX.jsx(ToggleRow, { label: t("Charging indicator"), description: t("Spin a blue dot around the stick while charging (when the stick color follows the battery level)"), value: !!stickLed.sides?.l?.chargingIndicator, onChange: setChargingIndicator }) }))] }));
 }
 
+function Roms(_props) {
+    const [scan, setScan] = SP_REACT.useState(null);
+    const [sgdb, setSgdb] = SP_REACT.useState(null);
+    const [sgdbDraft, setSgdbDraft] = SP_REACT.useState("");
+    const [busy, setBusy] = SP_REACT.useState("");
+    const [message, setMessage] = SP_REACT.useState("");
+    const refresh = SP_REACT.useCallback(() => {
+        romsScan()
+            .then(setScan)
+            .catch((error) => setMessage(String(error)));
+        getSgdbKeyState()
+            .then(setSgdb)
+            .catch(() => { });
+    }, []);
+    SP_REACT.useEffect(() => {
+        refresh();
+    }, [refresh]);
+    const doImport = async () => {
+        setBusy("import");
+        setMessage("");
+        try {
+            const result = await romsImport();
+            if (result.error) {
+                setMessage(result.error);
+            }
+            else {
+                setMessage(t("Imported {added}, already present {skipped}. Restart game mode to see the new games.")
+                    .replace("{added}", String(result.added.length))
+                    .replace("{skipped}", String(result.skipped.length)));
+            }
+        }
+        catch (error) {
+            setMessage(String(error));
+        }
+        setBusy("");
+    };
+    const doArtwork = async () => {
+        setBusy("artwork");
+        setMessage("");
+        try {
+            const result = await romsArtwork();
+            if (result.error && !result.matched) {
+                setMessage(result.error);
+            }
+            else {
+                setMessage(t("Covers downloaded: {matched}, not found: {missed}.")
+                    .replace("{matched}", String(result.matched))
+                    .replace("{missed}", String(result.missed.length)));
+            }
+        }
+        catch (error) {
+            setMessage(String(error));
+        }
+        setBusy("");
+    };
+    const saveSgdbKey = async () => {
+        try {
+            setSgdb(await setSgdbKey(sgdbDraft));
+            setSgdbDraft("");
+        }
+        catch (error) {
+            setMessage(String(error));
+        }
+    };
+    const systems = scan?.systems || [];
+    const total = systems.reduce((sum, system) => sum + system.count, 0);
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("ROM library"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("ROM folder"), description: t("Put games into per-system subfolders; systems appear here once their emulator is installed"), children: scan?.root || "" }) }), systems.map((system) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: system.label, description: system.dir, children: system.count }) }, system.id))), !systems.length && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { opacity: 0.7, fontSize: "12px" }, children: t("No emulators or ROM folders found") }) }))] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Covers"), children: [sgdb?.present ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("SteamGridDB key"), description: sgdb.masked, children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: async () => setSgdb(await setSgdbKey("")), children: t("Remove key") }) }) })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.TextField, { label: t("SteamGridDB API key (optional)"), value: sgdbDraft, onChange: (e) => setSgdbDraft(e.target.value) }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: saveSgdbKey, disabled: !sgdbDraft.trim(), children: t("Save key") })] })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { opacity: 0.7, fontSize: "12px" }, children: t("SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.") }) })] }), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: doImport, disabled: busy !== "" || total === 0, children: busy === "import" ? t("Importing...") : t("Import to Steam library") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: doArtwork, disabled: busy !== "" || total === 0, children: busy === "artwork" ? t("Downloading...") : t("Fetch covers") }), message && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px" }, children: message }) }))] })] }));
+}
+
 function AddDeviceModal({ closeModal, onAdd }) {
     const [deviceId, setDeviceId] = SP_REACT.useState("");
     const [name, setName] = SP_REACT.useState("");
@@ -4044,7 +4214,7 @@ function Sync({ qam }) {
     if (!state)
         return SP_JSX.jsx(DFL.PanelSection, { title: t("Sync"), children: SP_JSX.jsx(DFL.Field, { label: t("Loading") }) });
     const connectedCount = state.devices.filter((d) => d.connected).length;
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Syncthing", children: [!state.installed && SP_JSX.jsx(DFL.Field, { label: t("Syncthing is not installed in this OS image") }), SP_JSX.jsx(ToggleRow, { label: t("Sync service"), description: state.serviceActive ? t("Running") : t("Stopped"), value: state.serviceEnabled && state.serviceActive, disabled: busy || !state.installed, onChange: (enabled) => void run(async () => { await setSyncServiceEnabled(enabled); await refresh(); }) }), state.myId && (SP_JSX.jsx(DFL.Field, { label: t("This device ID"), description: state.myId })), state.devices.length > 0 && (SP_JSX.jsx(DFL.Field, { label: t("Status"), description: t("{connected} of {total} device(s) connected", { connected: connectedCount, total: state.devices.length }) })), !!error && SP_JSX.jsx(DFL.Field, { label: t("Error"), description: error })] }), state.serviceActive && (state.pendingDevices.length > 0 || state.pendingFolders.length > 0) && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Requests"), children: [state.pendingDevices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Device \"{name}\" wants to pair", { name: device.name }), description: device.id.slice(0, 13) + "...", children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAddDevice(device.id, device.name)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissDevice(device.id)), children: t("Dismiss") })] }) }) }, device.id))), state.pendingFolders.map((folder) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Folder \"{name}\" was shared with you", { name: folder.label }), description: folder.id, children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAcceptFolder(folder.id)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissFolder(folder.id, folder.offeredBy[0] || "")), children: t("Dismiss") })] }) }) }, folder.id)))] })), !qam && state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Devices"), children: [state.devices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `${device.name}${device.connected ? " " + t("(connected)") : ""}`, description: device.id.slice(0, 13) + "...", children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveDevice(device.id)), children: t("Remove") }) }) }, device.id))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddDeviceModal, { onAdd: async (deviceId, name) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Syncthing", children: [!state.installed && SP_JSX.jsx(DFL.Field, { label: t("Syncthing is not installed in this OS image") }), SP_JSX.jsx(ToggleRow, { label: t("Sync service"), description: state.serviceActive ? t("Running") : t("Stopped"), value: state.serviceEnabled && state.serviceActive, disabled: busy || !state.installed, onChange: (enabled) => void run(async () => { await setSyncServiceEnabled(enabled); await refresh(); }) }), state.myId && (SP_JSX.jsx(DFL.Field, { label: t("This device ID"), description: state.myId })), state.devices.length > 0 && (SP_JSX.jsx(DFL.Field, { label: t("Status"), description: t("{connected} of {total} device(s) connected", { connected: connectedCount, total: state.devices.length }) })), state.serviceActive && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => void run(async () => { await syncNow(); await refresh(); }), children: t("Sync now") }) })), !!error && SP_JSX.jsx(DFL.Field, { label: t("Error"), description: error })] }), state.serviceActive && (state.pendingDevices.length > 0 || state.pendingFolders.length > 0) && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Requests"), children: [state.pendingDevices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Device \"{name}\" wants to pair", { name: device.name }), description: device.id.slice(0, 13) + "...", children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAddDevice(device.id, device.name)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissDevice(device.id)), children: t("Dismiss") })] }) }) }, device.id))), state.pendingFolders.map((folder) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("Folder \"{name}\" was shared with you", { name: folder.label }), description: folder.id, children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncAcceptFolder(folder.id)), children: t("Accept") }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "80px" }, disabled: busy, onClick: () => void run(() => syncDismissFolder(folder.id, folder.offeredBy[0] || "")), children: t("Dismiss") })] }) }) }, folder.id)))] })), !qam && state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Devices"), children: [state.devices.map((device) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: `${device.name}${device.connected ? " " + t("(connected)") : ""}`, description: device.id.slice(0, 13) + "...", children: SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: "90px" }, disabled: busy, onClick: () => void run(() => syncRemoveDevice(device.id)), children: t("Remove") }) }) }, device.id))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { disabled: busy, onClick: () => DFL.showModal(SP_JSX.jsx(AddDeviceModal, { onAdd: async (deviceId, name) => {
                                     await run(() => syncAddDevice(deviceId, name));
                                 } })), children: t("Add device") }) })] })), !qam && state.serviceActive && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Folders"), children: [state.devices.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("Add a device first - folders sync only to paired devices") })), state.folders.map((folder) => {
                         const statusSuffix = folder.enabled
@@ -4417,6 +4587,7 @@ function buildTabs(config, setConfig, qam) {
     return [
         { id: "Home", icon: tabIcons.Home, label: t("TabHome"), content: SP_JSX.jsx(Home, { config: config, setConfig: setConfig, qam: qam }) },
         { id: "Games", icon: tabIcons.Games, label: t("TabGames"), content: SP_JSX.jsx(Games, { config: config, setConfig: setConfig, qam: qam }) },
+        { id: "Roms", icon: tabIcons.Roms, label: t("TabRoms"), content: SP_JSX.jsx(Roms, { qam: qam }) },
         { id: "Display", icon: tabIcons.Display, label: t("TabDisplay"), content: SP_JSX.jsx(Display, { qam: qam }) },
         { id: "Power", icon: tabIcons.Power, label: t("TabPower"), content: SP_JSX.jsx(Power, { config: config, setConfig: setConfig, qam: qam }) },
         { id: "Lighting", icon: tabIcons.Lighting, label: t("TabLighting"), content: SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig, qam: qam }) },

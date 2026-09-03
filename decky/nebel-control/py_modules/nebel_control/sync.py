@@ -121,6 +121,24 @@ def set_service_enabled(enabled):
     return result
 
 
+def sync_now():
+    """Force an immediate rescan of every folder. Syncthing's fs watcher
+    normally beats us to it; this is the user's 'push it now' escape hatch."""
+    if not installed() or not api_key():
+        return {"ok": False, "scanned": 0}
+    scanned = 0
+    for folder in rest("GET", "/rest/config/folders") or []:
+        folder_id = folder.get("id")
+        if not folder_id:
+            continue
+        try:
+            rest("POST", f"/rest/db/scan?folder={folder_id}", timeout=4)
+            scanned += 1
+        except Exception:
+            pass
+    return {"ok": True, "scanned": scanned}
+
+
 def _remote_devices():
     devices = rest("GET", "/rest/config/devices") or []
     return [d for d in devices if isinstance(d, dict) and d.get("deviceID")]

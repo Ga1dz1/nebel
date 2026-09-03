@@ -36,6 +36,7 @@ export interface GameTweak {
   memoryLimitMB?: number;
   gpuSpoof?: string;
   envPresets?: Record<string, boolean>;
+  extraArgs?: string;
   heroicForce?: boolean;
   dualScreen?: boolean;
   powerProfile?: string;

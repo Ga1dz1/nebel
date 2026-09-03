@@ -13,6 +13,7 @@ import { Games } from "./tabs/Games";
 import { Home } from "./tabs/Home";
 import { Lighting } from "./tabs/Lighting";
 import { Power } from "./tabs/Power";
+import { Roms } from "./tabs/Roms";
 import { Sync } from "./tabs/Sync";
 import { System } from "./tabs/System";
 import type { Config } from "./types";
@@ -99,6 +100,7 @@ function buildTabs(config: Config, setConfig: SetConfig, qam: boolean): PluginTa
   return [
     { id: "Home", icon: tabIcons.Home, label: t("TabHome"), content: <Home config={config} setConfig={setConfig} qam={qam} /> },
     { id: "Games", icon: tabIcons.Games, label: t("TabGames"), content: <Games config={config} setConfig={setConfig} qam={qam} /> },
+    { id: "Roms", icon: tabIcons.Roms, label: t("TabRoms"), content: <Roms qam={qam} /> },
     { id: "Display", icon: tabIcons.Display, label: t("TabDisplay"), content: <Display qam={qam} /> },
     { id: "Power", icon: tabIcons.Power, label: t("TabPower"), content: <Power config={config} setConfig={setConfig} qam={qam} /> },
     { id: "Lighting", icon: tabIcons.Lighting, label: t("TabLighting"), content: <Lighting config={config} setConfig={setConfig} qam={qam} /> },
