@@ -1,29 +1,94 @@
 #!/usr/bin/bash
 # udev-triggered on DRM change events (99-nebel-display-hotplug.rules).
 #
-# Game mode's output/resolution/rotation are gamescope STARTUP flags (see
-# sessions.d/steam) - if the external display the session launched on is
-# unplugged mid-session, the internal panel would come back with the
-# external's rotation/no rotation shader even if gamescope's own connector
-# fallback kicks in. Restarting the session is the only way to re-apply
-# the internal panel's correct flags, so do exactly that - but only when
-# the connector THIS session actually launched on (the marker written by
-# sessions.d/steam) is the one that disconnected. The marker is removed
-# before restarting and only rewritten by a session that launches on the
-# external again, which is what prevents a restart loop: the relaunched
-# session sees the connector gone, falls back to internal, writes no
-# marker, and further DRM events find nothing to do.
+# Game mode's output/routing are gamescope STARTUP flags (see
+# sessions.d/steam), so both directions of a hotplug need a session restart
+# to take effect:
+#
+# Disconnect: if the external display the session launched on is unplugged
+# mid-session, the internal panel would come back with the external's
+# rotation/no rotation shader even if gamescope's own connector fallback
+# kicks in. Restart the session back onto the internal panel - but only
+# when the connector THIS session actually launched on (the marker written
+# by sessions.d/steam, "CONNECTOR MODE") is the one that disconnected. The
+# marker is removed before restarting and only rewritten by a session that
+# launches on the external again, which is what prevents a restart loop.
+# A duo session additionally has its persisted mode reset to internal:
+# duo is meaningless without the second panel, and the reset lets a later
+# re-plug re-enter duo via the connect branch below.
+#
+# Connect: with the session on the internal panel (no marker), mode
+# internal and auto-duo not opted out, plugging in an external display
+# switches the persisted mode to duo and restarts into it.
 set -euo pipefail
 
 MARKER="/run/user/1000/nebel-display-connector"
+OVERRIDE="/etc/nebel/display-override.conf"
 LOCK="/run/nebel-display-hotplug.lock"
 
 exec 9>"$LOCK"
 flock -n 9 || exit 0
 
-[[ -f "$MARKER" ]] || exit 0
-connector=$(cat "$MARKER")
+# Debounce: DRM change events arrive in bursts while the link trains and
+# connectors flap - settle before trusting any status read.
+sleep 2
+
+dp_connected_connector() {
+    local status_file connector
+    for status_file in /sys/class/drm/card*-DP-*/status; do
+        [[ -f "$status_file" ]] || continue
+        if [[ "$(cat "$status_file" 2>/dev/null)" == "connected" ]]; then
+            connector="$(basename "$(dirname "$status_file")")"
+            printf '%s\n' "${connector#card*-}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+gamescope_running() {
+    # gamescope renames its main process comm to "gamescope-wl" at startup -
+    # checking for "gamescope" alone never matches a live session.
+    pgrep -x gamescope-wl >/dev/null 2>&1 || pgrep -x gamescope >/dev/null 2>&1
+}
+
+override_value() {
+    local key="$1" line
+    [[ -f "$OVERRIDE" ]] || return 1
+    while IFS= read -r line; do
+        case "$line" in
+            "$key="*) printf '%s\n' "${line#*=}"; return 0 ;;
+        esac
+    done < "$OVERRIDE"
+    return 1
+}
+
+if [[ ! -f "$MARKER" ]]; then
+    # Connect branch. No marker = this session launched on the internal
+    # panel; only an internal-mode session with auto-duo enabled (the
+    # default - NEBEL_DISPLAY_AUTO_DUO=0 in the override is the opt-out)
+    # follows a freshly plugged external display into duo. Anything else
+    # (dock/duo already chosen, desktop session with no gamescope at all)
+    # is left alone.
+    gamescope_running || exit 0
+    mode="$(override_value NEBEL_DISPLAY_MODE || echo internal)"
+    [[ "$mode" == "internal" || -z "$mode" ]] || exit 0
+    [[ "$(override_value NEBEL_DISPLAY_AUTO_DUO || echo 1)" != "0" ]] || exit 0
+    connector="$(dp_connected_connector || true)"
+    [[ -n "$connector" ]] || exit 0
+    printf 'NEBEL_DISPLAY_MODE=duo\n' > "$OVERRIDE"
+    logger -t nebel-display-hotplug "external display $connector connected - restarting game mode into duo"
+    # Detached: udev kills long-running RUN+= children, and this restart
+    # tears down the very cgroup this trigger is running in mid-flight.
+    systemd-run --no-block /usr/libexec/nebel/restart-gamescope-session
+    exit 0
+fi
+
+# Marker format: "CONNECTOR MODE" (MODE added in 1.4; treat its absence as
+# a dock/"external" session written by an older image).
+read -r connector mode < "$MARKER"
 [[ -n "$connector" ]] || exit 0
+mode="${mode:-external}"
 
 for status_file in /sys/class/drm/card*-"${connector}"/status; do
     [[ -f "$status_file" ]] || continue
@@ -31,22 +96,32 @@ for status_file in /sys/class/drm/card*-"${connector}"/status; do
 done
 
 # Marker present but gamescope gone = stale leftover (session ended some
-# other way); clean up but don't touch sddm from here. NOTE: gamescope
-# renames its main process comm to "gamescope-wl" at startup - checking for
-# "gamescope" here never matches a live session and used to send every
-# real disconnect down this no-restart path (live-observed: RDS unplug left
-# game mode on the internal panel with the external's flags, sideways).
-if ! pgrep -x gamescope-wl >/dev/null 2>&1 && ! pgrep -x gamescope >/dev/null 2>&1; then
+# other way); clean up but don't touch sddm from here. NOTE: the
+# gamescope_running check used to be a plain "gamescope" pgrep, which never
+# matches a live session (see above) and used to send every real disconnect
+# down this no-restart path (live-observed: RDS unplug left game mode on
+# the internal panel with the external's flags, sideways).
+if ! gamescope_running; then
     rm -f "$MARKER"
     exit 0
 fi
 
 rm -f "$MARKER"
+if [[ "$mode" == "duo" ]]; then
+    # Duo without the second panel is meaningless - persist the fallback so
+    # the next boot is internal and a later re-plug can re-enter duo via the
+    # connect branch. Keep an explicit auto-duo opt-out intact.
+    if [[ "$(override_value NEBEL_DISPLAY_AUTO_DUO || echo 1)" == "0" ]]; then
+        printf 'NEBEL_DISPLAY_MODE=internal\nNEBEL_DISPLAY_AUTO_DUO=0\n' > "$OVERRIDE"
+    else
+        rm -f "$OVERRIDE"
+    fi
+fi
 # Detached: udev kills long-running RUN+= children, and this restart
 # tearing down the very cgroup this trigger is running in mid-flight is
 # exactly that case. Not session-control's switch-gamemode: confirmed live
 # that restarting sddm.service (what that goes through when there's no
 # Plasma session to gracefully hand off from) never tears down an already-
 # running autologin session at all - see restart-gamescope-session for why.
-logger -t nebel-display-hotplug "primary connector $connector disconnected - restarting game mode onto the internal panel"
+logger -t nebel-display-hotplug "primary connector $connector ($mode) disconnected - restarting game mode onto the internal panel"
 systemd-run --no-block /usr/libexec/nebel/restart-gamescope-session
