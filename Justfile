@@ -230,6 +230,16 @@ build-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_build
 
 # Output: ./output/nebel-<version>.img.gz  (version = container label, date.sha)
 # All supported devices boot via ROCKNIX ABL from /KERNEL; GRUB is not used.
+#
+# GOTCHA: bib (osbuild/images distro.ParseID) rejects a VERSION_ID with two
+# dots ("bootc-nebel-1.4.1: too many dots in the version"), and reads
+# /etc/os-release BEFORE /usr/lib/os-release. For a three-part NEBEL_RELEASE
+# build the raw via a wrapper image whose /etc/os-release is a REAL FILE with
+# VERSION_ID flattened to one dot (see /tmp/bib-wrap/Containerfile pattern:
+# `cp -L` + sed + replace), then mount the raw's btrfs root and restore
+# /etc/os-release to the `../usr/lib/os-release` symlink before running the
+# post_process steps. /usr/lib/os-release keeps the real version, so the
+# flashed device reports it correctly.
 [group('Nebel')]
 build-nebel-image $target_image=("localhost/" + image_name) $tag=default_tag: (build-raw target_image tag)
     #!/usr/bin/env bash
