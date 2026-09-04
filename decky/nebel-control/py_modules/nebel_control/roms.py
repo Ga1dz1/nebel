@@ -167,10 +167,74 @@ SYSTEMS = {
         "cores": ["flycast_libretro.so"],
         "thumbs": "Sega - Dreamcast",
     },
+    "saturn": {
+        "label": "Sega Saturn",
+        "exts": {".chd", ".cue", ".ccd", ".mds"},
+        "cores": ["beetle_saturn_libretro.so", "kronos_libretro.so", "yabause_libretro.so"],
+        "thumbs": "Sega - Saturn",
+    },
+    "segacd": {
+        "label": "Sega CD",
+        "exts": {".chd", ".cue", ".iso"},
+        "cores": ["genesis_plus_gx_libretro.so", "picodrive_libretro.so"],
+        "thumbs": "Sega - Mega-CD - Sega CD",
+    },
+    "gamegear": {
+        "label": "Game Gear",
+        "exts": {".gg", ".zip", ".7z"},
+        "cores": ["genesis_plus_gx_libretro.so"],
+        "thumbs": "Sega - Game Gear",
+    },
+    "pcengine": {
+        "label": "PC Engine / TurboGrafx-16",
+        "exts": {".pce", ".chd", ".cue", ".zip", ".7z"},
+        "cores": ["beetle_pce_fast_libretro.so", "beetle_pce_libretro.so"],
+        "thumbs": "NEC - PC Engine - TurboGrafx 16",
+    },
+    "atari2600": {
+        "label": "Atari 2600",
+        "exts": {".a26", ".bin", ".zip", ".7z"},
+        "cores": ["stella_libretro.so"],
+        "thumbs": "Atari - 2600",
+    },
+    "sega32x": {
+        "label": "Sega 32X",
+        "exts": {".32x", ".zip", ".7z"},
+        "cores": ["picodrive_libretro.so"],
+        "thumbs": "Sega - 32X",
+    },
 }
 
 _TAG_RE = re.compile(r"\s*(\([^()]*\)|\[[^\[\]]*\])\s*")
 _WS_RE = re.compile(r"\s+")
+
+# Folder-name hints for shared extensions in the loose-folder scan. Kept
+# short and lowercase; matched as substrings of path components.
+_HINTS = {
+    "psx": ("psx", "ps1", "playstation", "sony - playstation"),
+    "ps2": ("ps2", "playstation 2", "sony - playstation 2"),
+    "psp": ("psp", "playstation portable"),
+    "nes": ("nes", "nintendo entertainment", "famicom"),
+    "snes": ("snes", "super nintendo", "super famicom"),
+    "n64": ("n64", "nintendo 64"),
+    "gb": ("gb", "game boy"),
+    "gbc": ("gbc", "game boy color"),
+    "gba": ("gba", "game boy advance"),
+    "nds": ("nds", "nintendo ds"),
+    "3ds": ("3ds", "nintendo 3ds", "citra", "azahar"),
+    "genesis": ("genesis", "mega drive", "megadrive", "md", "smd"),
+    "mastersystem": ("mastersystem", "master system"),
+    "gamegear": ("gamegear", "game gear"),
+    "dreamcast": ("dreamcast",),
+    "saturn": ("saturn",),
+    "segacd": ("segacd", "sega cd", "mega-cd", "mega cd"),
+    "pcengine": ("pcengine", "pc engine", "turbografx", "tg16", "pce"),
+    "atari2600": ("atari2600", "atari 2600", "atari"),
+    "sega32x": ("sega32x", "32x", "sega 32x"),
+    "gamecube": ("gamecube", "gc"),
+    "wii": ("wii",),
+    "switch": ("switch",),
+}
 
 
 def clean_name(stem):
@@ -266,14 +330,47 @@ def _rom_files(system, root):
     )
 
 
+def _sniff_disc_console(path):
+    """GC vs Wii for shared disc extensions (.iso/.rvz/.ciso/.gcz):
+    Wii discs carry 0x5D1C9EA3 at 0x18, GameCube 0xC2339F3D at 0x1C
+    (RVZ keeps the same magics in its preserved header area)."""
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(0x20)
+    except OSError:
+        return None
+    if len(head) < 0x20:
+        return None
+    if head[0x18:0x1C] == b"\x5d\x1c\x9e\xa3":
+        return "wii"
+    if head[0x1C:0x20] == b"\xc2\x33\x9f\x3d":
+        return "gamecube"
+    return None
+
+
+def _sniff_zip_inner(path, by_ext):
+    """Classify a zip by its contents: the first entry whose extension
+    maps to exactly one system decides (a zipped .cci is a 3ds ROM)."""
+    import zipfile
+    try:
+        with zipfile.ZipFile(path) as zf:
+            for name in zf.namelist():
+                sids = by_ext.get(Path(name).suffix.lower())
+                if sids and len(sids) == 1:
+                    return sids[0]
+    except (zipfile.BadZipFile, OSError):
+        pass
+    return None
+
+
 def _any_folder_roms(root):
     """Recursive scan used when `root` has NO per-system subfolders at all
     (the user pointed the importer at a loose folder, e.g. Downloads).
 
-    A file matches a system when its extension is unique to that system
-    (.cci/.3ds -> 3ds, .nsp/.xci -> switch, ...). Shared extensions
-    (.iso, .zip, .chd, ...) need a folder-name hint: a path component
-    matching the system id or label ("wii", "PlayStation", ...).
+    Classification order: unique extension (.cci/.3ds -> 3ds, .nsp/.xci ->
+    switch, ...), then content sniffing (zip contents, GC/Wii disc magic),
+    then a folder-name hint (a path component matching the system id or
+    label) for the remaining shared extensions (.chd, .cue, .pbp, .7z).
     """
     by_ext = {}
     for sid, system in available_systems().items():
@@ -283,19 +380,29 @@ def _any_folder_roms(root):
     for p in sorted(root.rglob("*")):
         if not p.is_file():
             continue
-        sids = by_ext.get(p.suffix.lower())
+        ext = p.suffix.lower()
+        sids = by_ext.get(ext)
         if not sids:
             continue
-        if len(sids) == 1:
-            out.append((sids[0], p))
-            continue
-        parts = [part.casefold() for part in p.parts[:-1]]
-        hinted = [
-            sid for sid in sids
-            if any(sid in part or SYSTEMS[sid]["label"].casefold() in part for part in parts)
-        ]
-        if hinted:
-            out.append((hinted[0], p))
+        sid = sids[0] if len(sids) == 1 else None
+        if not sid and ext == ".zip":
+            sid = _sniff_zip_inner(p, by_ext)
+        if not sid and ext in (".iso", ".rvz", ".ciso", ".gcz"):
+            sniffed = _sniff_disc_console(p)
+            if sniffed in sids:
+                sid = sniffed
+        if not sid:
+            parts = [part.casefold() for part in p.parts[:-1]]
+            # Longest hint wins, so "game boy color" beats "gb" etc.
+            best = None
+            for s in sids:
+                for hint in _HINTS.get(s, (s,)):
+                    for part in parts:
+                        if hint in part and (not best or len(hint) > best[0]):
+                            best = (len(hint), s)
+            sid = best[1] if best else None
+        if sid:
+            out.append((sid, p))
     return out
 
 
