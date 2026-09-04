@@ -75,7 +75,7 @@ function QuickDisplayRowsInner({ state, setState, externals }: { state: DisplayS
   return (
     <>
       <SelectEdit
-        label={t("Primary Display")}
+        label={t("Display Mode")}
         value={mode === "duo" ? DUO : mode === "external" ? state.connector : INTERNAL}
         options={[
           { data: INTERNAL, label: t("Internal Screen") },

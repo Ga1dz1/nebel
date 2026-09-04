@@ -244,10 +244,10 @@ const uk = {
     "GPU Min (%)": "Мін. ГП (%)",
     "GPU Max (%)": "Макс. ГП (%)",
     "Display": "Дисплей",
-    "External Display": "Зовнішній дисплей",
+    "Dock Station": "Докстанція",
     "Internal Screen": "Вбудований екран",
     "{connector} (disconnected)": "{connector} (від’єднано)",
-    "Primary Display": "Основний дисплей",
+    "Display Mode": "Режим дисплея",
     "Resolution": "Роздільна здатність",
     "Rotation": "Поворот",
     "Normal": "Нормальна",
@@ -586,10 +586,10 @@ const ru = {
     "GPU Min (%)": "Мин. ГП (%)",
     "GPU Max (%)": "Макс. ГП (%)",
     "Display": "Дисплей",
-    "External Display": "Внешний дисплей",
+    "Dock Station": "Докстанция",
     "Internal Screen": "Встроенный экран",
     "{connector} (disconnected)": "{connector} (отключён)",
-    "Primary Display": "Основной дисплей",
+    "Display Mode": "Режим дисплея",
     "Resolution": "Разрешение",
     "Rotation": "Поворот",
     "Normal": "Обычная",
@@ -928,10 +928,10 @@ const es = {
     "GPU Min (%)": "GPU mín. (%)",
     "GPU Max (%)": "GPU máx. (%)",
     "Display": "Pantalla",
-    "External Display": "Pantalla externa",
+    "Dock Station": "Estación de acoplamiento",
     "Internal Screen": "Pantalla interna",
     "{connector} (disconnected)": "{connector} (desconectado)",
-    "Primary Display": "Pantalla principal",
+    "Display Mode": "Modo de pantalla",
     "Resolution": "Resolución",
     "Rotation": "Rotación",
     "Normal": "Normal",
@@ -1262,10 +1262,10 @@ const fr = {
     "GPU Min (%)": "GPU min (%)",
     "GPU Max (%)": "GPU max (%)",
     "Display": "Affichage",
-    "External Display": "Écran externe",
+    "Dock Station": "Station d'accueil",
     "Internal Screen": "Écran interne",
     "{connector} (disconnected)": "{connector} (déconnecté)",
-    "Primary Display": "Écran principal",
+    "Display Mode": "Mode d'affichage",
     "Resolution": "Résolution",
     "Rotation": "Rotation",
     "Normal": "Normale",
@@ -2484,7 +2484,7 @@ function Display(_props) {
     const selectOrientation = (orientation) => {
         persist({ orientation });
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Internal Screen"), children: SP_JSX.jsx(InternalTouchpadRow, {}) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("External Display"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedMode, options: modeOptions, onChange: selectMode, disabled: saving }), mode === "internal" && (SP_JSX.jsx(DFL.ToggleField, { label: t("Auto-Duo on connect"), description: t("Switch to Duo automatically when an external display is plugged in"), checked: state.autoDuo !== false, onChange: (enabled) => persist({ autoDuo: enabled }) })), mode === "duo" && (SP_JSX.jsx(DFL.Field, { label: t("Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.") })), mode === "external" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: resolutionOptions, onChange: selectResolution, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") }))] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Internal Screen"), children: SP_JSX.jsx(InternalTouchpadRow, {}) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Dock Station"), children: [SP_JSX.jsx(SelectEdit, { label: t("Display Mode"), value: selectedMode, options: modeOptions, onChange: selectMode, disabled: saving }), mode === "internal" && (SP_JSX.jsx(DFL.ToggleField, { label: t("Auto-Duo on connect"), description: t("Switch to Duo automatically when an external display is plugged in"), checked: state.autoDuo !== false, onChange: (enabled) => persist({ autoDuo: enabled }) })), mode === "duo" && (SP_JSX.jsx(DFL.Field, { label: t("Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.") })), mode === "external" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: resolutionOptions, onChange: selectResolution, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") }))] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
                                 setRestarting(true);
                                 setErrorMessage("");
                                 // A successful restart tears down this very session (and Decky
@@ -5114,7 +5114,7 @@ function QuickDisplayRowsInner({ state, setState, externals }) {
         const orientation = previous?.orientation || (width < height ? "left" : "normal");
         finish(setDisplayConfig(true, choice, width, height, orientation, "external", state.autoDuo));
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: mode === "duo" ? DUO : mode === "external" ? state.connector : INTERNAL, options: [
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Display Mode"), value: mode === "duo" ? DUO : mode === "external" ? state.connector : INTERNAL, options: [
                     { data: INTERNAL, label: t("Internal Screen") },
                     ...externals.map((c) => ({ data: c.connector, label: c.name ? `${c.name} (${c.connector})` : c.connector })),
                     { data: DUO, label: t("Duo (both screens)") },

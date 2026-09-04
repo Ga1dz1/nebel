@@ -125,8 +125,8 @@ export function Display(_props: { qam?: boolean }) {
       <PanelSection title={t("Internal Screen")}>
         <InternalTouchpadRow />
       </PanelSection>
-      <PanelSection title={t("External Display")}>
-      <SelectEdit label={t("Primary Display")} value={selectedMode} options={modeOptions} onChange={selectMode} disabled={saving} />
+      <PanelSection title={t("Dock Station")}>
+      <SelectEdit label={t("Display Mode")} value={selectedMode} options={modeOptions} onChange={selectMode} disabled={saving} />
       {mode === "internal" && (
         <ToggleField
           label={t("Auto-Duo on connect")}
