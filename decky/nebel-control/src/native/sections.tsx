@@ -2,6 +2,7 @@ import { ButtonItem, Field, Navigation, PanelSection, PanelSectionRow } from "@d
 import { t } from "../i18n";
 import { Display } from "../tabs/Display";
 import { AddGameSection, Games } from "../tabs/Games";
+import { Roms } from "../tabs/Roms";
 import { MonitorRows, NotifyFlashRows, OverlayToggleRow } from "../tabs/Home";
 import { Lighting } from "../tabs/Lighting";
 import { Power } from "../tabs/Power";
@@ -113,12 +114,14 @@ export function ControlCenterSection() {
 }
 
 // Settings -> Library: the working "Add non-Steam game" picker (Steam's own
-// Browse dialog is broken in the ARM64 client).
+// Browse dialog is broken in the ARM64 client), plus the ROM library
+// (per-system folders, import, covers).
 export function LibraryAddGameSection() {
   return (
     <div className="nebel-native">
       <NativeStyles />
       <AddGameSection />
+      <Roms qam={false} />
     </div>
   );
 }

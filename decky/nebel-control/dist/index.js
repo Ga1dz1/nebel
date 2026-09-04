@@ -4736,9 +4736,10 @@ function ControlCenterSection() {
     return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Control Center"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.Navigate("/nebel-control"), children: t("Open Control Center") }) }) }), config && (SP_JSX.jsx(DFL.PanelSection, { title: t("Storage"), children: SP_JSX.jsx(SharedStorageRow, { config: config, setConfig: setConfig }) }))] }));
 }
 // Settings -> Library: the working "Add non-Steam game" picker (Steam's own
-// Browse dialog is broken in the ARM64 client).
+// Browse dialog is broken in the ARM64 client), plus the ROM library
+// (per-system folders, import, covers).
 function LibraryAddGameSection() {
-    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(AddGameSection, {})] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(AddGameSection, {}), SP_JSX.jsx(Roms, { qam: false })] }));
 }
 // Settings -> Internet: SSH access toggle.
 function SshSection() {
