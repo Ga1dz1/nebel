@@ -266,37 +266,92 @@ def _rom_files(system, root):
     )
 
 
+def _any_folder_roms(root):
+    """Recursive scan used when `root` has NO per-system subfolders at all
+    (the user pointed the importer at a loose folder, e.g. Downloads).
+
+    A file matches a system when its extension is unique to that system
+    (.cci/.3ds -> 3ds, .nsp/.xci -> switch, ...). Shared extensions
+    (.iso, .zip, .chd, ...) need a folder-name hint: a path component
+    matching the system id or label ("wii", "PlayStation", ...).
+    """
+    by_ext = {}
+    for sid, system in available_systems().items():
+        for ext in system["exts"]:
+            by_ext.setdefault(ext, []).append(sid)
+    out = []
+    for p in sorted(root.rglob("*")):
+        if not p.is_file():
+            continue
+        sids = by_ext.get(p.suffix.lower())
+        if not sids:
+            continue
+        if len(sids) == 1:
+            out.append((sids[0], p))
+            continue
+        parts = [part.casefold() for part in p.parts[:-1]]
+        hinted = [
+            sid for sid in sids
+            if any(sid in part or SYSTEMS[sid]["label"].casefold() in part for part in parts)
+        ]
+        if hinted:
+            out.append((hinted[0], p))
+    return out
+
+
+def _has_system_subfolders(root):
+    return any((root / sid).is_dir() for sid in available_systems())
+
+
 def scan_roms(root=None):
     """Systems and ROM counts under `root` (configured ROM root when omitted)."""
     root = Path(root) if root else roms_root()
     systems = []
+    loose = None if _has_system_subfolders(root) else _any_folder_roms(root)
     for sid, system in available_systems().items():
-        roms = _rom_files(system, root)
+        if loose is None:
+            count = len(_rom_files(system, root))
+        else:
+            count = sum(1 for fsid, _ in loose if fsid == sid)
         systems.append({
             "id": sid,
             "label": system["label"],
             "dir": str(root / sid),
-            "count": len(roms),
+            "count": count,
         })
     return {"root": str(root), "systems": systems}
 
 
 def import_roms(root=None):
-    """Create Steam shortcuts for ROMs under `root` (per-system subfolders)."""
+    """Create Steam shortcuts for ROMs under `root`.
+
+    `root` is either an organized library (per-system subfolders like
+    `root/3ds/`) or any loose folder - then the whole tree is scanned
+    recursively, classified by extension (+ folder-name hints for shared
+    extensions).
+    """
     root = Path(root) if root else roms_root()
+    found = []
+    if _has_system_subfolders(root):
+        for system in available_systems().values():
+            for rom in _rom_files(system, root):
+                found.append((system, rom))
+    else:
+        systems = available_systems()
+        for sid, rom in _any_folder_roms(root):
+            found.append((systems[sid], rom))
     games = []
-    for system in available_systems().values():
+    for system, rom in found:
         prefix = " ".join(system.get("args") or [])
-        for rom in _rom_files(system, root):
-            args = f'"{rom}"'
-            if prefix:
-                args = f"{prefix} {args}"
-            games.append({
-                "name": clean_name(rom.stem),
-                "exe": system["exe"],
-                "args": args,
-                "startdir": str(rom.parent),
-            })
+        args = f'"{rom}"'
+        if prefix:
+            args = f"{prefix} {args}"
+        games.append({
+            "name": clean_name(rom.stem),
+            "exe": system["exe"],
+            "args": args,
+            "startdir": str(rom.parent),
+        })
     if not games:
         return {"added": [], "skipped": [], "error": "no ROMs found"}
     try:
