@@ -27,6 +27,21 @@ if [ -z "$WID" ]; then
 fi
 echo "== window id: $WID =="
 
+# The window diff can grab a recreated BPM window instead of the card when
+# steamwebhelper restarts (monitor hotplug) - placing THAT on seat A swaps
+# the panels. The card always titles itself NebelSeatB; refuse to place
+# anything else.
+TITLE=""
+for i in $(seq 1 10); do
+  TITLE=$(python3 "$DUALSCREEN_DIR/xwintitle.py" "$WID" 2>/dev/null)
+  [ "$TITLE" = "NebelSeatB" ] && break
+  sleep 0.5
+done
+if [ "$TITLE" != "NebelSeatB" ]; then
+  echo "ERROR: window $WID title is '$TITLE', not NebelSeatB - refusing to place" >&2
+  exit 1
+fi
+
 # 3. drop STEAM_GAME property and move to seat A (else gamescope reverts position)
 python3 "$DUALSCREEN_DIR/xplace.py" "$WID" 340 1080 1240 1080
 

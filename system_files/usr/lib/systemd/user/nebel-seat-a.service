@@ -4,9 +4,10 @@ After=gamescope-session-plus@steam.service
 PartOf=gamescope-session-plus@steam.service
 
 [Service]
-Type=oneshot
+Type=simple
 ExecStart=/usr/libexec/nebel/dualscreen/seatA-autostart.sh
-RemainAfterExit=no
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=gamescope-session-plus@steam.service
