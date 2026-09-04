@@ -157,6 +157,8 @@ export interface DisplayState {
   connectors: DisplayConnector[];
   primaryConnector: string;
   useExternal: boolean;
+  mode: "internal" | "external" | "duo";
+  autoDuo: boolean;
   connector: string;
   width: number;
   height: number;

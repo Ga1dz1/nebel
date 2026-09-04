@@ -49,31 +49,38 @@ function QuickDisplayRows() {
 function QuickDisplayRowsInner({ state, setState, externals }: { state: DisplayState; setState: (s: DisplayState) => void; externals: DisplayState["connectors"] }) {
   const [busy, setBusy] = useState(false);
   const INTERNAL = "__internal__";
-  const selectPrimary = (connector: string) => {
+  const DUO = "__duo__";
+  const mode = state.mode || (state.useExternal ? "external" : "internal");
+  const selectPrimary = (choice: string) => {
     setBusy(true);
     const finish = (promise: Promise<DisplayState>) =>
       promise.then(setState).catch(() => {}).finally(() => setBusy(false));
-    if (connector === INTERNAL) {
-      finish(setDisplayConfig(false, state.connector, state.width, state.height, state.orientation));
+    if (choice === INTERNAL) {
+      finish(setDisplayConfig(false, state.connector, state.width, state.height, state.orientation, "internal", state.autoDuo));
       return;
     }
-    const target = externals.find((c) => c.connector === connector);
-    const previous = state.remembered[connector];
+    if (choice === DUO) {
+      finish(setDisplayConfig(true, state.connector, state.width, state.height, state.orientation, "duo", state.autoDuo));
+      return;
+    }
+    const target = externals.find((c) => c.connector === choice);
+    const previous = state.remembered[choice];
     const [w, h] = (target?.modes[0] || "1920x1080").split("x").map(Number);
     const width = previous?.width || w || 1920;
     const height = previous?.height || h || 1080;
     // Portrait panel + no rotation is rejected by the backend - pre-select one.
     const orientation = previous?.orientation || (width < height ? "left" : "normal");
-    finish(setDisplayConfig(true, connector, width, height, orientation));
+    finish(setDisplayConfig(true, choice, width, height, orientation, "external", state.autoDuo));
   };
   return (
     <>
       <SelectEdit
         label={t("Primary Display")}
-        value={state.useExternal ? state.connector : INTERNAL}
+        value={mode === "duo" ? DUO : mode === "external" ? state.connector : INTERNAL}
         options={[
           { data: INTERNAL, label: t("Internal Screen") },
           ...externals.map((c) => ({ data: c.connector, label: c.name ? `${c.name} (${c.connector})` : c.connector })),
+          { data: DUO, label: t("Duo (both screens)") },
         ]}
         onChange={selectPrimary}
         disabled={busy}

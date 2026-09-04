@@ -35,6 +35,9 @@ DISPLAY_OVERRIDE_PATH = Path("/etc/nebel/display-override.conf")
 # it's accumulated state, not the active choice.
 DISPLAY_REMEMBERED_PATH = Path("/var/lib/nebel/display-remembered.json")
 DISPLAY_ORIENTATIONS = {"normal", "left", "right", "upsidedown"}
+# Game mode display routing: internal panel only, external only (dock), or
+# both at once (duo).
+DISPLAY_MODES = ("internal", "external", "duo")
 CALIBRATION_PARAMS = (
     "axis_leftx_min",
     "axis_leftx_center",
@@ -279,7 +282,7 @@ def _display_remembered():
 def action_get_display_config(request):
     remembered = _display_remembered()
     if not DISPLAY_OVERRIDE_PATH.exists():
-        return {"useExternal": False, "remembered": remembered}
+        return {"useExternal": False, "mode": "internal", "autoDuo": True, "remembered": remembered}
     values = {}
     try:
         for line in DISPLAY_OVERRIDE_PATH.read_text(encoding="utf-8").splitlines():
@@ -287,9 +290,16 @@ def action_get_display_config(request):
                 key, value = line.split("=", 1)
                 values[key] = value
     except OSError:
-        return {"useExternal": False, "remembered": remembered}
+        return {"useExternal": False, "mode": "internal", "autoDuo": True, "remembered": remembered}
+    # Files written before NEBEL_DISPLAY_MODE existed only ever meant
+    # "external display as primary", so a missing key maps to external.
+    mode = values.get("NEBEL_DISPLAY_MODE") or "external"
+    if mode not in DISPLAY_MODES:
+        mode = "external"
     return {
-        "useExternal": True,
+        "useExternal": mode != "internal",
+        "mode": mode,
+        "autoDuo": values.get("NEBEL_DISPLAY_AUTO_DUO") != "0",
         "connector": values.get("NEBEL_DISPLAY_CONNECTOR", ""),
         "width": int(values.get("NEBEL_DISPLAY_WIDTH") or 0),
         "height": int(values.get("NEBEL_DISPLAY_HEIGHT") or 0),
@@ -299,13 +309,35 @@ def action_get_display_config(request):
 
 
 def action_set_display_config(request):
-    if not bool(request.get("useExternal")):
-        # Only the active choice is cleared - the remembered per-connector
-        # settings survive so picking the same monitor later restores them.
-        try:
-            DISPLAY_OVERRIDE_PATH.unlink()
-        except FileNotFoundError:
-            pass
+    # mode is the 1.4+ trio; legacy callers only pass the useExternal bool,
+    # which maps onto internal/external exactly as before.
+    mode = str(request.get("mode") or ("external" if request.get("useExternal") else "internal"))
+    if mode not in DISPLAY_MODES:
+        raise ValueError("invalid display mode")
+    auto_duo = bool(request.get("autoDuo", True))
+
+    if mode == "internal":
+        # Internal with auto-duo on is the default state - no file at all,
+        # same as before the mode key existed. Only an explicit opt-out of
+        # auto-duo needs the file (that's what the hotplug handler reads).
+        if auto_duo:
+            try:
+                DISPLAY_OVERRIDE_PATH.unlink()
+            except FileNotFoundError:
+                pass
+        else:
+            atomic_write(DISPLAY_OVERRIDE_PATH, "NEBEL_DISPLAY_MODE=internal\nNEBEL_DISPLAY_AUTO_DUO=0\n")
+        return {"ok": True}
+
+    if mode == "duo":
+        # Duo drives both panels; which external connector and its geometry
+        # are negotiated by the session itself, so there's nothing per-
+        # connector to store here. Remembered dock-mode settings survive so
+        # switching back restores them.
+        text = "NEBEL_DISPLAY_MODE=duo\n"
+        if not auto_duo:
+            text += "NEBEL_DISPLAY_AUTO_DUO=0\n"
+        atomic_write(DISPLAY_OVERRIDE_PATH, text)
         return {"ok": True}
 
     connector = str(request.get("connector", ""))
@@ -329,11 +361,14 @@ def action_set_display_config(request):
         raise ValueError("a portrait mode requires a rotation")
 
     text = (
+        f"NEBEL_DISPLAY_MODE=external\n"
         f"NEBEL_DISPLAY_CONNECTOR={connector}\n"
         f"NEBEL_DISPLAY_WIDTH={width}\n"
         f"NEBEL_DISPLAY_HEIGHT={height}\n"
         f"NEBEL_DISPLAY_ORIENTATION={orientation}\n"
     )
+    if not auto_duo:
+        text += "NEBEL_DISPLAY_AUTO_DUO=0\n"
     atomic_write(DISPLAY_OVERRIDE_PATH, text)
     remembered = _display_remembered()
     remembered[connector] = {"width": width, "height": height, "orientation": orientation}

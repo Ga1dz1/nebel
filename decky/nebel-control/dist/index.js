@@ -76,7 +76,7 @@ const resetCalibration = () => call("reset_calibration");
 const beginCalibrationSession = (token) => call("begin_calibration_session", token);
 const endCalibrationSession = (token) => call("end_calibration_session", token);
 const getDisplayState = () => call("get_display_state");
-const setDisplayConfig = (useExternal, connector, width, height, orientation) => call("set_display_config", useExternal, connector, width, height, orientation);
+const setDisplayConfig = (useExternal, connector, width, height, orientation, mode, autoDuo) => call("set_display_config", useExternal, connector, width, height, orientation, mode, autoDuo);
 const restartGamescopeSession = () => call("restart_gamescope_session");
 const setInternalTouchpad = (mode) => call("set_internal_touchpad", mode);
 const getSyncState = () => call("get_sync_state");
@@ -261,6 +261,10 @@ const uk = {
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Цей дисплей зараз не під’єднано — ігровий режим працює на вбудованому екрані, доки його не буде під’єднано знову. Налаштування збережено.",
     "Error: {message}": "Помилка: {message}",
     "Apply & Restart Game Mode": "Застосувати й перезапустити ігровий режим",
+    "Duo (both screens)": "Duo (обидва екрани)",
+    "Auto-Duo on connect": "Авто-Duo при підключенні",
+    "Switch to Duo automatically when an external display is plugged in": "Автоматично перемикатися на Duo при підключенні зовнішнього дисплея",
+    "Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.": "Ігровий режим працює на зовнішньому дисплеї, а друге вікно Steam лишається на вбудованому екрані. Якщо зовнішній дисплей не підключено, використовується вбудований екран. Застосовується після перезапуску ігрового режиму.",
     "Stick Lighting": "Підсвітка стіків",
     "No addressable stick lighting hardware detected on this device.": "На цьому пристрої не виявлено адресної підсвітки стіків.",
     "Enable": "Увімкнути",
@@ -599,6 +603,10 @@ const ru = {
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Этот дисплей сейчас не подключён — игровой режим работает на встроенном экране, пока его не подключат снова. Настройки сохранены.",
     "Error: {message}": "Ошибка: {message}",
     "Apply & Restart Game Mode": "Применить и перезапустить игровой режим",
+    "Duo (both screens)": "Duo (оба экрана)",
+    "Auto-Duo on connect": "Авто-Duo при подключении",
+    "Switch to Duo automatically when an external display is plugged in": "Автоматически переключаться на Duo при подключении внешнего дисплея",
+    "Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.": "Игровой режим работает на внешнем дисплее, а второе окно Steam остаётся на встроенном экране. Если внешний дисплей не подключён, используется встроенный экран. Применяется после перезапуска игрового режима.",
     "Stick Lighting": "Подсветка стиков",
     "No addressable stick lighting hardware detected on this device.": "На этом устройстве не обнаружена адресная подсветка стиков.",
     "Enable": "Включить",
@@ -937,6 +945,10 @@ const es = {
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Esta pantalla no está conectada ahora mismo: el modo de juego funciona en la pantalla interna hasta que se vuelva a conectar. Sus ajustes se conservan.",
     "Error: {message}": "Error: {message}",
     "Apply & Restart Game Mode": "Aplicar y reiniciar el modo de juego",
+    "Duo (both screens)": "Duo (ambas pantallas)",
+    "Auto-Duo on connect": "Duo automático al conectar",
+    "Switch to Duo automatically when an external display is plugged in": "Cambiar a Duo automáticamente al conectar una pantalla externa",
+    "Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.": "El modo de juego funciona en la pantalla externa mientras una segunda ventana de Steam queda en la pantalla interna. Si no hay pantalla externa conectada, se usa la interna. Se aplica al reiniciar el modo de juego.",
     "Stick Lighting": "Iluminación de los sticks",
     "No addressable stick lighting hardware detected on this device.": "No se detectó hardware de iluminación direccionable de sticks en este dispositivo.",
     "Enable": "Activar",
@@ -1267,6 +1279,10 @@ const fr = {
     "This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.": "Cet écran n'est pas connecté pour le moment : le mode jeu tourne sur l'écran interne jusqu'à ce qu'il soit rebranché. Ses paramètres sont conservés.",
     "Error: {message}": "Erreur : {message}",
     "Apply & Restart Game Mode": "Appliquer et redémarrer le mode jeu",
+    "Duo (both screens)": "Duo (les deux écrans)",
+    "Auto-Duo on connect": "Duo automatique à la connexion",
+    "Switch to Duo automatically when an external display is plugged in": "Basculer automatiquement en Duo quand un écran externe est branché",
+    "Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.": "Le mode jeu tourne sur l'écran externe pendant qu'une seconde fenêtre Steam reste sur l'écran interne. Sans écran externe connecté, l'écran interne est utilisé. Appliqué au redémarrage du mode jeu.",
     "Stick Lighting": "Éclairage des sticks",
     "No addressable stick lighting hardware detected on this device.": "Aucun matériel d'éclairage adressable de sticks détecté sur cet appareil.",
     "Enable": "Activer",
@@ -2369,13 +2385,14 @@ function InternalTouchpadRow() {
     return (SP_JSX.jsx(SelectEdit, { label: t("Internal screen"), value: String(mode), options: options, onChange: onChange }));
 }
 
-// gamescope only ever drives one embedded output at a time (--prefer-output
-// picks the first available from a priority list at startup, there's no
-// live multi-monitor/hotplug re-pick) - so "primary display" here means
-// which single connector the whole game-mode session targets, not an
-// extend/mirror choice. Mirroring/extending is desktop-mode-only (Plasma's
-// display settings); game mode stays single-screen by design.
+// "Display mode" here is game mode's output routing: the internal panel
+// alone, an external display alone (dock mode), or both at once (duo).
+// gamescope picks its output(s) from STARTUP flags (see sessions.d/steam),
+// so a mode change only takes effect on a session restart - there's no live
+// re-pick. Mirroring/extending beyond duo is desktop-mode-only (Plasma's
+// display settings).
 const INTERNAL = "__internal__";
+const DUO = "__duo__";
 // An external panel can be physically portrait (the Retroid Dual Screen
 // addon exposes only 1080x1920 but mounts landscape). gamescope rotates it
 // via --force-external-orientation + the rotation shader (armada patches
@@ -2407,34 +2424,41 @@ function Display(_props) {
         return (SP_JSX.jsx(DFL.PanelSection, { title: t("Display"), children: SP_JSX.jsx(DFL.Field, { label: loadMessage }) }));
     }
     const externals = state.connectors.filter((c) => !c.internal);
-    const selectedConnector = state.useExternal ? state.connector : INTERNAL;
-    const primaryOptions = [
+    const mode = state.mode || (state.useExternal ? "external" : "internal");
+    const selectedMode = mode === "duo" ? DUO : mode === "external" ? state.connector : INTERNAL;
+    const modeOptions = [
         { data: INTERNAL, label: t("Internal Screen") },
         ...externals.map((c) => ({ data: c.connector, label: connectorLabel(c) })),
+        { data: DUO, label: t("Duo (both screens)") },
     ];
     const activeExternal = externals.find((c) => c.connector === state.connector);
     // A disconnected display has nothing meaningful to configure right now -
     // its remembered settings come back when it's plugged in again.
-    const activeDisconnected = state.useExternal && (!activeExternal || !activeExternal.connected);
+    const activeDisconnected = mode === "external" && (!activeExternal || !activeExternal.connected);
     const currentMode = `${state.width}x${state.height}`;
     const modeChoices = activeExternal?.modes.length ? activeExternal.modes : [currentMode];
-    const modeOptions = modeChoices.map((mode) => ({ data: mode, label: mode }));
+    const resolutionOptions = modeChoices.map((m) => ({ data: m, label: m }));
     const persist = (next) => {
         const merged = { ...state, ...next };
+        const mergedMode = merged.mode || (merged.useExternal ? "external" : "internal");
         setSaving(true);
         setErrorMessage("");
-        setDisplayConfig(merged.useExternal, merged.connector, merged.width, merged.height, merged.orientation)
+        setDisplayConfig(mergedMode !== "internal", merged.connector, merged.width, merged.height, merged.orientation, mergedMode, merged.autoDuo)
             .then(setState)
             .catch((error) => setErrorMessage(String(error)))
             .finally(() => setSaving(false));
     };
-    const selectPrimary = (connector) => {
-        if (connector === INTERNAL) {
-            persist({ useExternal: false });
+    const selectMode = (choice) => {
+        if (choice === INTERNAL) {
+            persist({ mode: "internal", useExternal: false });
             return;
         }
-        const target = externals.find((c) => c.connector === connector);
-        const previous = state.remembered[connector];
+        if (choice === DUO) {
+            persist({ mode: "duo", useExternal: true });
+            return;
+        }
+        const target = externals.find((c) => c.connector === choice);
+        const previous = state.remembered[choice];
         const [w, h] = (target?.modes[0] || "1920x1080").split("x").map(Number);
         const width = previous?.width || w || 1920;
         const height = previous?.height || h || 1080;
@@ -2445,10 +2469,10 @@ function Display(_props) {
             // if the image comes up the wrong way round.
             orientation = "left";
         }
-        persist({ useExternal: true, connector, width, height, orientation });
+        persist({ mode: "external", useExternal: true, connector: choice, width, height, orientation });
     };
-    const selectMode = (mode) => {
-        const [w, h] = mode.split("x").map(Number);
+    const selectResolution = (value) => {
+        const [w, h] = value.split("x").map(Number);
         if (!w || !h)
             return;
         persist({
@@ -2460,7 +2484,7 @@ function Display(_props) {
     const selectOrientation = (orientation) => {
         persist({ orientation });
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Internal Screen"), children: SP_JSX.jsx(InternalTouchpadRow, {}) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("External Display"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedConnector, options: primaryOptions, onChange: selectPrimary, disabled: saving }), state.useExternal && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: modeOptions, onChange: selectMode, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") }))] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Internal Screen"), children: SP_JSX.jsx(InternalTouchpadRow, {}) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("External Display"), children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: selectedMode, options: modeOptions, onChange: selectMode, disabled: saving }), mode === "internal" && (SP_JSX.jsx(DFL.ToggleField, { label: t("Auto-Duo on connect"), description: t("Switch to Duo automatically when an external display is plugged in"), checked: state.autoDuo !== false, onChange: (enabled) => persist({ autoDuo: enabled }) })), mode === "duo" && (SP_JSX.jsx(DFL.Field, { label: t("Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.") })), mode === "external" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: resolutionOptions, onChange: selectResolution, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") }))] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
                                 setRestarting(true);
                                 setErrorMessage("");
                                 // A successful restart tears down this very session (and Decky
@@ -5068,25 +5092,32 @@ function QuickDisplayRows() {
 function QuickDisplayRowsInner({ state, setState, externals }) {
     const [busy, setBusy] = SP_REACT.useState(false);
     const INTERNAL = "__internal__";
-    const selectPrimary = (connector) => {
+    const DUO = "__duo__";
+    const mode = state.mode || (state.useExternal ? "external" : "internal");
+    const selectPrimary = (choice) => {
         setBusy(true);
         const finish = (promise) => promise.then(setState).catch(() => { }).finally(() => setBusy(false));
-        if (connector === INTERNAL) {
-            finish(setDisplayConfig(false, state.connector, state.width, state.height, state.orientation));
+        if (choice === INTERNAL) {
+            finish(setDisplayConfig(false, state.connector, state.width, state.height, state.orientation, "internal", state.autoDuo));
             return;
         }
-        const target = externals.find((c) => c.connector === connector);
-        const previous = state.remembered[connector];
+        if (choice === DUO) {
+            finish(setDisplayConfig(true, state.connector, state.width, state.height, state.orientation, "duo", state.autoDuo));
+            return;
+        }
+        const target = externals.find((c) => c.connector === choice);
+        const previous = state.remembered[choice];
         const [w, h] = (target?.modes[0] || "1920x1080").split("x").map(Number);
         const width = previous?.width || w || 1920;
         const height = previous?.height || h || 1080;
         // Portrait panel + no rotation is rejected by the backend - pre-select one.
         const orientation = previous?.orientation || (width < height ? "left" : "normal");
-        finish(setDisplayConfig(true, connector, width, height, orientation));
+        finish(setDisplayConfig(true, choice, width, height, orientation, "external", state.autoDuo));
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: state.useExternal ? state.connector : INTERNAL, options: [
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Primary Display"), value: mode === "duo" ? DUO : mode === "external" ? state.connector : INTERNAL, options: [
                     { data: INTERNAL, label: t("Internal Screen") },
                     ...externals.map((c) => ({ data: c.connector, label: c.name ? `${c.name} (${c.connector})` : c.connector })),
+                    { data: DUO, label: t("Duo (both screens)") },
                 ], onChange: selectPrimary, disabled: busy }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => {
                     setBusy(true);
                     // A successful restart tears down this session (and Decky with it);

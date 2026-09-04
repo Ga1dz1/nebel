@@ -12,6 +12,8 @@ def display_state():
         "connectors": connectors,
         "primaryConnector": listing.get("primaryConnector", ""),
         "useExternal": bool(config.get("useExternal")),
+        "mode": config.get("mode") or ("external" if config.get("useExternal") else "internal"),
+        "autoDuo": bool(config.get("autoDuo", True)),
         "connector": config.get("connector", ""),
         "width": config.get("width", 0),
         "height": config.get("height", 0),
@@ -21,11 +23,16 @@ def display_state():
     }
 
 
-def set_display_config(use_external, connector, width, height, orientation):
+def set_display_config(use_external, connector, width, height, orientation, mode=None, auto_duo=None):
     if orientation not in ORIENTATIONS:
         orientation = "normal"
     payload = {"useExternal": bool(use_external)}
-    if use_external:
+    if mode is not None:
+        payload["mode"] = str(mode)
+    if auto_duo is not None:
+        payload["autoDuo"] = bool(auto_duo)
+    effective_mode = payload.get("mode") or ("external" if use_external else "internal")
+    if effective_mode == "external":
         payload.update(
             {
                 "connector": str(connector or ""),

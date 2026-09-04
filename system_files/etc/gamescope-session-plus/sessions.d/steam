@@ -68,10 +68,10 @@ fi
 # panel defaults already set above, not strand the session on a dead output.
 NEBEL_DISPLAY_OVERRIDE=/etc/nebel/display-override.conf
 # Records which external connector this session actually launched on (not
-# merely which one is configured) - nebel-display-hotplug restarts the
-# session back onto the internal panel only when THIS connector unplugs,
-# and the absence of the marker after that restart is what stops it from
-# restarting again in a loop.
+# merely which one is configured) and in which mode ("external" or "duo") -
+# nebel-display-hotplug restarts the session back onto the internal panel
+# only when THIS connector unplugs, and the absence of the marker after
+# that restart is what stops it from restarting again in a loop.
 NEBEL_DISPLAY_MARKER="${XDG_RUNTIME_DIR:-/run/user/1000}/nebel-display-connector"
 rm -f "$NEBEL_DISPLAY_MARKER"
 if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
@@ -99,7 +99,7 @@ if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
             display_connected=0
         fi
         if (( display_connected )); then
-            printf '%s\n' "$NEBEL_DISPLAY_CONNECTOR" > "$NEBEL_DISPLAY_MARKER"
+            printf '%s %s\n' "$NEBEL_DISPLAY_CONNECTOR" external > "$NEBEL_DISPLAY_MARKER"
             # Listed first as a preference, not the only option: if the same
             # connector somehow vanishes between this check and gamescope's
             # own probe a moment later, it still falls back to the internal
@@ -145,6 +145,36 @@ if [[ -f "$NEBEL_DISPLAY_OVERRIDE" ]]; then
                 printf 'connected\n' > "${XDG_RUNTIME_DIR:-/run/user/1000}/nebel-external-primary" 2>/dev/null || true
             fi
         fi
+    fi
+fi
+
+# Duo mode (Decky's Display menu -> NEBEL_DISPLAY_MODE=duo): one game-mode
+# session drives BOTH panels - Steam Big Picture and games on the external
+# display, a second Steam window on the internal one (the nebel-seat-a
+# user service places it there). Only trusted when an external display is
+# ACTUALLY connected right now - same startup-flag reasoning as the dock
+# override above: with nothing attached there is no second output to drive,
+# so the session falls back to the internal panel defaults. The internal
+# panel keeps its own touch in this mode (no pass-through daemon, no
+# external-primary marker).
+if [[ "${NEBEL_DISPLAY_MODE:-}" == "duo" ]]; then
+    duo_connector=""
+    for status_file in /sys/class/drm/card*-DP-*/status; do
+        [[ -f "$status_file" ]] || continue
+        if [[ "$(cat "$status_file" 2>/dev/null)" == "connected" ]]; then
+            duo_connector="$(basename "$(dirname "$status_file")")"
+            duo_connector="${duo_connector#card*-}"
+            break
+        fi
+    done
+    if [[ -n "$duo_connector" ]]; then
+        printf '%s %s\n' "$duo_connector" duo > "$NEBEL_DISPLAY_MARKER"
+        export GAMESCOPE_DUAL_OUTPUT=1
+        export GAMESCOPE_DUAL_OUTPUT_DESKTOP=1
+        export GAMESCOPE_DUAL_OUTPUT_ROT_A=right
+        export GAMESCOPE_DUAL_OUTPUT_ROT_B=left
+        export GAMESCOPE_DUAL_OUTPUT_TOUCH_ROT_A=270
+        export GAMESCOPE_DUAL_OUTPUT_PLACE_WIN=steam
     fi
 fi
 

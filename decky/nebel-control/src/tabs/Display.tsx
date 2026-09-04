@@ -1,4 +1,4 @@
-import { ButtonItem, Field, PanelSection } from "@decky/ui";
+import { ButtonItem, Field, PanelSection, ToggleField } from "@decky/ui";
 import { useEffect, useState } from "react";
 import { getDisplayState, restartGamescopeSession, setDisplayConfig } from "../backend";
 import { InternalTouchpadRow } from "../components/InternalTouchpadRow";
@@ -6,13 +6,14 @@ import { SelectEdit } from "../components/widgets";
 import { t } from "../i18n";
 import type { DisplayConnector, DisplayState } from "../types";
 
-// gamescope only ever drives one embedded output at a time (--prefer-output
-// picks the first available from a priority list at startup, there's no
-// live multi-monitor/hotplug re-pick) - so "primary display" here means
-// which single connector the whole game-mode session targets, not an
-// extend/mirror choice. Mirroring/extending is desktop-mode-only (Plasma's
-// display settings); game mode stays single-screen by design.
+// "Display mode" here is game mode's output routing: the internal panel
+// alone, an external display alone (dock mode), or both at once (duo).
+// gamescope picks its output(s) from STARTUP flags (see sessions.d/steam),
+// so a mode change only takes effect on a session restart - there's no live
+// re-pick. Mirroring/extending beyond duo is desktop-mode-only (Plasma's
+// display settings).
 const INTERNAL = "__internal__";
+const DUO = "__duo__";
 
 // An external panel can be physically portrait (the Retroid Dual Screen
 // addon exposes only 1080x1920 but mounts landscape). gamescope rotates it
@@ -55,36 +56,43 @@ export function Display(_props: { qam?: boolean }) {
   }
 
   const externals = state.connectors.filter((c) => !c.internal);
-  const selectedConnector = state.useExternal ? state.connector : INTERNAL;
-  const primaryOptions = [
+  const mode = state.mode || (state.useExternal ? "external" : "internal");
+  const selectedMode = mode === "duo" ? DUO : mode === "external" ? state.connector : INTERNAL;
+  const modeOptions = [
     { data: INTERNAL, label: t("Internal Screen") },
     ...externals.map((c) => ({ data: c.connector, label: connectorLabel(c) })),
+    { data: DUO, label: t("Duo (both screens)") },
   ];
   const activeExternal = externals.find((c) => c.connector === state.connector);
   // A disconnected display has nothing meaningful to configure right now -
   // its remembered settings come back when it's plugged in again.
-  const activeDisconnected = state.useExternal && (!activeExternal || !activeExternal.connected);
+  const activeDisconnected = mode === "external" && (!activeExternal || !activeExternal.connected);
   const currentMode = `${state.width}x${state.height}`;
   const modeChoices = activeExternal?.modes.length ? activeExternal.modes : [currentMode];
-  const modeOptions = modeChoices.map((mode) => ({ data: mode, label: mode }));
+  const resolutionOptions = modeChoices.map((m) => ({ data: m, label: m }));
 
   const persist = (next: Partial<DisplayState>) => {
     const merged = { ...state, ...next };
+    const mergedMode = merged.mode || (merged.useExternal ? "external" : "internal");
     setSaving(true);
     setErrorMessage("");
-    setDisplayConfig(merged.useExternal, merged.connector, merged.width, merged.height, merged.orientation)
+    setDisplayConfig(mergedMode !== "internal", merged.connector, merged.width, merged.height, merged.orientation, mergedMode, merged.autoDuo)
       .then(setState)
       .catch((error) => setErrorMessage(String(error)))
       .finally(() => setSaving(false));
   };
 
-  const selectPrimary = (connector: string) => {
-    if (connector === INTERNAL) {
-      persist({ useExternal: false });
+  const selectMode = (choice: string) => {
+    if (choice === INTERNAL) {
+      persist({ mode: "internal", useExternal: false });
       return;
     }
-    const target = externals.find((c) => c.connector === connector);
-    const previous = state.remembered[connector];
+    if (choice === DUO) {
+      persist({ mode: "duo", useExternal: true });
+      return;
+    }
+    const target = externals.find((c) => c.connector === choice);
+    const previous = state.remembered[choice];
     const [w, h] = (target?.modes[0] || "1920x1080").split("x").map(Number);
     const width = previous?.width || w || 1920;
     const height = previous?.height || h || 1080;
@@ -95,11 +103,11 @@ export function Display(_props: { qam?: boolean }) {
       // if the image comes up the wrong way round.
       orientation = "left";
     }
-    persist({ useExternal: true, connector, width, height, orientation });
+    persist({ mode: "external", useExternal: true, connector: choice, width, height, orientation });
   };
 
-  const selectMode = (mode: string) => {
-    const [w, h] = mode.split("x").map(Number);
+  const selectResolution = (value: string) => {
+    const [w, h] = value.split("x").map(Number);
     if (!w || !h) return;
     persist({
       width: w,
@@ -118,10 +126,21 @@ export function Display(_props: { qam?: boolean }) {
         <InternalTouchpadRow />
       </PanelSection>
       <PanelSection title={t("External Display")}>
-      <SelectEdit label={t("Primary Display")} value={selectedConnector} options={primaryOptions} onChange={selectPrimary} disabled={saving} />
-      {state.useExternal && (
+      <SelectEdit label={t("Primary Display")} value={selectedMode} options={modeOptions} onChange={selectMode} disabled={saving} />
+      {mode === "internal" && (
+        <ToggleField
+          label={t("Auto-Duo on connect")}
+          description={t("Switch to Duo automatically when an external display is plugged in")}
+          checked={state.autoDuo !== false}
+          onChange={(enabled) => persist({ autoDuo: enabled })}
+        />
+      )}
+      {mode === "duo" && (
+        <Field label={t("Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.")} />
+      )}
+      {mode === "external" && (
         <>
-          <SelectEdit label={t("Resolution")} value={currentMode} options={modeOptions} onChange={selectMode} disabled={saving || activeDisconnected} />
+          <SelectEdit label={t("Resolution")} value={currentMode} options={resolutionOptions} onChange={selectResolution} disabled={saving || activeDisconnected} />
           <SelectEdit label={t("Rotation")} value={state.orientation} options={ORIENTATION_OPTIONS} onChange={selectOrientation} disabled={saving || activeDisconnected} />
           {isPortrait(state.width, state.height) && (
             <Field label={t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.")} />

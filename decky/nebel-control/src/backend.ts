@@ -129,8 +129,8 @@ export const resetCalibration = () => call<[], CalibrationState>("reset_calibrat
 export const beginCalibrationSession = (token: string) => call<[string], boolean>("begin_calibration_session", token);
 export const endCalibrationSession = (token: string) => call<[string], boolean>("end_calibration_session", token);
 export const getDisplayState = () => call<[], DisplayState>("get_display_state");
-export const setDisplayConfig = (useExternal: boolean, connector: string, width: number, height: number, orientation: string) =>
-  call<[boolean, string, number, number, string], DisplayState>("set_display_config", useExternal, connector, width, height, orientation);
+export const setDisplayConfig = (useExternal: boolean, connector: string, width: number, height: number, orientation: string, mode?: string, autoDuo?: boolean) =>
+  call<[boolean, string, number, number, string, string | undefined, boolean | undefined], DisplayState>("set_display_config", useExternal, connector, width, height, orientation, mode, autoDuo);
 export const restartGamescopeSession = () => call<[], { ok: boolean }>("restart_gamescope_session");
 export const setInternalTouchpad = (mode: number) => call<[number], number>("set_internal_touchpad", mode);
 export const getSyncState = () => call<[], SyncState>("get_sync_state");

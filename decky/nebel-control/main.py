@@ -241,8 +241,8 @@ class Plugin:
     async def get_display_state(self):
         return await asyncio.to_thread(display_state)
 
-    async def set_display_config(self, use_external, connector, width, height, orientation):
-        return await asyncio.to_thread(set_display_config, use_external, connector, width, height, orientation)
+    async def set_display_config(self, use_external, connector, width, height, orientation, mode=None, auto_duo=None):
+        return await asyncio.to_thread(set_display_config, use_external, connector, width, height, orientation, mode, auto_duo)
 
     async def restart_gamescope_session(self):
         return await asyncio.to_thread(restart_gamescope_session)
