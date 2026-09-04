@@ -410,16 +410,26 @@ def _has_system_subfolders(root):
     return any((root / sid).is_dir() for sid in available_systems())
 
 
+def _find_roms(root):
+    """[(system, rom_path)] — an organized library (root/<system>/ subfolders)
+    or a loose folder scanned recursively."""
+    if _has_system_subfolders(root):
+        out = []
+        for system in available_systems().values():
+            for rom in _rom_files(system, root):
+                out.append((system, rom))
+        return out
+    systems = available_systems()
+    return [(systems[sid], rom) for sid, rom in _any_folder_roms(root)]
+
+
 def scan_roms(root=None):
     """Systems and ROM counts under `root` (configured ROM root when omitted)."""
     root = Path(root) if root else roms_root()
+    found = _find_roms(root)
     systems = []
-    loose = None if _has_system_subfolders(root) else _any_folder_roms(root)
     for sid, system in available_systems().items():
-        if loose is None:
-            count = len(_rom_files(system, root))
-        else:
-            count = sum(1 for fsid, _ in loose if fsid == sid)
+        count = sum(1 for fs, _ in found if fs["id"] == sid)
         systems.append({
             "id": sid,
             "label": system["label"],
@@ -438,15 +448,7 @@ def import_roms(root=None):
     extensions).
     """
     root = Path(root) if root else roms_root()
-    found = []
-    if _has_system_subfolders(root):
-        for system in available_systems().values():
-            for rom in _rom_files(system, root):
-                found.append((system, rom))
-    else:
-        systems = available_systems()
-        for sid, rom in _any_folder_roms(root):
-            found.append((systems[sid], rom))
+    found = _find_roms(root)
     games = []
     for system, rom in found:
         prefix = " ".join(system.get("args") or [])
@@ -581,10 +583,11 @@ def fetch_artwork(root=None):
     matched = 0
     missed = []
     error = ""
-    for sid, system in available_systems().items():
-        roms = _rom_files(system, root)
-        if not roms:
-            continue
+    found = _find_roms(root)
+    by_system = {}
+    for system, rom in found:
+        by_system.setdefault(system["id"], (system, []))[1].append(rom)
+    for sid, (system, roms) in by_system.items():
         index = {}
         keys = []
         try:
