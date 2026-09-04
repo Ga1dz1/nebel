@@ -43,11 +43,6 @@ def restart_gamescope_session():
     return {"ok": True}
 
 
-def start_dualscreen_session():
-    call("start_dualscreen_session")
-    return {"ok": True}
-
-
 def set_internal_touchpad(mode):
     result = call("set_internal_touchpad", mode=int(mode))
     return int(result.get("mode", 0))

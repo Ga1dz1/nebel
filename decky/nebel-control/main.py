@@ -10,7 +10,7 @@ from nebel_control.calibration import (
 from nebel_control.config import build_config
 from nebel_control.controller import set_controller_type
 from nebel_control.deps import get_status as deps_status, install_verbs as deps_install
-from nebel_control.display import display_state, restart_gamescope_session, set_display_config, set_internal_touchpad, start_dualscreen_session
+from nebel_control.display import display_state, restart_gamescope_session, set_display_config, set_internal_touchpad
 from nebel_control.filepick import (
     heroic_config,
     heroic_games,
@@ -246,9 +246,6 @@ class Plugin:
 
     async def restart_gamescope_session(self):
         return await asyncio.to_thread(restart_gamescope_session)
-
-    async def start_dualscreen_session(self):
-        return await asyncio.to_thread(start_dualscreen_session)
 
     async def set_internal_touchpad(self, mode):
         return await asyncio.to_thread(set_internal_touchpad, mode)

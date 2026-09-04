@@ -1,8 +1,3 @@
-# Allow the nebel user to switch sessions (dual-screen and back) without a
-# password - needed when a game flagged "Dual-screen mode" launches from
-# inside the gamescope session.
+# Allow the nebel user to switch sessions (desktop <-> game mode) without a
+# password - os-session-select calls this from inside the running session.
 nebel ALL=(root) NOPASSWD: /usr/libexec/nebel/session-control
-# The dual-screen exit/F11 hotkey watcher must run as root: the raw MCU
-# gamepad node is MODE=0000 to unprivileged users on purpose (see
-# 70-nebel-retroid-gamepad.rules - SDL would otherwise see a ghost pad).
-nebel ALL=(root) NOPASSWD: /usr/libexec/nebel/nebel-dualscreen-exit

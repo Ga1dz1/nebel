@@ -855,29 +855,6 @@ def main():
     except Exception as exc:
         print(f"nebel-game-launch: extra launch args skipped: {exc}", file=sys.stderr)
 
-    # "Dual-screen mode" flag (Decky per-game properties): hand this game's
-    # command to the labwc dual-screen session instead of running it under
-    # gamescope. The session script consumes the conf once and returns to
-    # game mode when the app exits.
-    if settings.get("dualScreen") is True:
-        try:
-            conf = pathlib.Path(
-                os.environ.get("XDG_RUNTIME_DIR", "/run/user/1000")
-            ) / "nebel-dualscreen-app.conf"
-            conf.write_text(
-                "APP_CMD=" + " ".join(shlex.quote(a) for a in args) + "\n",
-                encoding="utf-8",
-            )
-            subprocess.run(
-                ["sudo", "-n", "/usr/libexec/nebel/session-control", "switch-dualscreen"],
-                check=False,
-            )
-            raise SystemExit(0)
-        except SystemExit:
-            raise
-        except Exception as exc:
-            print(f"nebel-game-launch: dual-screen switch failed: {exc}", file=sys.stderr)
-
     try:
         apply_fex(settings, game_id, contract["profiles"], os.environ)
     except Exception as exc:

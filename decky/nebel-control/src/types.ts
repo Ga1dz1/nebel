@@ -38,7 +38,6 @@ export interface GameTweak {
   envPresets?: Record<string, boolean>;
   extraArgs?: string;
   heroicForce?: boolean;
-  dualScreen?: boolean;
   powerProfile?: string;
   lsfg?: boolean;
   lsfgMultiplier?: number;
