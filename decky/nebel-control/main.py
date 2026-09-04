@@ -41,7 +41,15 @@ from nebel_control.lighting import (
     set_stick_led_flip,
 )
 from nebel_control.monitor import set_overlay_enabled, system_monitor
-from nebel_control.roms import fetch_artwork, import_roms, scan_roms as roms_scan, sgdb_key_state, set_sgdb_key
+from nebel_control.roms import (
+    fetch_artwork,
+    import_roms,
+    roms_root_state,
+    scan_roms as roms_scan,
+    set_roms_root,
+    sgdb_key_state,
+    set_sgdb_key,
+)
 from nebel_control.power import save_power_config
 from nebel_control.shared_storage import set_shared_storage_enabled
 from nebel_control.steam import installed_games
@@ -86,14 +94,20 @@ class Plugin:
     async def get_lsfg_availability(self):
         return await asyncio.to_thread(lsfg_availability)
 
-    async def roms_scan(self):
-        return await asyncio.to_thread(roms_scan)
+    async def roms_scan(self, path=""):
+        return await asyncio.to_thread(roms_scan, path or None)
 
-    async def roms_import(self):
-        return await asyncio.to_thread(roms_import)
+    async def roms_import(self, path=""):
+        return await asyncio.to_thread(import_roms, path or None)
 
-    async def roms_artwork(self):
-        return await asyncio.to_thread(fetch_artwork)
+    async def roms_artwork(self, path=""):
+        return await asyncio.to_thread(fetch_artwork, path or None)
+
+    async def roms_root(self):
+        return await asyncio.to_thread(roms_root_state)
+
+    async def roms_set_root(self, path):
+        return await asyncio.to_thread(set_roms_root, path)
 
     async def get_sgdb_key_state(self):
         return await asyncio.to_thread(sgdb_key_state)

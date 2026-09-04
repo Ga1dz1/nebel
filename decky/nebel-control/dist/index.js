@@ -90,9 +90,11 @@ const syncRemoveCustomFolder = (folderId) => call("sync_remove_custom_folder", f
 const syncDismissDevice = (deviceId) => call("sync_dismiss_device", deviceId);
 const syncAcceptFolder = (folderId) => call("sync_accept_folder", folderId);
 const syncDismissFolder = (folderId, deviceId) => call("sync_dismiss_folder", folderId, deviceId);
-const romsScan = () => call("roms_scan");
-const romsImport = () => call("roms_import");
-const romsArtwork = () => call("roms_artwork");
+const romsScan = (path = "") => call("roms_scan", path);
+const romsImport = (path = "") => call("roms_import", path);
+const romsArtwork = (path = "") => call("roms_artwork", path);
+const romsRoot = () => call("roms_root");
+const romsSetRoot = (path) => call("roms_set_root", path);
 const getSgdbKeyState = () => call("get_sgdb_key_state");
 const setSgdbKey = (key) => call("set_sgdb_key", key);
 const syncNow = () => call("sync_now");
@@ -391,6 +393,12 @@ const uk = {
     "TabSystem": "Система",
     "TabRoms": "ROM-и",
     "ROM library": "Бібліотека ROM",
+    "Select ROM folder": "Вибрати теку ROM",
+    "Use this folder": "Використати цю теку",
+    "Import from this folder once": "Імпортувати з цієї теки один раз",
+    "Change folder...": "Змінити теку...",
+    "Reset to default folder": "Скинути до типової теки",
+    "Monitoring": "Моніторинг",
     "ROM folder": "Тека ROM",
     "Put games into per-system subfolders; systems appear here once their emulator is installed": "Складайте ігри в підтеки за системами; системи з'являються тут, коли встановлено їхній емулятор",
     "No emulators or ROM folders found": "Емуляторів або тек з ROM не знайдено",
@@ -404,7 +412,7 @@ const uk = {
     "SteamGridDB key": "Ключ SteamGridDB",
     "SteamGridDB API key (optional)": "API-ключ SteamGridDB (необов'язково)",
     "Save key": "Зберегти ключ",
-    "SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "У SteamGridDB є повноцінні обкладинки для PS2, GameCube і Switch - безкоштовний ключ береться на steamgriddb.com. Без нього використовуються мініатюри libretro.",
+    "SteamGridDB has proper covers for every system - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "У SteamGridDB є повноцінні обкладинки для кожної системи - безкоштовний ключ береться на steamgriddb.com. Без нього використовуються мініатюри libretro.",
     "Quick toggles": "Швидкі перемикачі",
     "Open full screen": "Відкрити на весь екран",
     "Control Center": "Центр керування",
@@ -733,6 +741,12 @@ const ru = {
     "TabSystem": "Система",
     "TabRoms": "Ромы",
     "ROM library": "Библиотека ROM",
+    "Select ROM folder": "Выбрать папку ROM",
+    "Use this folder": "Использовать эту папку",
+    "Import from this folder once": "Импортировать из этой папки один раз",
+    "Change folder...": "Сменить папку...",
+    "Reset to default folder": "Сбросить на папку по умолчанию",
+    "Monitoring": "Мониторинг",
     "ROM folder": "Папка ROM",
     "Put games into per-system subfolders; systems appear here once their emulator is installed": "Складывайте игры в подпапки по системам; системы появляются здесь, когда установлен их эмулятор",
     "No emulators or ROM folders found": "Эмуляторы или папки с ROM не найдены",
@@ -746,7 +760,7 @@ const ru = {
     "SteamGridDB key": "Ключ SteamGridDB",
     "SteamGridDB API key (optional)": "API-ключ SteamGridDB (необязательно)",
     "Save key": "Сохранить ключ",
-    "SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "В SteamGridDB есть полноценные обложки для PS2, GameCube и Switch - бесплатный ключ берётся на steamgriddb.com. Без него используются миниатюры libretro.",
+    "SteamGridDB has proper covers for every system - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "В SteamGridDB есть полноценные обложки для каждой системы - бесплатный ключ берётся на steamgriddb.com. Без него используются миниатюры libretro.",
     "Quick toggles": "Быстрые переключатели",
     "Open full screen": "Открыть на весь экран",
     "Control Center": "Центр управления",
@@ -1075,6 +1089,12 @@ const es = {
     "TabSystem": "Sistema",
     "TabRoms": "ROMs",
     "ROM library": "Biblioteca de ROM",
+    "Select ROM folder": "Seleccionar carpeta de ROM",
+    "Use this folder": "Usar esta carpeta",
+    "Import from this folder once": "Importar desde esta carpeta una vez",
+    "Change folder...": "Cambiar carpeta...",
+    "Reset to default folder": "Restablecer carpeta predeterminada",
+    "Monitoring": "Monitorización",
     "ROM folder": "Carpeta de ROM",
     "Put games into per-system subfolders; systems appear here once their emulator is installed": "Guarda los juegos en subcarpetas por sistema; los sistemas aparecen aquí cuando su emulador está instalado",
     "No emulators or ROM folders found": "No se encontraron emuladores ni carpetas de ROM",
@@ -1089,7 +1109,7 @@ const es = {
     "SteamGridDB API key (optional)": "Clave API de SteamGridDB (opcional)",
     "Save key": "Guardar clave",
     "Remove key": "Eliminar clave",
-    "SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "SteamGridDB tiene carátulas completas para PS2, GameCube y Switch - la clave gratuita se obtiene en steamgriddb.com. Sin ella se usan las miniaturas de libretro.",
+    "SteamGridDB has proper covers for every system - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "SteamGridDB tiene carátulas adecuadas para cada sistema; la clave gratuita se obtiene en steamgriddb.com. Sin ella, se usan las miniaturas de libretro.",
     "Quick toggles": "Interruptores rápidos",
     "Open full screen": "Abrir a pantalla completa",
     "Control Center": "Centro de control",
@@ -1409,6 +1429,12 @@ const fr = {
     "TabSystem": "Système",
     "TabRoms": "ROMs",
     "ROM library": "Bibliothèque de ROM",
+    "Select ROM folder": "Sélectionner le dossier ROM",
+    "Use this folder": "Utiliser ce dossier",
+    "Import from this folder once": "Importer depuis ce dossier une fois",
+    "Change folder...": "Changer de dossier...",
+    "Reset to default folder": "Rétablir le dossier par défaut",
+    "Monitoring": "Surveillance",
     "ROM folder": "Dossier ROM",
     "Put games into per-system subfolders; systems appear here once their emulator is installed": "Rangez les jeux dans des sous-dossiers par système ; les systèmes apparaissent ici une fois leur émulateur installé",
     "No emulators or ROM folders found": "Aucun émulateur ni dossier de ROM trouvé",
@@ -1423,7 +1449,7 @@ const fr = {
     "SteamGridDB API key (optional)": "Clé API SteamGridDB (optionnel)",
     "Save key": "Enregistrer la clé",
     "Remove key": "Supprimer la clé",
-    "SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "SteamGridDB propose de vraies jaquettes pour PS2, GameCube et Switch - la clé gratuite s'obtient sur steamgriddb.com. Sans elle, les miniatures libretro sont utilisées.",
+    "SteamGridDB has proper covers for every system - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.": "SteamGridDB propose de vraies jaquettes pour chaque système - la clé gratuite s'obtient sur steamgriddb.com. Sans elle, les vignettes libretro sont utilisées.",
     "Quick toggles": "Raccourcis rapides",
     "Open full screen": "Ouvrir en plein écran",
     "Control Center": "Centre de contrôle",
@@ -4047,14 +4073,19 @@ function Power({ config, setConfig }) {
 
 function Roms(_props) {
     const [scan, setScan] = SP_REACT.useState(null);
+    const [rootState, setRootState] = SP_REACT.useState(null);
     const [sgdb, setSgdb] = SP_REACT.useState(null);
     const [sgdbDraft, setSgdbDraft] = SP_REACT.useState("");
     const [busy, setBusy] = SP_REACT.useState("");
     const [message, setMessage] = SP_REACT.useState("");
+    const [picker, setPicker] = SP_REACT.useState(null);
     const refresh = SP_REACT.useCallback(() => {
         romsScan()
             .then(setScan)
             .catch((error) => setMessage(String(error)));
+        romsRoot()
+            .then(setRootState)
+            .catch(() => { });
         getSgdbKeyState()
             .then(setSgdb)
             .catch(() => { });
@@ -4062,30 +4093,19 @@ function Roms(_props) {
     SP_REACT.useEffect(() => {
         refresh();
     }, [refresh]);
-    const doImport = async () => {
-        setBusy("import");
-        setMessage("");
+    const navigate = async (path) => {
         try {
-            const result = await romsImport();
-            if (result.error) {
-                setMessage(result.error);
-            }
-            else {
-                setMessage(t("Imported {added}, already present {skipped}. Restart game mode to see the new games.")
-                    .replace("{added}", String(result.added.length))
-                    .replace("{skipped}", String(result.skipped.length)));
-            }
+            setPicker(await listDir(path));
         }
         catch (error) {
             setMessage(String(error));
+            setPicker(null);
         }
-        setBusy("");
     };
-    const doArtwork = async () => {
+    const doArtwork = async (path = "") => {
         setBusy("artwork");
-        setMessage("");
         try {
-            const result = await romsArtwork();
+            const result = await romsArtwork(path);
             if (result.error && !result.matched) {
                 setMessage(result.error);
             }
@@ -4100,6 +4120,46 @@ function Roms(_props) {
         }
         setBusy("");
     };
+    // Import, then pull covers for the newly added shortcuts right away - one
+    // button press should leave the library ready, not half-dressed.
+    const doImport = async (path = "") => {
+        setBusy("import");
+        setMessage("");
+        try {
+            const result = await romsImport(path);
+            if (result.error) {
+                setMessage(result.error);
+                setBusy("");
+                return;
+            }
+            setMessage(t("Imported {added}, already present {skipped}. Restart game mode to see the new games.")
+                .replace("{added}", String(result.added.length))
+                .replace("{skipped}", String(result.skipped.length)));
+            refresh();
+            if (result.added.length > 0) {
+                await doArtwork(path);
+            }
+        }
+        catch (error) {
+            setMessage(String(error));
+        }
+        setBusy("");
+    };
+    const useFolder = async (path) => {
+        setPicker(null);
+        setMessage("");
+        try {
+            setRootState(await romsSetRoot(path));
+            refresh();
+        }
+        catch (error) {
+            setMessage(String(error));
+        }
+    };
+    const importOnce = async (path) => {
+        setPicker(null);
+        await doImport(path);
+    };
     const saveSgdbKey = async () => {
         try {
             setSgdb(await setSgdbKey(sgdbDraft));
@@ -4111,7 +4171,12 @@ function Roms(_props) {
     };
     const systems = scan?.systems || [];
     const total = systems.reduce((sum, system) => sum + system.count, 0);
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("ROM library"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("ROM folder"), description: t("Put games into per-system subfolders; systems appear here once their emulator is installed"), children: scan?.root || "" }) }), systems.map((system) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: system.label, description: system.dir, children: system.count }) }, system.id))), !systems.length && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { opacity: 0.7, fontSize: "12px" }, children: t("No emulators or ROM folders found") }) }))] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Covers"), children: [sgdb?.present ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("SteamGridDB key"), description: sgdb.masked, children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: async () => setSgdb(await setSgdbKey("")), children: t("Remove key") }) }) })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.TextField, { label: t("SteamGridDB API key (optional)"), value: sgdbDraft, onChange: (e) => setSgdbDraft(e.target.value) }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: saveSgdbKey, disabled: !sgdbDraft.trim(), children: t("Save key") })] })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { opacity: 0.7, fontSize: "12px" }, children: t("SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.") }) })] }), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: doImport, disabled: busy !== "" || total === 0, children: busy === "import" ? t("Importing...") : t("Import to Steam library") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: doArtwork, disabled: busy !== "" || total === 0, children: busy === "artwork" ? t("Downloading...") : t("Fetch covers") }), message && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px" }, children: message }) }))] })] }));
+    // Directory picker for the ROM root: folders only, with shortcuts to the
+    // internal storage and SD cards (same backend the game picker uses).
+    if (picker) {
+        return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Select ROM folder"), children: [SP_JSX.jsx(DFL.Field, { label: picker.path }), (picker.shortcuts || []).map((s) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(s.path), children: [s.id === "home" ? t("Internal storage") : `${t("SD card")}: ${s.label}`, "/"] }, `s:${s.path}`))), picker.parent !== null && (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(picker.parent || "/"), children: ".." })), picker.dirs.map((dir) => (SP_JSX.jsxs(DFL.ButtonItem, { layout: "below", onClick: () => navigate(`${picker.path}/${dir}`), children: [dir, "/"] }, `d:${dir}`))), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => useFolder(picker.path), children: t("Use this folder") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => importOnce(picker.path), disabled: busy !== "", children: busy === "import" ? t("Importing...") : t("Import from this folder once") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setPicker(null), children: t("Cancel") })] }));
+    }
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("ROM library"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("ROM folder"), description: t("Put games into per-system subfolders; systems appear here once their emulator is installed"), children: scan?.root || "" }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => navigate(scan?.root || ""), children: t("Change folder...") }), rootState?.custom && (SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => useFolder(""), children: t("Reset to default folder") })), systems.map((system) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: system.label, description: system.dir, children: system.count }) }, system.id))), !systems.length && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { opacity: 0.7, fontSize: "12px" }, children: t("No emulators or ROM folders found") }) }))] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Covers"), children: [sgdb?.present ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("SteamGridDB key"), description: sgdb.masked, children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: async () => setSgdb(await setSgdbKey("")), children: t("Remove key") }) }) })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.TextField, { label: t("SteamGridDB API key (optional)"), value: sgdbDraft, onChange: (e) => setSgdbDraft(e.target.value) }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: saveSgdbKey, disabled: !sgdbDraft.trim(), children: t("Save key") })] })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { opacity: 0.7, fontSize: "12px" }, children: t("SteamGridDB has proper covers for every system - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.") }) })] }), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => doImport(), disabled: busy !== "" || total === 0, children: busy === "import" ? t("Importing...") : t("Import to Steam library") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => doArtwork(), disabled: busy !== "" || total === 0, children: busy === "artwork" ? t("Downloading...") : t("Fetch covers") }), message && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px" }, children: message }) }))] })] }));
 }
 
 function AddDeviceModal({ closeModal, onAdd }) {
@@ -4700,12 +4765,13 @@ function ControllerLightingSection() {
         return SP_JSX.jsx(MissingConfig, { message: message });
     return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(ControllerExtras, { config: config, setConfig: setConfig }), SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig })] }));
 }
-// Settings -> Power: fan curve / CPU-GPU limits (Power tab).
+// Settings -> Power: live hardware readout (temps, fan, battery) above the
+// fan curve / CPU-GPU limits (Power tab).
 function PowerLimitsSection() {
     const { config, setConfig, message } = useInjectedConfig();
     if (!config)
         return SP_JSX.jsx(MissingConfig, { message: message });
-    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(Power, { config: config, setConfig: setConfig })] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Monitoring"), children: SP_JSX.jsx(MonitorRows, {}) }), SP_JSX.jsx(Power, { config: config, setConfig: setConfig })] }));
 }
 // Settings -> Display: external display (Display tab).
 function ExternalDisplaySection() {
@@ -4733,7 +4799,7 @@ function CloudSyncSection() {
 // on the fullscreen page itself, where it belongs.
 function ControlCenterSection() {
     const { config, setConfig } = useInjectedConfig();
-    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Control Center"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.Navigate("/nebel-control"), children: t("Open Control Center") }) }) }), config && (SP_JSX.jsx(DFL.PanelSection, { title: t("Storage"), children: SP_JSX.jsx(SharedStorageRow, { config: config, setConfig: setConfig }) }))] }));
+    return (SP_JSX.jsxs("div", { className: "nebel-native", children: [SP_JSX.jsx(NativeStyles, {}), SP_JSX.jsx(DFL.PanelSection, { title: t("Control Center"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.Navigate("/nebel-control"), children: t("Open Control Center") }) }) }), config && (SP_JSX.jsx(DFL.PanelSection, { title: t("Storage"), children: SP_JSX.jsx(SharedStorageRow, { config: config, setConfig: setConfig }) })), SP_JSX.jsx(SupporterKeySection, {})] }));
 }
 // Settings -> Library: the working "Add non-Steam game" picker (Steam's own
 // Browse dialog is broken in the ARM64 client), plus the ROM library

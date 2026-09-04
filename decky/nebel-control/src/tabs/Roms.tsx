@@ -1,20 +1,34 @@
 import { ButtonItem, Field, PanelSection, PanelSectionRow, TextField } from "@decky/ui";
 import { useCallback, useEffect, useState } from "react";
-import { getSgdbKeyState, romsArtwork, romsImport, romsScan, setSgdbKey } from "../backend";
-import type { RomsScan, SgdbKeyState } from "../backend";
+import {
+  getSgdbKeyState,
+  listDir,
+  romsArtwork,
+  romsImport,
+  romsRoot,
+  romsScan,
+  romsSetRoot,
+  setSgdbKey,
+} from "../backend";
+import type { DirListing, RomsRootState, RomsScan, SgdbKeyState } from "../backend";
 import { t } from "../i18n";
 
 export function Roms(_props: { qam: boolean }) {
   const [scan, setScan] = useState<RomsScan | null>(null);
+  const [rootState, setRootState] = useState<RomsRootState | null>(null);
   const [sgdb, setSgdb] = useState<SgdbKeyState | null>(null);
   const [sgdbDraft, setSgdbDraft] = useState("");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [picker, setPicker] = useState<DirListing | null>(null);
 
   const refresh = useCallback(() => {
     romsScan()
       .then(setScan)
       .catch((error) => setMessage(String(error)));
+    romsRoot()
+      .then(setRootState)
+      .catch(() => {});
     getSgdbKeyState()
       .then(setSgdb)
       .catch(() => {});
@@ -24,31 +38,19 @@ export function Roms(_props: { qam: boolean }) {
     refresh();
   }, [refresh]);
 
-  const doImport = async () => {
-    setBusy("import");
-    setMessage("");
+  const navigate = async (path: string) => {
     try {
-      const result = await romsImport();
-      if (result.error) {
-        setMessage(result.error);
-      } else {
-        setMessage(
-          t("Imported {added}, already present {skipped}. Restart game mode to see the new games.")
-            .replace("{added}", String(result.added.length))
-            .replace("{skipped}", String(result.skipped.length)),
-        );
-      }
+      setPicker(await listDir(path));
     } catch (error) {
       setMessage(String(error));
+      setPicker(null);
     }
-    setBusy("");
   };
 
-  const doArtwork = async () => {
+  const doArtwork = async (path = "") => {
     setBusy("artwork");
-    setMessage("");
     try {
-      const result = await romsArtwork();
+      const result = await romsArtwork(path);
       if (result.error && !result.matched) {
         setMessage(result.error);
       } else {
@@ -64,6 +66,49 @@ export function Roms(_props: { qam: boolean }) {
     setBusy("");
   };
 
+  // Import, then pull covers for the newly added shortcuts right away - one
+  // button press should leave the library ready, not half-dressed.
+  const doImport = async (path = "") => {
+    setBusy("import");
+    setMessage("");
+    try {
+      const result = await romsImport(path);
+      if (result.error) {
+        setMessage(result.error);
+        setBusy("");
+        return;
+      }
+      setMessage(
+        t("Imported {added}, already present {skipped}. Restart game mode to see the new games.")
+          .replace("{added}", String(result.added.length))
+          .replace("{skipped}", String(result.skipped.length)),
+      );
+      refresh();
+      if (result.added.length > 0) {
+        await doArtwork(path);
+      }
+    } catch (error) {
+      setMessage(String(error));
+    }
+    setBusy("");
+  };
+
+  const useFolder = async (path: string) => {
+    setPicker(null);
+    setMessage("");
+    try {
+      setRootState(await romsSetRoot(path));
+      refresh();
+    } catch (error) {
+      setMessage(String(error));
+    }
+  };
+
+  const importOnce = async (path: string) => {
+    setPicker(null);
+    await doImport(path);
+  };
+
   const saveSgdbKey = async () => {
     try {
       setSgdb(await setSgdbKey(sgdbDraft));
@@ -76,6 +121,36 @@ export function Roms(_props: { qam: boolean }) {
   const systems = scan?.systems || [];
   const total = systems.reduce((sum, system) => sum + system.count, 0);
 
+  // Directory picker for the ROM root: folders only, with shortcuts to the
+  // internal storage and SD cards (same backend the game picker uses).
+  if (picker) {
+    return (
+      <PanelSection title={t("Select ROM folder")}>
+        <Field label={picker.path} />
+        {(picker.shortcuts || []).map((s) => (
+          <ButtonItem key={`s:${s.path}`} layout="below" onClick={() => navigate(s.path)}>
+            {s.id === "home" ? t("Internal storage") : `${t("SD card")}: ${s.label}`}/
+          </ButtonItem>
+        ))}
+        {picker.parent !== null && (
+          <ButtonItem layout="below" onClick={() => navigate(picker.parent || "/")}>..</ButtonItem>
+        )}
+        {picker.dirs.map((dir) => (
+          <ButtonItem key={`d:${dir}`} layout="below" onClick={() => navigate(`${picker.path}/${dir}`)}>
+            {dir}/
+          </ButtonItem>
+        ))}
+        <ButtonItem layout="below" onClick={() => useFolder(picker.path)}>
+          {t("Use this folder")}
+        </ButtonItem>
+        <ButtonItem layout="below" onClick={() => importOnce(picker.path)} disabled={busy !== ""}>
+          {busy === "import" ? t("Importing...") : t("Import from this folder once")}
+        </ButtonItem>
+        <ButtonItem layout="below" onClick={() => setPicker(null)}>{t("Cancel")}</ButtonItem>
+      </PanelSection>
+    );
+  }
+
   return (
     <>
       <PanelSection title={t("ROM library")}>
@@ -87,6 +162,14 @@ export function Roms(_props: { qam: boolean }) {
             {scan?.root || ""}
           </Field>
         </PanelSectionRow>
+        <ButtonItem layout="below" onClick={() => navigate(scan?.root || "")}>
+          {t("Change folder...")}
+        </ButtonItem>
+        {rootState?.custom && (
+          <ButtonItem layout="below" onClick={() => useFolder("")}>
+            {t("Reset to default folder")}
+          </ButtonItem>
+        )}
         {systems.map((system) => (
           <PanelSectionRow key={system.id}>
             <Field label={system.label} description={system.dir}>
@@ -121,15 +204,15 @@ export function Roms(_props: { qam: boolean }) {
         )}
         <PanelSectionRow>
           <div style={{ opacity: 0.7, fontSize: "12px" }}>
-            {t("SteamGridDB has proper covers for PS2, GameCube and Switch - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.")}
+            {t("SteamGridDB has proper covers for every system - a free key comes from steamgriddb.com. Without it, covers fall back to libretro thumbnails.")}
           </div>
         </PanelSectionRow>
       </PanelSection>
       <PanelSection>
-        <ButtonItem layout="below" onClick={doImport} disabled={busy !== "" || total === 0}>
+        <ButtonItem layout="below" onClick={() => doImport()} disabled={busy !== "" || total === 0}>
           {busy === "import" ? t("Importing...") : t("Import to Steam library")}
         </ButtonItem>
-        <ButtonItem layout="below" onClick={doArtwork} disabled={busy !== "" || total === 0}>
+        <ButtonItem layout="below" onClick={() => doArtwork()} disabled={busy !== "" || total === 0}>
           {busy === "artwork" ? t("Downloading...") : t("Fetch covers")}
         </ButtonItem>
         {message && (

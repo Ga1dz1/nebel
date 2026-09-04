@@ -155,9 +155,12 @@ export interface RomSystem { id: string; label: string; dir: string; count: numb
 export interface RomsScan { root: string; systems: RomSystem[] }
 export interface RomsImportResult { added: string[]; skipped: string[]; error: string }
 export interface RomsArtworkResult { matched: number; missed: string[]; error: string }
-export const romsScan = () => call<[], RomsScan>("roms_scan");
-export const romsImport = () => call<[], RomsImportResult>("roms_import");
-export const romsArtwork = () => call<[], RomsArtworkResult>("roms_artwork");
+export interface RomsRootState { root: string; default: string; custom: boolean }
+export const romsScan = (path = "") => call<[string], RomsScan>("roms_scan", path);
+export const romsImport = (path = "") => call<[string], RomsImportResult>("roms_import", path);
+export const romsArtwork = (path = "") => call<[string], RomsArtworkResult>("roms_artwork", path);
+export const romsRoot = () => call<[], RomsRootState>("roms_root");
+export const romsSetRoot = (path: string) => call<[string], RomsRootState>("roms_set_root", path);
 export interface SgdbKeyState { present: boolean; masked: string }
 export const getSgdbKeyState = () => call<[], SgdbKeyState>("get_sgdb_key_state");
 export const setSgdbKey = (key: string) => call<[string], SgdbKeyState>("set_sgdb_key", key);

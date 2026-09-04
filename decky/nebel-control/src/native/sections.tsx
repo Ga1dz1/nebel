@@ -7,7 +7,7 @@ import { MonitorRows, NotifyFlashRows, OverlayToggleRow } from "../tabs/Home";
 import { Lighting } from "../tabs/Lighting";
 import { Power } from "../tabs/Power";
 import { Sync } from "../tabs/Sync";
-import { ControllerExtras, SharedStorageRow, SshRow } from "../tabs/System";
+import { ControllerExtras, SharedStorageRow, SshRow, SupporterKeySection } from "../tabs/System";
 import { NativeStyles, useInjectedConfig } from "./injectedConfig";
 
 // The sections duplicated into Steam's own settings pages. Each one renders
@@ -39,13 +39,17 @@ export function ControllerLightingSection() {
   );
 }
 
-// Settings -> Power: fan curve / CPU-GPU limits (Power tab).
+// Settings -> Power: live hardware readout (temps, fan, battery) above the
+// fan curve / CPU-GPU limits (Power tab).
 export function PowerLimitsSection() {
   const { config, setConfig, message } = useInjectedConfig();
   if (!config) return <MissingConfig message={message} />;
   return (
     <div className="nebel-native">
       <NativeStyles />
+      <PanelSection title={t("Monitoring")}>
+        <MonitorRows />
+      </PanelSection>
       <Power config={config} setConfig={setConfig} />
     </div>
   );
@@ -109,6 +113,7 @@ export function ControlCenterSection() {
           <SharedStorageRow config={config} setConfig={setConfig} />
         </PanelSection>
       )}
+      <SupporterKeySection />
     </div>
   );
 }
