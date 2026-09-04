@@ -1,0 +1,9 @@
+[Unit]
+Description=Nebel seat control HTTP bridge (127.0.0.1:48717)
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/libexec/nebel/dualscreen/seatctl.py
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

@@ -13,6 +13,7 @@ sha256sum -c <<'EOF'
 EOF
 
 chmod 0755 /usr/libexec/nebel/*
+chmod 0755 /usr/libexec/nebel/dualscreen /usr/libexec/nebel/dualscreen/*
 chmod 0755 /usr/libexec/os-session-select
 
 sed -i '/const allPanels/,$d' /usr/share/plasma/layout-templates/org.kde.plasma.desktop.defaultPanel/contents/layout.js
@@ -60,6 +61,11 @@ systemctl enable nebel-gpio-keys.service
 systemctl enable nebel-control.service
 systemctl enable nebel-steamos-manager.service
 systemctl --global enable nebel-steamos-manager.service
+# Duo-mode session helpers (second steamui window + seat bridge). Both are
+# cheap no-ops in single-screen sessions: seatA-autostart exits unless the
+# session actually came up dual-output, seatctl is a localhost-only bridge.
+systemctl --global enable nebel-seat-a.service
+systemctl --global enable nebel-seatctl.service
 systemctl enable nebel-bootimg-sync.service
 systemctl enable nebel-flatpak-setup.service
 systemctl enable nebel-shared-storage.service
