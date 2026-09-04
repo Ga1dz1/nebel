@@ -1,6 +1,7 @@
 #!/bin/bash
 # seatA.sh — contextual second native Steam UI window on the internal
-# screen (seat A: 1240x1080 at +340+1080). Shows AppDetails of the app focused/open/running on the main screen (polls tempNavStore route + game list selection + running apps every 1s); falls back to a Loading placeholder until collectionStore is ready.
+# screen (seat A; geometry derived from the device panel description at
+# placement time). Shows AppDetails of the app focused/open/running on the main screen (polls tempNavStore route + game list selection + running apps every 1s); falls back to a Loading placeholder until collectionStore is ready.
 # Runs inside the game-mode session while dual-output (duo mode) is active.
 set -e
 DUALSCREEN_DIR="/usr/libexec/nebel/dualscreen"
@@ -43,7 +44,21 @@ if [ "$TITLE" != "NebelSeatB" ]; then
 fi
 
 # 3. drop STEAM_GAME property and move to seat A (else gamescope reverts position)
-python3 "$DUALSCREEN_DIR/xplace.py" "$WID" 340 1080 1240 1080
+# Seat geometry comes from the device's panel description, not a hardcoded
+# Mini rect: the internal seat is the panel's LOGICAL (post-rotation) size,
+# stacked below the external seat and centered under it. gamescope re-clamps
+# the final placement itself (PLACE_WIN=steam), these args just avoid a
+# visible misplacement flash before that clamp lands.
+eval "$(/usr/libexec/nebel/device-env)"
+SEAT_W="${NEBEL_PANEL_NATIVE_WIDTH:-1080}"
+SEAT_H="${NEBEL_PANEL_NATIVE_HEIGHT:-1920}"
+case "${NEBEL_PANEL_ORIENTATION:-normal}" in
+    left|right) SEAT_W="${NEBEL_PANEL_NATIVE_HEIGHT:-1920}"; SEAT_H="${NEBEL_PANEL_NATIVE_WIDTH:-1080}" ;;
+esac
+EXT_W=1920; EXT_H=1080
+SEAT_X=$(( (EXT_W - SEAT_W) / 2 )); (( SEAT_X < 0 )) && SEAT_X=0
+SEAT_Y=$EXT_H
+python3 "$DUALSCREEN_DIR/xplace.py" "$WID" "$SEAT_X" "$SEAT_Y" "$SEAT_W" "$SEAT_H"
 
 # 4. render the contextual SteamUI view into the window via React from SharedJSContext
 sleep 1

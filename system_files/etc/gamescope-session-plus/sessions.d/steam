@@ -171,9 +171,35 @@ if [[ "${NEBEL_DISPLAY_MODE:-}" == "duo" ]]; then
         printf '%s %s\n' "$duo_connector" duo > "$NEBEL_DISPLAY_MARKER"
         export GAMESCOPE_DUAL_OUTPUT=1
         export GAMESCOPE_DUAL_OUTPUT_DESKTOP=1
-        export GAMESCOPE_DUAL_OUTPUT_ROT_A=right
-        export GAMESCOPE_DUAL_OUTPUT_ROT_B=left
-        export GAMESCOPE_DUAL_OUTPUT_TOUCH_ROT_A=270
+        # The scene canvas is composed pre-rotated for the internal DSI
+        # panel (portrait native, direct scanout), so each seat's scatter
+        # pass must apply that panel's own mounting rotation, and the
+        # external seat needs the INVERSE turn to come back to landscape.
+        # Hardcoding right/left only fits panels mounted "right" (Mini);
+        # on a "left" panel (RP6) the external screen lands upside down.
+        # Touch rotation follows the internal panel the same way
+        # (right=270, left=90, matching wlserver's touch transform).
+        case "${NEBEL_PANEL_ORIENTATION:-right}" in
+            left)
+                export GAMESCOPE_DUAL_OUTPUT_ROT_A=left
+                export GAMESCOPE_DUAL_OUTPUT_ROT_B=right
+                export GAMESCOPE_DUAL_OUTPUT_TOUCH_ROT_A=90
+                ;;
+            right)
+                export GAMESCOPE_DUAL_OUTPUT_ROT_A=right
+                export GAMESCOPE_DUAL_OUTPUT_ROT_B=left
+                export GAMESCOPE_DUAL_OUTPUT_TOUCH_ROT_A=270
+                ;;
+            *)
+                export GAMESCOPE_DUAL_OUTPUT_ROT_A=none
+                export GAMESCOPE_DUAL_OUTPUT_ROT_B=none
+                export GAMESCOPE_DUAL_OUTPUT_TOUCH_ROT_A=0
+                ;;
+        esac
+        # Manual overrides for oddball panels/mounts.
+        [[ -n "${NEBEL_GAMESCOPE_DUAL_ROT_A:-}" ]] && export GAMESCOPE_DUAL_OUTPUT_ROT_A="$NEBEL_GAMESCOPE_DUAL_ROT_A"
+        [[ -n "${NEBEL_GAMESCOPE_DUAL_ROT_B:-}" ]] && export GAMESCOPE_DUAL_OUTPUT_ROT_B="$NEBEL_GAMESCOPE_DUAL_ROT_B"
+        [[ -n "${NEBEL_GAMESCOPE_DUAL_TOUCH_ROT_A:-}" ]] && export GAMESCOPE_DUAL_OUTPUT_TOUCH_ROT_A="$NEBEL_GAMESCOPE_DUAL_TOUCH_ROT_A"
         export GAMESCOPE_DUAL_OUTPUT_PLACE_WIN=steam
     fi
 fi

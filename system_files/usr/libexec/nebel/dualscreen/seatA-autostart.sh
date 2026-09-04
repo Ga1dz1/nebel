@@ -35,11 +35,15 @@ python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "fetch(\"http://127.0.0.1:4
 # Steam only recreates its own windows. While two outputs are present,
 # recreate the card if it disappeared. The JS patches die with the CEF
 # context, so re-install them before recreating.
+# The card is matched by its NebelSeatB title, NOT by geometry: the seat-A
+# rect differs per device (Mini 1240x1080+340+1080, RP6 1920x1080+0+1080)
+# and gamescope re-clamps the placement anyway, so a hardcoded rect makes
+# the loop recreate the window forever on any other panel.
 while true; do
     sleep 5
     outs=$(DISPLAY=:0 python3 "$DUALSCREEN_DIR/xrrq_count.py" 2>/dev/null || echo 1)
     [ "$outs" = "2" ] || continue
-    if DISPLAY=:0 python3 "$DUALSCREEN_DIR/xmove.py" 2>/dev/null | grep -q '1240x1080+340+1080'; then
+    if DISPLAY=:0 python3 "$DUALSCREEN_DIR/xmove.py" 2>/dev/null | grep -q "'NebelSeatB'"; then
         continue
     fi
     curl -sf http://127.0.0.1:8080/json 2>/dev/null | grep -q SharedJSContext || continue
