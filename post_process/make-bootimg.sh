@@ -46,10 +46,15 @@ CMDLINE="${OPTIONS_LINE}"
 # the kernel is last-wins per karg, and BIB's subvol= rootflags plus our kargs.d
 # mount-opts rootflags arrive as separate tokens - unmerged, the later one drops
 # subvol=/root and the boot dies in the initramfs emergency shell.
+#
+# Also drop "gpt": it is only wanted on internal GPT installs with a damaged
+# primary GPT. SD images are converted to MBR by finalize-nebel-image.sh, and
+# with "gpt" the kernel would adopt a stale backup GPT at the end of a larger,
+# previously-GPT card instead of the image's MBR -> dracut emergency.
 _ostree=""; _rest=""; _rootflags=""
 for _t in ${CMDLINE}; do
     case "${_t}" in
-        console=ttyS0) continue ;;
+        console=ttyS0|gpt) continue ;;
         ostree=*) _ostree="${_t}" ;;
         rootflags=*) _rootflags="${_rootflags}${_rootflags:+,}${_t#rootflags=}" ;;
         *) _rest="${_rest} ${_t}" ;;

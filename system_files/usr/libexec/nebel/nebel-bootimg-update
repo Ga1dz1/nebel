@@ -43,6 +43,18 @@ if [ -f "${KERNEL_OUT}" ] && [ "$(cat "${STAMP}" 2>/dev/null || true)" = "${id}"
     exit 0
 fi
 
+# The "gpt" karg exists for internal GPT installs whose primary GPT header was
+# left invalid by Retroid's tooling (the kernel then falls back to the backup
+# GPT). On our SD cards (MBR label) it backfires: a stale backup GPT at the end
+# of a larger, previously-GPT card wins over the image's MBR, the image's own
+# partitions never appear and the boot dies in dracut emergency
+# ("/dev/disk/by-uuid/<root> does not exist", seen live on RP6 + 1TB card).
+# Strip the token when the ESP's disk is MBR-labelled.
+esp_src=$(findmnt -rn -o SOURCE "${ESP}" 2>/dev/null || true)
+esp_disk="/dev/$(lsblk -no PKNAME "${esp_src}" 2>/dev/null || true)"
+esp_pttype=""
+[ -b "${esp_disk}" ] && esp_pttype=$(lsblk -dn -o PTTYPE "${esp_disk}" 2>/dev/null || true)
+
 # Fit the header-v0 512-byte cmdline: drop the serial console and redundant
 # Btrfs defaults, then put ostree first.
 #
@@ -55,6 +67,7 @@ ostree_arg=""; rest=""; rootflags=""
 for t in ${options}; do
     case "${t}" in
         console=ttyS0) continue ;;
+        gpt) [ "${esp_pttype}" = "dos" ] && continue ;;
         ostree=*) ostree_arg="${t}" ;;
         rootflags=*) rootflags="${rootflags}${rootflags:+,}${t#rootflags=}" ;;
         *) rest="${rest} ${t}" ;;
