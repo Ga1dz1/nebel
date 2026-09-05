@@ -106,4 +106,6 @@ pigz -f "-${GZIP_LEVEL}" -p "$(nproc)" -c "${RAW_IMAGE}" > "${OUT}"
 rm -f "${RAW_IMAGE}"
 
 echo "Built: ${OUT}"
-echo "Flash to SD with:  zcat ${OUT} | sudo dd of=/dev/sdX bs=4M conv=fsync status=progress"
+echo "Flash to SD with:  ./post_process/flash-sd.sh ${OUT} /dev/sdX"
+echo "(flash-sd.sh also wipes the card's tail: a stale backup GPT there is picked up"
+echo " by the kernel's gpt karg and the boot dies in the dracut emergency shell)"
