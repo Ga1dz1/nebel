@@ -1,6 +1,9 @@
 [Unit]
 Description=nebel power policy daemon
 StartLimitIntervalSec=0
+# Apply profile/IRQ affinity before the session starts so the greeter and
+# gamescope never run on the wrong CPU set or power profile.
+Before=display-manager.service
 
 [Service]
 Type=dbus
