@@ -35,10 +35,47 @@ if [[ -n "$profile" && -r "$device_dir/$profile.conf" ]]; then
     source "$device_dir/$profile.conf"
 fi
 
+# CPU topology by SoC (device conf may override). Cpulists are ordered:
+# presets expand in host order. Empty NEBEL_IRQ_CORES means no IRQ
+# restriction. (Topology block ported from armada-os device-env.)
+case "${NEBEL_SOC_CLASS:-}" in
+    SM8250)
+        : "${NEBEL_LITTLE_CORES=0-3}"
+        : "${NEBEL_BIG_CORES=4-7}"
+        : "${NEBEL_PRIME_CORES=7}"
+        # references run SM8250 unrestricted; the A55s are too weak to
+        # carry all IRQ handling
+        : "${NEBEL_IRQ_CORES=}"
+        ;;
+    SM8550)
+        : "${NEBEL_LITTLE_CORES=0-2}"
+        : "${NEBEL_BIG_CORES=3-7}"
+        : "${NEBEL_PRIME_CORES=7}"
+        # The A740 GMU wedges if a GPU interrupt wakes CPU 0-2 out of power collapse
+        : "${NEBEL_IRQ_CORES=3-7}"
+        ;;
+    SM8650)
+        : "${NEBEL_LITTLE_CORES=0-1}"
+        : "${NEBEL_BIG_CORES=2-7}"
+        : "${NEBEL_PRIME_CORES=7}"
+        : "${NEBEL_IRQ_CORES=0-1}"
+        ;;
+    SM8750)
+        : "${NEBEL_LITTLE_CORES=}"
+        : "${NEBEL_BIG_CORES=0-7}"
+        : "${NEBEL_PRIME_CORES=6-7}"
+        : "${NEBEL_IRQ_CORES=}"
+        ;;
+esac
+
 vars=(
     NEBEL_DEVICE_ID
     NEBEL_DEVICE_NAME
     NEBEL_SOC_CLASS
+    NEBEL_LITTLE_CORES
+    NEBEL_BIG_CORES
+    NEBEL_PRIME_CORES
+    NEBEL_IRQ_CORES
     NEBEL_SUSPEND_MODE
     NEBEL_SUSPEND_WATCHDOG_MINUTES
     NEBEL_PRIMARY_CONNECTOR

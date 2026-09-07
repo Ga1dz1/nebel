@@ -31,7 +31,9 @@ kargs = [
     "fw_devlink.strict=1",
     "pcie_ports=compat",
 
-    "irqaffinity=0-1",
+    # No irqaffinity= karg: IRQ routing is per-SoC (SM8550 needs IRQs off the
+    # little cluster, SM8250 unrestricted), so nebel-powerd applies it at
+    # runtime from NEBEL_IRQ_CORES instead of an image-wide karg.
 
     # Waydroid's LMKD wants system-wide PSI stats, but not the legacy cgroup
     # v1-style "pressure" controller hooked into the hierarchy (conflicts

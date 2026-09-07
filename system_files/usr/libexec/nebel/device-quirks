@@ -35,10 +35,11 @@ if [[ "${NEBEL_SUSPEND_MODE:-fake}" != "fake" ]]; then
     rm -f /etc/NetworkManager/ignore-sleep
 fi
 
-# SM8550 (A740): CPU0's deep power-collapse C-state wedges the GMU; disable it.
-if [[ "${NEBEL_SOC_CLASS:-}" == "SM8550" ]]; then
-    echo 1 >/sys/devices/system/cpu/cpu0/cpuidle/state1/disable
-fi
+# SM8550 (A740): the GMU wedge from CPU0's deep C-state is now prevented by
+# keeping IRQs off the little cluster entirely (nebel-powerd applies
+# NEBEL_IRQ_CORES=3-7 at runtime, from device-env). The old workaround -
+# permanently disabling cpu0 cpuidle state1 - kept the little-core rail up
+# and cost idle power, so it is gone. (armada-os e2d9802.)
 
 # RP6: force s2idle for NEBEL_SUSPEND_MODE=mem. The device profiles all intend
 # s2idle (see the comments in system_files/usr/lib/nebel/devices/*.conf), and

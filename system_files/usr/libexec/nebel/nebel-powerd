@@ -144,6 +144,21 @@ def ints_from_file(path):
     return sorted(int(v) for v in read_text(path).split() if v.isdigit())
 
 
+def parse_cpulist(value):
+    """'0-2,7' -> [0, 1, 2, 7]."""
+    cpus = []
+    for part in str(value).split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            lo, hi = part.split("-", 1)
+            cpus.extend(range(int(lo), int(hi) + 1))
+        else:
+            cpus.append(int(part))
+    return cpus
+
+
 def clamp(value, low, high):
     return max(low, min(high, value))
 
@@ -224,6 +239,7 @@ class NebelPower:
         self.apply_profile()
         if self.gpu_level == "manual" and self.manual_gpu_clock:
             self.set_gpu_manual_clock(self.manual_gpu_clock)
+        self.apply_irq_affinity()
         self.fan_tick()
         GLib.timeout_add_seconds(3, self.fan_tick)
         self.power_source_tick()
@@ -510,6 +526,41 @@ class NebelPower:
             write_text(policy / "scaling_max_freq", self.choose_at_most(freqs, target))
         if self.gpu and self.gpu_level == "auto":
             self.apply_gpu_auto(settings)
+
+    def irq_mask(self):
+        cpus = []
+        cpulist = self.env.get("NEBEL_IRQ_CORES", "")
+        if cpulist:
+            try:
+                cpus = parse_cpulist(cpulist)
+            except ValueError as exc:
+                print(f"nebel-powerd: bad irq_cores {cpulist!r}: {exc}", file=sys.stderr)
+        if not cpus:
+            cpus = ints_from_file("/sys/devices/system/cpu/online")
+        return sum(1 << c for c in cpus)
+
+    def apply_irq_affinity(self):
+        # Runtime replacement for the irqaffinity= karg (ported from
+        # armada-powerd). Chained/per-cpu IRQs refuse the write - ignored.
+        # SM8550: keeps IRQs off CPU 0-2 so a GPU interrupt cannot wake the
+        # little cluster out of power collapse (GMU wedge).
+        if not self.env.get("NEBEL_IRQ_CORES", ""):
+            return
+        mask = f"{self.irq_mask():x}"
+        try:
+            Path("/proc/irq/default_smp_affinity").write_text(f"{mask}\n")
+        except OSError:
+            pass
+        moved = 0
+        for irq_dir in Path("/proc/irq").iterdir():
+            if not irq_dir.name.isdigit():
+                continue
+            try:
+                (irq_dir / "smp_affinity").write_text(f"{mask}\n")
+                moved += 1
+            except OSError:
+                continue
+        print(f"nebel-powerd: irq affinity {mask} ({moved} irqs)", file=sys.stderr)
 
     def resolved_cpu_caps(self):
         settings = self.profile_settings()
