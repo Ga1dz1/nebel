@@ -11,6 +11,7 @@ import re
 import resource
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -20,6 +21,43 @@ BASE_FEX_CONFIG = pathlib.Path("/usr/share/fex-emu/Config.json")
 TWEAKS_CONFIG = pathlib.Path("/etc/nebel/game-tweaks.json")
 FEX_PROFILES_CONFIG = pathlib.Path("/usr/share/nebel/fex-profiles.json")
 PROTON_INJECT_SRC = pathlib.Path("/usr/share/nebel/proton-inject/x86_64-linux-gnu")
+SYSTEM_EXEC_PATHS = ("/usr/bin", "/usr/local/bin", "/bin")
+
+
+def is_appimage(command):
+    try:
+        fd = os.open(command, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+    except OSError:
+        return False
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return False
+        header = os.read(fd, 11)
+    except OSError:
+        return False
+    finally:
+        os.close(fd)
+
+    return (
+        len(header) == 11
+        and header[:4] == b"\x7fELF"
+        and header[8:10] == b"AI"
+        and header[10] in (1, 2)
+    )
+
+
+def prepare_appimage_path(args):
+    # AppImage runtimes resolve their tools via PATH; Steam game mode hands
+    # shortcuts an empty/bare PATH, so put the system exec dirs first.
+    if not any(is_appimage(arg) for arg in args):
+        return
+
+    paths = [*SYSTEM_EXEC_PATHS]
+
+    if existing := os.environ.get("PATH"):
+        paths.append(existing)
+
+    os.environ["PATH"] = os.pathsep.join(paths)
 
 
 def appid():
@@ -229,18 +267,16 @@ def runtime_config_dir():
     return pathlib.Path("/tmp") / f"nebel-fex-{os.getuid()}"
 
 
-# FEX inside pressure-vessel sees the container's own /usr, so absolute /usr
-# paths in the config (RootFS, thunk dirs) are dead ends there; the host fs is
-# reachable under /run/host instead. Non-container launches keep host paths.
-CONTAINER_PATH_KEYS = ("RootFS", "ThunkGuestLibs", "ThunkHostLibs")
+# Each FEX resolves rootfs/thunk paths from its own global or template config;
+# forcing the system ones onto the Steam FEX depot (Proton 11) empties its
+# SLR4 rootfs (upstream armada). Drop them from the generated config.
+FOREIGN_FEX_PATH_KEYS = ("RootFS", "ThunkGuestLibs", "ThunkHostLibs")
 
 
-def containerize_config_paths(config):
+def strip_foreign_fex_paths(config):
     cfg = config.get("Config", {})
-    for key in CONTAINER_PATH_KEYS:
-        value = cfg.get(key)
-        if isinstance(value, str) and value.startswith("/usr/"):
-            cfg[key] = "/run/host" + value
+    for key in FOREIGN_FEX_PATH_KEYS:
+        cfg.pop(key, None)
 
 
 def resolve_fex_config(settings, profiles):
@@ -260,8 +296,7 @@ def apply_fex(settings, game_id, profiles, env):
     fex_config = resolve_fex_config(settings, profiles)
     config.setdefault("Config", {}).update({k: v for k, v in fex_config.items() if k in allowed})
     config["ThunksDB"] = thunk_settings(settings, config.get("ThunksDB", {}).keys())
-    if os.environ.get("STEAM_COMPAT_DATA_PATH"):
-        containerize_config_paths(config)
+    strip_foreign_fex_paths(config)
 
     config_dir = runtime_config_dir()
     config_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -854,6 +889,8 @@ def main():
         args = args + extra_launch_args(settings)
     except Exception as exc:
         print(f"nebel-game-launch: extra launch args skipped: {exc}", file=sys.stderr)
+
+    prepare_appimage_path(args)
 
     try:
         apply_fex(settings, game_id, contract["profiles"], os.environ)
