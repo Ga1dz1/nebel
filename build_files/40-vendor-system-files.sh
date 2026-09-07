@@ -12,6 +12,60 @@ sha256sum -c <<'EOF'
 1bb1feec68a13da18d581aa2c631798f86f6bc10b55d587b2dd31446a0f8a203  /usr/libexec/nebel/gki/generate_gki_certificate.py
 EOF
 
+# ROCKNIX ABL payload staging (ported from upstream armada). Needs abl/ in the
+# build context (ctx stage of the Containerfile: COPY abl /abl/). Until that
+# line lands, skip staging: nebel-abl-update then no-ops on the missing
+# manifest instead of flashing on any hash mismatch like its predecessor did.
+if [ -r /ctx/abl/release.env ]; then
+    source /ctx/abl/release.env
+    abl_releases=/ctx/abl/releases.tsv
+    abl_archive=/tmp/rocknix-abl.tar.gz
+    curl --connect-timeout 30 --retry 3 -fsSL -o "${abl_archive}" \
+        "https://github.com/ROCKNIX/abl/releases/download/v${NEBEL_ABL_VERSION}/rocknix-abl-v${NEBEL_ABL_VERSION}.tar.gz"
+    abl_src=/tmp/rocknix-abl
+    mkdir -p "${abl_src}"
+    tar -xzf "${abl_archive}" -C "${abl_src}" --strip-components=1
+    manifest=/usr/lib/nebel/abl/manifest
+    install -Dpm 0644 /dev/null "${manifest}"
+    install -Dpm 0644 "${abl_releases}" /usr/lib/nebel/abl/releases.tsv
+    printf 'NEBEL_ABL_VERSION=%s\nNEBEL_ABL_AUTO=%s\n' \
+        "${NEBEL_ABL_VERSION}" "${NEBEL_ABL_AUTO}" >> "${manifest}"
+    for soc in SM8250 SM8550 SM8650 SM8750; do
+        approved=$(NEBEL_ABL_RELEASES="${abl_releases}" \
+            python3 /usr/lib/nebel/abl-version --lookup "${NEBEL_ABL_VERSION}" "${soc}") || {
+            echo "ERROR: missing approved ${NEBEL_ABL_VERSION} ${soc} payload" >&2
+            exit 1
+        }
+        read -r approved_size approved_hash <<<"${approved}"
+        payload="/usr/lib/nebel/abl/abl_signed-${soc}.elf"
+        install -Dpm 0644 "${abl_src}/abl_signed-${soc}.elf" \
+            "${payload}"
+        [[ $(stat -c %s "${payload}") == "${approved_size}" ]] || {
+            echo "ERROR: ${soc} payload size does not match the approved release" >&2
+            exit 1
+        }
+        actual_hash=$(sha256sum "${payload}" | cut -d ' ' -f 1)
+        [[ ${actual_hash} == "${approved_hash}" ]] || {
+            echo "ERROR: ${soc} payload hash does not match the approved release" >&2
+            exit 1
+        }
+        identity=$(NEBEL_ABL_RELEASES=/usr/lib/nebel/abl/releases.tsv \
+            python3 /usr/lib/nebel/abl-version --with-soc "${payload}")
+        [[ ${identity} == "${NEBEL_ABL_VERSION} ${soc}" ]] || {
+            echo "ERROR: ${soc} payload catalog identity is ${identity:-unknown}" >&2
+            exit 1
+        }
+        printf 'NEBEL_ABL_SHA256_%s=%s\n' "${soc}" \
+            "${actual_hash}" \
+            >> "${manifest}"
+    done
+    rm -f "${abl_archive}"
+    rm -rf "${abl_src}"
+else
+    echo "WARNING: /ctx/abl/release.env missing; skipping ABL payload staging" >&2
+    echo "WARNING: add 'COPY abl /abl/' to the Containerfile ctx stage to enable it" >&2
+fi
+
 chmod 0755 /usr/libexec/nebel/*
 chmod 0755 /usr/libexec/nebel/dualscreen /usr/libexec/nebel/dualscreen/*
 chmod 0755 /usr/libexec/os-session-select
@@ -44,7 +98,8 @@ systemctl enable nebel-steamapps.service
 systemctl enable nebel-powerd.service
 systemctl enable nebel-audio-resume.service
 systemctl enable nebel-audio-heal.service
-systemctl enable nebel-abl-update.service
+# No nebel-abl-update.service: ABL writes run only from the shutdown finalizer
+# (nebel-bootimg-sync.service ExecStop) gated by NEBEL_ABL_AUTO, or manually.
 systemctl enable nebel-desktop-hotkeys.service
 systemctl enable nebel-led-notify.service
 systemctl enable nebel-steamui-watchdog.service
