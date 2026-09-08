@@ -100,15 +100,16 @@ def node_has_paddles(ev):
     """True only if the gpio-keys node actually carries the RP6 back paddles
     (BTN_C/BTN_Z). Other devices (RP Mini...) route plain volume/power keys
     through a node with the same name/phys; grabbing those would steal their
-    buttons and expose a phantom gamepad, so capability-check first."""
+    buttons and expose a phantom gamepad, so capability-check first.
+
+    The sysfs bitmap prints one unpadded hex word per 64 bits, highest word
+    first, zero words trimmed - decode word-by-word; a naive
+    replace(" ","")+int() misaligns every word after the first."""
     try:
-        caps = int(
-            (ev / "device" / "capabilities" / "key")
-            .read_text()
-            .strip()
-            .replace(" ", ""),
-            16,
-        )
+        words = (ev / "device" / "capabilities" / "key").read_text().split()
+        caps = 0
+        for i, word in enumerate(reversed(words)):
+            caps |= int(word, 16) << (64 * i)
     except (OSError, ValueError):
         return False
     return bool((caps >> BTN_C) & 1) or bool((caps >> BTN_Z) & 1)
