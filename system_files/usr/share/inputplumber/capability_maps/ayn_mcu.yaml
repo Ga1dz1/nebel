@@ -155,6 +155,19 @@ mapping:
       gamepad:
         button: LeftPaddle1
 
+  # Volume-up rocker shares the gpio-keys node on RP6; InputPlumber grabs
+  # that node for the paddles, so re-emit KEY_VOLUMEUP on the keyboard
+  # target to keep volume up working. (Volume-down lives on pmic_resin,
+  # a node we don't grab.)
+  - name: Volume Up
+    source_events:
+      - evdev:
+          event_type: KEY
+          event_code: KEY_VOLUMEUP
+          value_type: button
+    target_event:
+      keyboard: KeyVolumeUp
+
   - name: Right Stick
     source_events:
       - evdev:
