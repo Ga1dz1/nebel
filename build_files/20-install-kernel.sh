@@ -19,6 +19,12 @@ depmod -a "${KVER}" -b /
 mkdir -p /usr/lib/firmware
 cp -a /ctx/system_files/usr/lib/firmware/. /usr/lib/firmware/
 
+# Remoteproc (ADSP/CDSP) firmware names come from the DT, not MODULE_FIRMWARE,
+# so dracut can't introspect them; the conf lists them explicitly. Stage it
+# before dracut runs.
+mkdir -p /usr/lib/dracut/dracut.conf.d
+cp -a /ctx/system_files/usr/lib/dracut/dracut.conf.d/. /usr/lib/dracut/dracut.conf.d/
+
 # Plymouth theme must exist before dracut bakes the splash into initramfs.
 mkdir -p /usr/share/plymouth/themes
 cp -a /ctx/system_files/usr/share/plymouth/themes/nebel /usr/share/plymouth/themes/
