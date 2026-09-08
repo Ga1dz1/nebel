@@ -43,6 +43,17 @@ VBAT_GPU_CAPS = (
     (0, 490_000_000),
 )
 
+# Stock GPU ceiling per SoC class, applied to AUTO profiles only. The
+# kernel device tree carries overclock OPP points above the
+# vendor-qualified top (SM8550/qcs8550: stock ceiling 680 MHz, OC ladder
+# up to 1000 MHz). Auto power profiles must not cross the vendor ceiling
+# on their own - overclocking is opt-in via an explicit manual GPU clock
+# (QAM slider / `nebel-power gpu-manual`). The battery cap above still
+# applies on top of everything, manual included.
+STOCK_GPU_CAP = {
+    "SM8550": 680_000_000,
+}
+
 
 def normalize_profile(profile):
     value = profile.strip().lower()
@@ -579,7 +590,8 @@ class NebelPower:
         if not freqs:
             return (0, 0)
         settings = self.profile_settings()
-        max_freq = self.choose_at_most(freqs, int(freqs[-1] * settings["gpu_max"]))
+        max_freq = self.clamp_gpu_target(
+            freqs, self.choose_at_most(freqs, int(freqs[-1] * settings["gpu_max"])))
         min_target = int(freqs[-1] * settings["gpu_min"])
         min_freq = self.choose_at_least(freqs, min_target) if min_target else freqs[0]
         return (min(min_freq, max_freq), max_freq)
@@ -672,7 +684,11 @@ class NebelPower:
                         return cap
         return 0
 
-    def clamp_gpu_target(self, freqs, target):
+    def clamp_gpu_target(self, freqs, target, manual=False):
+        if not manual:
+            stock = STOCK_GPU_CAP.get(self.cpu_device_class(), 0)
+            if stock:
+                target = min(target, self.choose_at_most(freqs, stock))
         cap = self.battery_gpu_cap()
         if cap:
             return min(target, self.choose_at_most(freqs, cap))
@@ -718,9 +734,11 @@ class NebelPower:
         hz = self.closest(freqs, mhz * 1000000)
         # Keep the user's requested clock as state; clamp only what actually
         # gets written, so the full value is restored once the charger is
-        # back (battery GPU cap).
+        # back (battery GPU cap). The manual clock is the opt-in overclock
+        # path: it bypasses the stock ceiling (STOCK_GPU_CAP), only the
+        # battery cap still applies.
         self.manual_gpu_clock = hz // 1000000
-        hz = self.clamp_gpu_target(freqs, hz)
+        hz = self.clamp_gpu_target(freqs, hz, manual=True)
         write_text(self.gpu / "min_freq", freqs[0])
         write_text(self.gpu / "governor", "userspace")
         write_text(self.gpu / "max_freq", hz)
