@@ -165,6 +165,44 @@ resume_inputplumber() {
     systemctl start inputplumber
 }
 
+# USB role switch (ported from shuuri-labs/pocknix-os's usb-role-sleep-pre/post,
+# their shared sleep.d hooks 002-usb-role): left to its own devices, the
+# dwc3/type-c stack renegotiates the data role on resume and holds dwc3 and
+# ufshcd resume ~10s each. Forcing role=none before the freeze makes the stack
+# re-resolve instead; TCPM/pmic_glink reverts a written value within ~300ms
+# anyway - forcing the re-resolution is the operative part - so verify once
+# and re-assert if the typec stack already took it back. The saved role is
+# restored on resume.
+suspend_usb_role() {
+    local r name
+    for r in /sys/class/usb_role/*-role-switch/role; do
+        [[ -f "$r" ]] || continue
+        name="$(basename "$(dirname "$r")")"
+        cat "$r" > "$SAVE_DIR/usb-role.${name}" 2>/dev/null || continue
+        echo none > "$r" 2>/dev/null || true
+        sleep 0.3
+        if [[ "$(cat "$r" 2>/dev/null)" != "none" ]]; then
+            log "usb role ${name} reverted by typec stack; re-asserting none"
+            echo none > "$r" 2>/dev/null || true
+            sleep 0.2
+            [[ "$(cat "$r" 2>/dev/null)" != "none" ]] && \
+                log "usb role ${name} re-assert lost; suspending with role=$(cat "$r" 2>/dev/null)"
+        fi
+    done
+}
+
+resume_usb_role() {
+    local r name saved
+    for r in /sys/class/usb_role/*-role-switch/role; do
+        [[ -f "$r" ]] || continue
+        name="$(basename "$(dirname "$r")")"
+        saved="$SAVE_DIR/usb-role.${name}"
+        [[ -f "$saved" ]] || continue
+        cat "$saved" > "$r" 2>/dev/null || true
+        rm -f "$saved"
+    done
+}
+
 # InputPlumber can lose its VIRTUAL (uinput/uhid) target devices across a real
 # suspend while looking perfectly healthy otherwise (observed on RPmini: the
 # composite device was still up with the source grabbed, but the deck-uhid
@@ -291,6 +329,7 @@ case "$1" in
         # aborts the WHOLE suspend, so this needs to be clear before any of
         # the rest of this hook (or the kernel's own suspend) bothers.
         suspend_inputplumber_if_vhci
+        suspend_usb_role
         suspend_epoch_record
         suspend_sdcards
         # Quiesce CPU/GPU clocks and stop the fan before the kernel freezes
@@ -371,6 +410,7 @@ case "$1" in
         fi
 
         resume_radios
+        resume_usb_role
         resume_inputplumber
         resume_inputplumber_check
         resume_sdcards
