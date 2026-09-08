@@ -322,6 +322,48 @@ pwrkey_irq_count() {
     grep -i "pwrkey\|pwr_key\|power.button\|key_power" /proc/interrupts 2>/dev/null
 }
 
+# Battery drain per sleep cycle (ported from pocknix-os's drain-log sleep.d
+# hooks, packages/shared/pocknix-bsp-common/drain-log-pre|post): record
+# capacity/charge_counter before the freeze, and on resume report how much
+# charge the sleep actually cost - the number that answers "is this device's
+# sleep drain normal" without anyone having to babysit a battery graph.
+# Realtime (date +%s), not monotonic: the monotonic clock stops during s2idle,
+# and so does the RTC-less epoch this is differenced against - the existing
+# $SAVE_DIR/epoch is realtime already.
+batt_record() {
+    local b
+    for b in /sys/class/power_supply/*; do
+        [[ "$(cat "$b/type" 2>/dev/null)" == "Battery" ]] || continue
+        printf '%s %s\n' "$(cat "$b/capacity" 2>/dev/null || echo '?')" \
+            "$(cat "$b/charge_counter" 2>/dev/null || true)" > "$SAVE_DIR/battery"
+        return 0
+    done
+}
+
+# Echoes a one-line drain summary; the caller logs it and files it in the
+# per-cycle diag log.
+batt_drain_report() {
+    [[ -r "$SAVE_DIR/battery" ]] || return 0
+    local cap0 cc0 cap1='?' cc1='' then=0 now secs b
+    read -r cap0 cc0 < "$SAVE_DIR/battery"
+    for b in /sys/class/power_supply/*; do
+        [[ "$(cat "$b/type" 2>/dev/null)" == "Battery" ]] || continue
+        cap1="$(cat "$b/capacity" 2>/dev/null || echo '?')"
+        cc1="$(cat "$b/charge_counter" 2>/dev/null || true)"
+        break
+    done
+    now="$(date +%s)"
+    [[ -r "$SAVE_DIR/epoch" ]] && then="$(cat "$SAVE_DIR/epoch" 2>/dev/null || echo 0)"
+    secs=$(( now - then ))
+    local detail="${cap0}% -> ${cap1}%"
+    if [[ "${cc0:-}" =~ ^[0-9]+$ && "${cc1:-}" =~ ^[0-9]+$ ]]; then
+        local mah=$(( (cc0 - cc1) / 1000 )) ma=0
+        (( secs > 0 )) && ma=$(( mah * 3600 / secs ))
+        detail="${detail} (${mah} mAh, ${ma} mA avg)"
+    fi
+    echo "slept ${secs}s, battery ${detail}"
+}
+
 case "$1" in
     pre)
         mkdir -p /run/nebel "$SAVE_DIR" "$DIAG_DIR"
@@ -331,6 +373,7 @@ case "$1" in
         suspend_inputplumber_if_vhci
         suspend_usb_role
         suspend_epoch_record
+        batt_record
         suspend_sdcards
         # Quiesce CPU/GPU clocks and stop the fan before the kernel freezes
         # userspace; on resume the matching call restores the profile.
@@ -391,11 +434,16 @@ case "$1" in
             timeout 2 evtest --grab "$pdev" >/dev/null 2>&1
         fi
 
+        drain_line="$(batt_drain_report || true)"
+        [[ -n "$drain_line" ]] && log "$drain_line"
+
         if [[ -r "$DIAG_LOG_PATH_FLAG" ]]; then
             { read -r diag_log; read -r pre_ts; } < "$DIAG_LOG_PATH_FLAG"
             if [[ -n "${diag_log:-}" ]]; then
                 {
                     echo "=== post-resume $(date -Is) ==="
+                    echo "-- battery drain over the sleep --"
+                    echo "${drain_line:-(no battery data recorded)}"
                     echo "-- power-key IRQ count after --"
                     pwrkey_irq_count
                     echo "-- last wakeup IRQ the kernel recorded --"
