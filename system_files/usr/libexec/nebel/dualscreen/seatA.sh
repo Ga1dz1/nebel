@@ -2,10 +2,16 @@
 # seatA.sh — contextual second native Steam UI window on the internal
 # screen (seat A; geometry derived from the device panel description at
 # placement time). Shows AppDetails of the app focused/open/running on the main screen (polls tempNavStore route + game list selection + running apps every 1s); falls back to a Loading placeholder until collectionStore is ready.
+# While a game runs, the user's seat-content setting (/etc/nebel/seat-a.conf,
+# Decky Display tab) can replace the card with the QAM or the pause menu.
 # Runs inside the game-mode session while dual-output (duo mode) is active.
 set -e
 DUALSCREEN_DIR="/usr/libexec/nebel/dualscreen"
 CEFEVAL="python3 $DUALSCREEN_DIR/cefeval.py"
+
+# "Second screen off" in settings (/etc/nebel/seat-a.conf, written by the
+# Decky Display tab): nothing to create or place.
+[ "$(sed -n 's/^CONTENT=//p' /etc/nebel/seat-a.conf 2>/dev/null | head -1)" = "off" ] && exit 0
 
 # snapshot existing top-level X windows
 BEFORE=$(python3 "$DUALSCREEN_DIR/xmove.py" | awk '{print $1}' | sort)
@@ -61,6 +67,15 @@ SEAT_Y=$EXT_H
 python3 "$DUALSCREEN_DIR/xplace.py" "$WID" "$SEAT_X" "$SEAT_Y" "$SEAT_W" "$SEAT_H"
 
 # 4. render the contextual SteamUI view into the window via React from SharedJSContext
+# "Full Steam on the second screen" (FULL_STEAM=1 in seat-a.conf): navigate the
+# placed window to the main gamepadui URL and let the SPA render itself - the
+# companion render would stomp it. Experimental: whether the gamepad UI boots
+# standalone in a second window depends on the Steam client build.
+if [ "$(sed -n 's/^FULL_STEAM=//p' /etc/nebel/seat-a.conf 2>/dev/null | head -1)" = "1" ]; then
+  echo "== navigate to full steam ui =="
+  $CEFEVAL SharedJSContext "void((function(){try{if(!window.__req)webpackChunksteamui.push([[700000+Math.floor(Math.random()*99999)],{},(r)=>{window.__req=r}]);const w=window.__seatB;const m=window.__req(61236).oy.WindowStore.GamepadUIMainWindowInstance.m_BrowserWindow.window;if(w&&!w.closed&&m)w.location.href=String(m.location.href);}catch(e){}})()); \"navigated\"" || true
+  exit 0
+fi
 sleep 1
 echo "== render contextual view =="
 $CEFEVAL SharedJSContext "void($(cat "$DUALSCREEN_DIR/seatA_render.js")); \"started\""

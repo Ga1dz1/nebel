@@ -18,6 +18,18 @@
       console.error = function(...args){ try{ window.__errs.push(args.map(x=>String(x && x.stack || x)).join(" ").slice(0,1500)); }catch(_){}; return oe.apply(this,args); };
     }
     const e = React.createElement;
+    // --- seat content setting (Decky Display tab -> /etc/nebel/seat-a.conf, served by seatctl) ---
+    // While a game runs on the main screen: card (default) | qam | pause.
+    // ("off" never reaches here - autostart/seatA.sh skip creating the window.)
+    const fetchSeatCfg = ()=>{ try { fetch("http://127.0.0.1:48717/config").then(r=>r.json()).then(j=>{ window.__seatACfg = j; }).catch(()=>{}); } catch(_) {} };
+    fetchSeatCfg();
+    // --- error boundary: a best-effort steamui component (pause menu) must
+    // not blank the seat window if this Steam build's export differs ---
+    class SeatBoundary extends React.Component {
+      constructor(p){ super(p); this.state = {err:false}; }
+      static getDerivedStateFromError(){ return {err:true}; }
+      render(){ return this.state.err ? this.props.fallback : this.props.children; }
+    }
     // --- i18n: follow Steam UI language (SharedJSContext has no token table, so keep our own map) ---
     let __steamlang = "english";
     try { __steamlang = String(await SteamClient.Settings.GetCurrentLanguage() || "english").toLowerCase(); } catch(_) {}
@@ -358,7 +370,7 @@
       const run = (window.SteamUIStore && window.SteamUIStore.m_runningAppIDs) || [];
       if (run.length) {
         const rid = typeof run[0]==="object" ? run[0].appid : run[0];
-        if (rid && tw.GetAppOverviewByAppID(rid)) return {mode:"app", appid:rid};
+        if (rid && tw.GetAppOverviewByAppID(rid)) return {mode:"app", appid:rid, running:true};
       }
       const f = readFocusedContent();
       if (f) return f;
@@ -380,7 +392,13 @@
         let alive = true, delay = 1000;
         const tick = ()=>{
           if (!alive) return;
-          const c = pick();
+          let c = pick();
+          // while a game runs, the seat-content setting wins over the card
+          if (c.mode==="app" && c.running) {
+            const content = (window.__seatACfg && window.__seatACfg.content) || "card";
+            if (content==="qam" || content==="pause") c = {mode: content};
+          }
+          fetchSeatCfg();
           const l = lastRef.current;
           const same = l && l.mode===c.mode && l.appid===c.appid && l.gid===c.gid;
           lastRef.current = c;
@@ -392,6 +410,14 @@
         return ()=>{ alive = false; clearTimeout(window.__seatATimer); window.__seatATimer = null; };
       },[]);
       if (ctx.mode==="qam") return e(inst.ER, {instance: localInst}, e(QAM.pZ, {active:true}));
+      if (ctx.mode==="pause") {
+        // best-effort: Ez is module 5822's MenuStore-driven menu component
+        // (imported above); unverified against every Steam build - fall back
+        // to the QAM view if it's missing or throws at render time.
+        const fallback = e(inst.ER, {instance: localInst}, e(QAM.pZ, {active:true}));
+        if (typeof Ez !== "function") return fallback;
+        return e(SeatBoundary, {fallback: fallback}, e(inst.ER, {instance: localInst}, e(Ez, {instance: localInst})));
+      }
       if (ctx.mode==="loading") return e(Loading,null);
       if (ctx.mode==="app") return e(CompanionView,{appid:ctx.appid, key:ctx.appid});
       if (ctx.mode==="news") return e(NewsView,{gid:ctx.gid, key:ctx.gid});

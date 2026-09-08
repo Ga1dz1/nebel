@@ -17,18 +17,31 @@ python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "void($(cat "$DUALSCREEN_DI
 outs=$(DISPLAY=:0 python3 "$DUALSCREEN_DIR/xrrq_count.py" 2>/dev/null || echo 1)
 [ "$outs" = "2" ] || exit 0
 
-# Wait for the main BPM window to be mapped first, else the window-diff in
-# seatA.sh can mistake the appearing main window for the newly created popup.
-for i in $(seq 1 60); do
-    if DISPLAY=:0 python3 "$DUALSCREEN_DIR/xmove.py" 2>/dev/null | grep -q '1920x1080'; then
-        break
-    fi
-    sleep 2
-done
+# Seat content setting (Decky Display tab -> /etc/nebel/seat-a.conf; same file
+# seatctl serves as /config to the render JS).
+seat_content() {
+    sed -n 's/^CONTENT=//p' /etc/nebel/seat-a.conf 2>/dev/null | head -1
+}
+seat_full_steam() {
+    [ "$(sed -n 's/^FULL_STEAM=//p' /etc/nebel/seat-a.conf 2>/dev/null | head -1)" = "1" ]
+}
 
-"$DUALSCREEN_DIR/seatA.sh"
-# refresh the dual-output gate now that seat placement is known
-python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "fetch(\"http://127.0.0.1:48717/state\").then(r=>r.json()).then(j=>{window.__seatDual=!!j.dual}).catch(()=>{}); \"gate-refreshed\"" >/dev/null 2>&1 || true
+# "Second screen off": don't create the window at all (a live flip is handled
+# by the watchdog below).
+if [ "$(seat_content)" != "off" ]; then
+    # Wait for the main BPM window to be mapped first, else the window-diff in
+    # seatA.sh can mistake the appearing main window for the newly created popup.
+    for i in $(seq 1 60); do
+        if DISPLAY=:0 python3 "$DUALSCREEN_DIR/xmove.py" 2>/dev/null | grep -q '1920x1080'; then
+            break
+        fi
+        sleep 2
+    done
+
+    "$DUALSCREEN_DIR/seatA.sh"
+    # refresh the dual-output gate now that seat placement is known
+    python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "fetch(\"http://127.0.0.1:48717/state\").then(r=>r.json()).then(j=>{window.__seatDual=!!j.dual}).catch(()=>{}); \"gate-refreshed\"" >/dev/null 2>&1 || true
+fi
 
 # Watchdog: the second window does not survive steamwebhelper window
 # re-creation (GPU process restarts, hotplug flaps of the external panel) -
@@ -47,6 +60,26 @@ while true; do
     sleep 5
     outs=$(DISPLAY=:0 python3 "$DUALSCREEN_DIR/xrrq_count.py" 2>/dev/null || echo 1)
     [ "$outs" = "2" ] || continue
+    # "Second screen off" flipped on live: close the card and stop recreating
+    # it until the setting changes back.
+    if [ "$(seat_content)" = "off" ]; then
+        python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "try{const w=window.__seatB;if(w&&!w.closed)w.close()}catch(e){};\"off\"" >/dev/null 2>&1 || true
+        continue
+    fi
+    # Full Steam on the second screen: after navigation the window carries the
+    # SPA's own title, not NebelSeatB - the title scan below would "recreate"
+    # it every loop. Ask the SharedJSContext about the window handle instead.
+    if seat_full_steam; then
+        alive=$(python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "try{(window.__seatB&&!window.__seatB.closed)?1:0}catch(e){0}" 2>/dev/null) || alive=""
+        case "$alive" in
+            *1*) continue ;;
+        esac
+        curl -sf http://127.0.0.1:8080/json 2>/dev/null | grep -q SharedJSContext || continue
+        python3 "$DUALSCREEN_DIR/steamui_switcher_patch.py" >/dev/null 2>&1 || true
+        python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "void($(cat "$DUALSCREEN_DIR/switcher_patch.js")); \"started\"" >/dev/null 2>&1 || true
+        "$DUALSCREEN_DIR/seatA.sh" || true
+        continue
+    fi
     # The just-created card needs a moment before CEF sets its
     # _NET_WM_NAME; checking once right after seatA.sh returns would see an
     # untitled window, "recreate" it, and the new window kills the old one -

@@ -77,6 +77,7 @@ const beginCalibrationSession = (token) => call("begin_calibration_session", tok
 const endCalibrationSession = (token) => call("end_calibration_session", token);
 const getDisplayState = () => call("get_display_state");
 const setDisplayConfig = (useExternal, connector, width, height, orientation, mode, autoDuo) => call("set_display_config", useExternal, connector, width, height, orientation, mode, autoDuo);
+const setSeatAConfig = (content, fullSteam) => call("set_seat_a_config", content, fullSteam);
 const restartGamescopeSession = () => call("restart_gamescope_session");
 const setInternalTouchpad = (mode) => call("set_internal_touchpad", mode);
 const getSyncState = () => call("get_sync_state");
@@ -267,6 +268,16 @@ const uk = {
     "Auto-Duo on connect": "Авто-Duo при підключенні",
     "Switch to Duo automatically when an external display is plugged in": "Автоматично перемикатися на Duo при підключенні зовнішнього дисплея",
     "Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.": "Ігровий режим працює на зовнішньому дисплеї, а друге вікно Steam лишається на вбудованому екрані. Якщо зовнішній дисплей не підключено, використовується вбудований екран. Застосовується після перезапуску ігрового режиму.",
+    "Second Screen (Duo)": "Другий екран (Duo)",
+    "Second screen while gaming": "Другий екран під час гри",
+    "Game card": "Картка гри",
+    "Quick menu (QAM)": "Швидке меню (QAM)",
+    "Pause menu": "Меню паузи",
+    "Second screen off": "Другий екран вимкнено",
+    "Applies live while a game runs on the main screen. \"Second screen off\" closes the second Steam window; the panel itself stays powered by the session.": "Застосовується наживо, доки гра працює на основному екрані. «Другий екран вимкнено» закриває друге вікно Steam; сама панель лишається увімкненою сеансом.",
+    "Full Steam on the second screen": "Весь Steam на другому екрані",
+    "The second screen runs the full Steam interface instead of the companion view. Experimental - applies when the second window is (re)created.": "Другий екран запускає повний інтерфейс Steam замість допоміжного вигляду. Експериментально — застосовується під час (повторного) створення другого вікна.",
+    "Window management: in Steam's Switch Windows menu, Y sends a window to the internal screen. Touch on the second screen controls the window shown there.": "Керування вікнами: у меню Steam «Перемикання вікон» Y надсилає вікно на вбудований екран. Дотик на другому екрані керує вікном, яке там показано.",
     "Stick Lighting": "Підсвітка стіків",
     "No addressable stick lighting hardware detected on this device.": "На цьому пристрої не виявлено адресної підсвітки стіків.",
     "Enable": "Увімкнути",
@@ -615,6 +626,16 @@ const ru = {
     "Auto-Duo on connect": "Авто-Duo при подключении",
     "Switch to Duo automatically when an external display is plugged in": "Автоматически переключаться на Duo при подключении внешнего дисплея",
     "Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.": "Игровой режим работает на внешнем дисплее, а второе окно Steam остаётся на встроенном экране. Если внешний дисплей не подключён, используется встроенный экран. Применяется после перезапуска игрового режима.",
+    "Second Screen (Duo)": "Второй экран (Duo)",
+    "Second screen while gaming": "Второй экран во время игры",
+    "Game card": "Карточка игры",
+    "Quick menu (QAM)": "Быстрое меню (QAM)",
+    "Pause menu": "Меню паузы",
+    "Second screen off": "Второй экран выключен",
+    "Applies live while a game runs on the main screen. \"Second screen off\" closes the second Steam window; the panel itself stays powered by the session.": "Применяется на лету, пока игра работает на основном экране. «Второй экран выключен» закрывает второе окно Steam; сама панель остаётся включённой сессией.",
+    "Full Steam on the second screen": "Весь Steam на втором экране",
+    "The second screen runs the full Steam interface instead of the companion view. Experimental - applies when the second window is (re)created.": "Второй экран запускает полный интерфейс Steam вместо вспомогательного вида. Экспериментально — применяется при (пере)создании второго окна.",
+    "Window management: in Steam's Switch Windows menu, Y sends a window to the internal screen. Touch on the second screen controls the window shown there.": "Управление окнами: в меню Steam «Переключение окон» Y отправляет окно на встроенный экран. Касание на втором экране управляет окном, которое там показано.",
     "Stick Lighting": "Подсветка стиков",
     "No addressable stick lighting hardware detected on this device.": "На этом устройстве не обнаружена адресная подсветка стиков.",
     "Enable": "Включить",
@@ -963,6 +984,16 @@ const es = {
     "Auto-Duo on connect": "Duo automático al conectar",
     "Switch to Duo automatically when an external display is plugged in": "Cambiar a Duo automáticamente al conectar una pantalla externa",
     "Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.": "El modo de juego funciona en la pantalla externa mientras una segunda ventana de Steam queda en la pantalla interna. Si no hay pantalla externa conectada, se usa la interna. Se aplica al reiniciar el modo de juego.",
+    "Second Screen (Duo)": "Segunda pantalla (Duo)",
+    "Second screen while gaming": "Segunda pantalla durante el juego",
+    "Game card": "Ficha del juego",
+    "Quick menu (QAM)": "Menú rápido (QAM)",
+    "Pause menu": "Menú de pausa",
+    "Second screen off": "Segunda pantalla apagada",
+    "Applies live while a game runs on the main screen. \"Second screen off\" closes the second Steam window; the panel itself stays powered by the session.": "Se aplica en vivo mientras un juego corre en la pantalla principal. «Segunda pantalla apagada» cierra la segunda ventana de Steam; el panel en sí sigue encendido por la sesión.",
+    "Full Steam on the second screen": "Steam completo en la segunda pantalla",
+    "The second screen runs the full Steam interface instead of the companion view. Experimental - applies when the second window is (re)created.": "La segunda pantalla ejecuta la interfaz completa de Steam en lugar de la vista auxiliar. Experimental: se aplica al (re)crear la segunda ventana.",
+    "Window management: in Steam's Switch Windows menu, Y sends a window to the internal screen. Touch on the second screen controls the window shown there.": "Gestión de ventanas: en el menú Cambiar ventanas de Steam, Y envía una ventana a la pantalla interna. El tacto en la segunda pantalla controla la ventana que se muestra allí.",
     "Stick Lighting": "Iluminación de los sticks",
     "No addressable stick lighting hardware detected on this device.": "No se detectó hardware de iluminación direccionable de sticks en este dispositivo.",
     "Enable": "Activar",
@@ -1303,6 +1334,16 @@ const fr = {
     "Auto-Duo on connect": "Duo automatique à la connexion",
     "Switch to Duo automatically when an external display is plugged in": "Basculer automatiquement en Duo quand un écran externe est branché",
     "Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.": "Le mode jeu tourne sur l'écran externe pendant qu'une seconde fenêtre Steam reste sur l'écran interne. Sans écran externe connecté, l'écran interne est utilisé. Appliqué au redémarrage du mode jeu.",
+    "Second Screen (Duo)": "Second écran (Duo)",
+    "Second screen while gaming": "Second écran pendant le jeu",
+    "Game card": "Fiche du jeu",
+    "Quick menu (QAM)": "Menu rapide (QAM)",
+    "Pause menu": "Menu pause",
+    "Second screen off": "Second écran éteint",
+    "Applies live while a game runs on the main screen. \"Second screen off\" closes the second Steam window; the panel itself stays powered by the session.": "Appliqué en direct pendant qu'un jeu tourne sur l'écran principal. « Second écran éteint » ferme la seconde fenêtre Steam ; la dalle elle-même reste alimentée par la session.",
+    "Full Steam on the second screen": "Steam complet sur le second écran",
+    "The second screen runs the full Steam interface instead of the companion view. Experimental - applies when the second window is (re)created.": "Le second écran exécute l'interface Steam complète au lieu de la vue d'accompagnement. Expérimental : appliqué à la (re)création de la seconde fenêtre.",
+    "Window management: in Steam's Switch Windows menu, Y sends a window to the internal screen. Touch on the second screen controls the window shown there.": "Gestion des fenêtres : dans le menu Changer de fenêtre de Steam, Y envoie une fenêtre vers l'écran interne. Le tactile du second écran contrôle la fenêtre qui y est affichée.",
     "Stick Lighting": "Éclairage des sticks",
     "No addressable stick lighting hardware detected on this device.": "Aucun matériel d'éclairage adressable de sticks détecté sur cet appareil.",
     "Enable": "Activer",
@@ -2431,6 +2472,16 @@ const ORIENTATION_OPTIONS = [
     { data: "upsidedown", label: t("180°") },
 ];
 const isPortrait = (width, height) => width > 0 && height > 0 && width < height;
+// What the second Steam window (seat A) shows while a game runs on the main
+// screen. Stored in /etc/nebel/seat-a.conf and read live by the dualscreen
+// stack (seatctl's /config endpoint, seatA-autostart), so changes apply
+// without a session restart.
+const SEAT_CONTENT_OPTIONS = [
+    { data: "card", label: t("Game card") },
+    { data: "qam", label: t("Quick menu (QAM)") },
+    { data: "pause", label: t("Pause menu") },
+    { data: "off", label: t("Second screen off") },
+];
 const connectorLabel = (c) => {
     const base = c.name ? `${c.name} (${c.connector})` : c.connector;
     return c.connected ? base : t("{connector} (disconnected)", { connector: base });
@@ -2510,6 +2561,15 @@ function Display(_props) {
     const selectOrientation = (orientation) => {
         persist({ orientation });
     };
+    const persistSeat = (next) => {
+        setSaving(true);
+        setErrorMessage("");
+        const merged = { ...state, ...next };
+        setSeatAConfig(merged.seatContent, merged.seatFullSteam)
+            .then(setState)
+            .catch((error) => setErrorMessage(String(error)))
+            .finally(() => setSaving(false));
+    };
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { title: t("Internal Screen"), children: SP_JSX.jsx(InternalTouchpadRow, {}) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("Dock Station"), children: [SP_JSX.jsx(SelectEdit, { label: t("Display Mode"), value: selectedMode, options: modeOptions, onChange: selectMode, disabled: saving }), mode === "internal" && (SP_JSX.jsx(DFL.ToggleField, { label: t("Auto-Duo on connect"), description: t("Switch to Duo automatically when an external display is plugged in"), checked: state.autoDuo !== false, onChange: (enabled) => persist({ autoDuo: enabled }) })), mode === "duo" && (SP_JSX.jsx(DFL.Field, { label: t("Game mode runs on the external display while a second Steam window stays on the internal screen. Falls back to the internal screen when no external display is connected. Applied on game mode restart.") })), mode === "external" && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("Resolution"), value: currentMode, options: resolutionOptions, onChange: selectResolution, disabled: saving || activeDisconnected }), SP_JSX.jsx(SelectEdit, { label: t("Rotation"), value: state.orientation, options: ORIENTATION_OPTIONS, onChange: selectOrientation, disabled: saving || activeDisconnected }), isPortrait(state.width, state.height) && (SP_JSX.jsx(DFL.Field, { label: t("This is a portrait panel - pick the rotation that makes the image upright. Applied on game mode restart.") }))] })), externals.length === 0 && (SP_JSX.jsx(DFL.Field, { label: t("No external display detected. Connect one (dock/USB-C/HDMI) to choose it here.") })), activeDisconnected && (SP_JSX.jsx(DFL.Field, { label: t("This display isn't connected right now - game mode runs on the internal screen until it's plugged back in. Its settings are remembered.") })), errorMessage && SP_JSX.jsx(DFL.Field, { label: t("Error: {message}", { message: errorMessage }) }), SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: restarting, onClick: () => {
                                 setRestarting(true);
                                 setErrorMessage("");
@@ -2521,7 +2581,7 @@ function Display(_props) {
                                 restartGamescopeSession()
                                     .catch((error) => setErrorMessage(String(error)))
                                     .finally(() => setRestarting(false));
-                            }, children: t("Apply & Restart Game Mode") }) })] })] }));
+                            }, children: t("Apply & Restart Game Mode") }) })] }), (mode === "duo" || externals.some((c) => c.connected)) && (SP_JSX.jsxs(DFL.PanelSection, { title: t("Second Screen (Duo)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Second screen while gaming"), value: state.seatContent, options: SEAT_CONTENT_OPTIONS, onChange: (seatContent) => persistSeat({ seatContent }), disabled: saving }), SP_JSX.jsx(DFL.Field, { label: t("Applies live while a game runs on the main screen. \"Second screen off\" closes the second Steam window; the panel itself stays powered by the session.") }), SP_JSX.jsx(DFL.ToggleField, { label: t("Full Steam on the second screen"), description: t("The second screen runs the full Steam interface instead of the companion view. Experimental - applies when the second window is (re)created."), checked: state.seatFullSteam, disabled: saving || state.seatContent === "off", onChange: (seatFullSteam) => persistSeat({ seatFullSteam }) }), SP_JSX.jsx(DFL.Field, { label: t("Window management: in Steam's Switch Windows menu, Y sends a window to the internal screen. Touch on the second screen controls the window shown there.") })] }))] }));
 }
 
 function HeroicSection({ appid, forced, onToggleForce }) {

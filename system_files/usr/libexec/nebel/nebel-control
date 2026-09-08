@@ -38,6 +38,12 @@ DISPLAY_ORIENTATIONS = {"normal", "left", "right", "upsidedown"}
 # Game mode display routing: internal panel only, external only (dock), or
 # both at once (duo).
 DISPLAY_MODES = ("internal", "external", "duo")
+# What the second Steam window (seat A) shows while a game runs on the main
+# screen, and whether it hosts the full Steam UI instead of the companion
+# view. Read live by seatA-autostart/seatctl (and available to the gamescope
+# dual-output fork as plain state).
+SEAT_A_CONF_PATH = Path("/etc/nebel/seat-a.conf")
+SEAT_A_CONTENT_MODES = ("card", "qam", "pause", "off")
 CALIBRATION_PARAMS = (
     "axis_leftx_min",
     "axis_leftx_center",
@@ -374,6 +380,33 @@ def action_set_display_config(request):
     remembered[connector] = {"width": width, "height": height, "orientation": orientation}
     atomic_write(DISPLAY_REMEMBERED_PATH, json.dumps(remembered, separators=(",", ":")))
     return {"ok": True}
+
+
+def action_get_seat_a_config(request):
+    content = "card"
+    full_steam = False
+    try:
+        for line in SEAT_A_CONF_PATH.read_text(encoding="utf-8").splitlines():
+            key, sep, value = line.partition("=")
+            if not sep:
+                continue
+            if key == "CONTENT" and value in SEAT_A_CONTENT_MODES:
+                content = value
+            elif key == "FULL_STEAM":
+                full_steam = value == "1"
+    except OSError:
+        pass
+    return {"content": content, "fullSteam": full_steam}
+
+
+def action_set_seat_a_config(request):
+    current = action_get_seat_a_config(request)
+    content = str(request.get("content") or current["content"])
+    if content not in SEAT_A_CONTENT_MODES:
+        raise ValueError("invalid seat-a content mode")
+    full_steam = bool(request.get("fullSteam", current["fullSteam"]))
+    atomic_write(SEAT_A_CONF_PATH, f"CONTENT={content}\nFULL_STEAM={1 if full_steam else 0}\n")
+    return {"content": content, "fullSteam": full_steam}
 
 
 def action_restart_gamescope_session(request):
@@ -891,6 +924,8 @@ ACTIONS = {
     "list_displays": action_list_displays,
     "get_display_config": action_get_display_config,
     "set_display_config": action_set_display_config,
+    "get_seat_a_config": action_get_seat_a_config,
+    "set_seat_a_config": action_set_seat_a_config,
     "restart_gamescope_session": action_restart_gamescope_session,
     "get_internal_touchpad": action_get_internal_touchpad,
     "set_internal_touchpad": action_set_internal_touchpad,

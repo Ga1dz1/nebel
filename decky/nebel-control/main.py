@@ -10,7 +10,7 @@ from nebel_control.calibration import (
 from nebel_control.config import build_config
 from nebel_control.controller import set_controller_type
 from nebel_control.deps import get_status as deps_status, install_verbs as deps_install
-from nebel_control.display import display_state, restart_gamescope_session, set_display_config, set_internal_touchpad
+from nebel_control.display import display_state, restart_gamescope_session, set_display_config, set_internal_touchpad, set_seat_a_config
 from nebel_control.filepick import (
     heroic_config,
     heroic_games,
@@ -257,6 +257,9 @@ class Plugin:
 
     async def set_display_config(self, use_external, connector, width, height, orientation, mode=None, auto_duo=None):
         return await asyncio.to_thread(set_display_config, use_external, connector, width, height, orientation, mode, auto_duo)
+
+    async def set_seat_a_config(self, content=None, full_steam=None):
+        return await asyncio.to_thread(set_seat_a_config, content, full_steam)
 
     async def restart_gamescope_session(self):
         return await asyncio.to_thread(restart_gamescope_session)

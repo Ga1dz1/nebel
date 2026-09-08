@@ -1,6 +1,6 @@
 import { ButtonItem, Field, PanelSection, ToggleField } from "@decky/ui";
 import { useEffect, useState } from "react";
-import { getDisplayState, restartGamescopeSession, setDisplayConfig } from "../backend";
+import { getDisplayState, restartGamescopeSession, setDisplayConfig, setSeatAConfig } from "../backend";
 import { InternalTouchpadRow } from "../components/InternalTouchpadRow";
 import { SelectEdit } from "../components/widgets";
 import { t } from "../i18n";
@@ -28,6 +28,17 @@ const ORIENTATION_OPTIONS = [
 ];
 
 const isPortrait = (width: number, height: number) => width > 0 && height > 0 && width < height;
+
+// What the second Steam window (seat A) shows while a game runs on the main
+// screen. Stored in /etc/nebel/seat-a.conf and read live by the dualscreen
+// stack (seatctl's /config endpoint, seatA-autostart), so changes apply
+// without a session restart.
+const SEAT_CONTENT_OPTIONS = [
+  { data: "card", label: t("Game card") },
+  { data: "qam", label: t("Quick menu (QAM)") },
+  { data: "pause", label: t("Pause menu") },
+  { data: "off", label: t("Second screen off") },
+];
 
 const connectorLabel = (c: DisplayConnector) => {
   const base = c.name ? `${c.name} (${c.connector})` : c.connector;
@@ -120,6 +131,16 @@ export function Display(_props: { qam?: boolean }) {
     persist({ orientation });
   };
 
+  const persistSeat = (next: Partial<Pick<DisplayState, "seatContent" | "seatFullSteam">>) => {
+    setSaving(true);
+    setErrorMessage("");
+    const merged = { ...state, ...next };
+    setSeatAConfig(merged.seatContent, merged.seatFullSteam)
+      .then(setState)
+      .catch((error) => setErrorMessage(String(error)))
+      .finally(() => setSaving(false));
+  };
+
   return (
     <>
       <PanelSection title={t("Internal Screen")}>
@@ -175,6 +196,26 @@ export function Display(_props: { qam?: boolean }) {
         </ButtonItem>
       </div>
     </PanelSection>
+      {(mode === "duo" || externals.some((c) => c.connected)) && (
+        <PanelSection title={t("Second Screen (Duo)")}>
+          <SelectEdit
+            label={t("Second screen while gaming")}
+            value={state.seatContent}
+            options={SEAT_CONTENT_OPTIONS}
+            onChange={(seatContent) => persistSeat({ seatContent })}
+            disabled={saving}
+          />
+          <Field label={t("Applies live while a game runs on the main screen. \"Second screen off\" closes the second Steam window; the panel itself stays powered by the session.")} />
+          <ToggleField
+            label={t("Full Steam on the second screen")}
+            description={t("The second screen runs the full Steam interface instead of the companion view. Experimental - applies when the second window is (re)created.")}
+            checked={state.seatFullSteam}
+            disabled={saving || state.seatContent === "off"}
+            onChange={(seatFullSteam) => persistSeat({ seatFullSteam })}
+          />
+          <Field label={t("Window management: in Steam's Switch Windows menu, Y sends a window to the internal screen. Touch on the second screen controls the window shown there.")} />
+        </PanelSection>
+      )}
     </>
   );
 }

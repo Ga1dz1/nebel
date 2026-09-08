@@ -165,6 +165,8 @@ export interface DisplayState {
   orientation: string;
   remembered: Record<string, RememberedDisplay>;
   internalTouchpad: number;
+  seatContent: "card" | "qam" | "pause" | "off";
+  seatFullSteam: boolean;
 }
 
 export type Capture = Record<string, { center: number; min: number; max: number; range: number }>;
