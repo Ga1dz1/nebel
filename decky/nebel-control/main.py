@@ -1,4 +1,18 @@
 import asyncio
+import os as _os
+import sys as _sys
+
+# The plugin loader runs under FEX with a stripped embedded stdlib, and its
+# get_system_pythonpaths() helper cannot reach the host python (FEX shadows
+# /usr/bin/python3 with the guest rootfs, and os.listdir() sees the rootfs
+# view of /usr). Non-existent rootfs paths fall back to the host, so probe
+# fixed candidate dirs by file existence instead of listing.
+for _base in ("/usr/lib64", "/usr/lib"):
+    for _ver in ("3.15", "3.14", "3.13", "3.12", "3.11", "3.10"):
+        _p = f"{_base}/python{_ver}"
+        if _os.path.isfile(f"{_p}/configparser.py") and _os.path.isdir(_p):
+            if _p not in _sys.path:
+                _sys.path.append(_p)
 
 from nebel_control.calibration import (
     begin_session,
