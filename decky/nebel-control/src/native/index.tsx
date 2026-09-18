@@ -2,6 +2,7 @@ import { routerHook } from "@decky/api";
 import { ErrorBoundary } from "@decky/ui";
 import type { RoutePatch } from "@decky/api";
 import type { ReactNode } from "react";
+import { deckyRouterHookWorks, installDirectSettingsSections } from "./direct";
 import { ControllerLightingSection, CloudSyncSection, ControlCenterSection, ExternalDisplaySection, GameTweaksSection, InGameOverlaySection, LibraryAddGameSection, NotificationFlashSection, PowerLimitsSection, SshSection } from "./sections";
 
 // Duplicates Nebel Control's management UI into Steam's own settings pages
@@ -284,8 +285,13 @@ function makeRoutePatch(kind: InjectionKind): RoutePatch {
 
 // Installs both injections; returns the uninstaller for onDismount. Never
 // throws - a half-broken Steam update must cost us the duplicates, not the
-// plugin.
+// plugin. When the Decky loader's routerHook is inert on this Steam client
+// (probe: addPatch doesn't grow _routePatches), falls back to direct
+// webpack-factory injection that needs no router patching at all.
 export function installNativeSettingsSections(): () => void {
+  if (!deckyRouterHookWorks()) {
+    return installDirectSettingsSections();
+  }
   console.log(LOG, "installing");
   let settingsPatch: RoutePatch | null = null;
   let propertiesPatch: RoutePatch | null = null;
