@@ -1,0 +1,14 @@
+[Unit]
+Description=USB RNDIS debug gadget (SSH over USB-C at 10.66.0.1, opt-in)
+# Deliberately disabled by default: gadget mode can conflict with USB-OTG
+# role switching on handhelds. Enable explicitly when debugging without WiFi:
+#   systemctl enable --now nebel-usb-debug.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/nebel/usb-debug-gadget
+ExecStopPost=/bin/bash -c 'G=/config/usb_gadget/nebel-debug; [[ -d $G ]] && echo "" > $G/UDC 2>/dev/null; rm -f $G/configs/c.1/rndis.usb0 $G/configs/c.1/acm.usb0; rmdir $G/configs/c.1/strings/0x409 $G/configs/c.1 $G/functions/rndis.usb0 $G/functions/acm.usb0 $G/strings/0x409 $G 2>/dev/null; true'
+
+[Install]
+WantedBy=multi-user.target

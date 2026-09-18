@@ -1,0 +1,73 @@
+#!/bin/bash
+# usb-debug-gadget: expose a USB RNDIS (+serial) debug link over USB-C so a
+# PC can reach the device at 10.66.0.1 regardless of WiFi state.
+# Modeled on thorch-os's debug gadget. OPT-IN: enable with
+#   systemctl enable --now nebel-usb-debug.service
+# Disabled by default on purpose: binding the dwc3 UDC into gadget mode can
+# fight USB-OTG role switching (docks, peripherals), so this is a deliberate
+# debug/recovery tool, not an always-on feature. Fail-safe: any setup error
+# unrolls and exits 0 so a broken kernel config can never wedge boot.
+set -uo pipefail
+
+LOG_TAG="nebel-usb-debug"
+log() { logger -t "$LOG_TAG" -- "$*"; }
+
+CONFIGFS=/config/usb_gadget
+GADGET="$CONFIGFS/nebel-debug"
+UDC=""
+
+cleanup() {
+    [[ -d "$GADGET" ]] || return 0
+    echo "" > "$GADGET/UDC" 2>/dev/null || true
+    rm -f "$GADGET/configs/c.1/rndis.usb0" "$GADGET/configs/c.1/acm.usb0" 2>/dev/null || true
+    rmdir "$GADGET/strings/0x409/configs/c.1" "$GADGET/configs/c.1" "$GADGET/functions/rndis.usb0" "$GADGET/functions/acm.usb0" "$GADGET/strings/0x409" "$GADGET" 2>/dev/null || true
+}
+
+[[ -d "$CONFIGFS" ]] || { log "configfs usb_gadget not available (kernel CONFIG_USB_CONFIGFS*)"; exit 0; }
+
+# Pick the first UDC that is not already bound.
+for udc_path in /sys/class/udc/*; do
+    [[ -e "$udc_path" ]] || continue
+    udc=$(basename "$udc_path")
+    [[ -e "/sys/class/udc/$udc/device/gadget" ]] && continue
+    UDC="$udc"
+    break
+done
+[[ -n "$UDC" ]] || { log "no free UDC"; exit 0; }
+
+cleanup
+mkdir -p "$GADGET/strings/0x409" "$GADGET/configs/c.1/strings/0x409" \
+         "$GADGET/functions/rndis.usb0" "$GADGET/functions/acm.usb0" || { log "mkdir failed"; cleanup; exit 0; }
+
+echo 0x1d6b > "$GADGET/idVendor"   # Linux Foundation
+echo 0x0104 > "$GADGET/idProduct"  # RNDIS gadget
+echo "nebel-debug" > "$GADGET/strings/0x409/serialnumber"
+echo "Nebel" > "$GADGET/strings/0x409/manufacturer"
+echo "Nebel Debug" > "$GADGET/strings/0x409/product"
+
+# RNDIS needs these OS descriptors for Windows; harmless elsewhere.
+echo "RNDIS" > "$GADGET/configs/c.1/strings/0x409/configuration"
+echo 1 > "$GADGET/os_desc/use"
+echo 0xbc > "$GADGET/os_desc/b_vendor_code"
+echo "MSFT100" > "$GADGET/os_desc/qw_sign"
+ln -s "$GADGET/configs/c.1" "$GADGET/os_desc" 2>/dev/null || true
+
+# Windows-compatible RNDIS: allocate and report a random-ish MAC.
+HOST_MAC="5A$(od -An -N2 -tx1 /dev/urandom | tr -d ' \n' | sed 's/\(..\)\(..\)/\1:\2/')"
+DEV_MAC="5B$(od -An -N2 -tx1 /dev/urandom | tr -d ' \n' | sed 's/\(..\)\(..\)/\1:\2/')"
+echo "host:${HOST_MAC^^}" > "$GADGET/functions/rndis.usb0/dev_addr"
+echo "${DEV_MAC^^}" > "$GADGET/functions/rndis.usb0/mac_addr" 2>/dev/null || true
+
+ln -s "$GADGET/functions/rndis.usb0" "$GADGET/configs/c.1/rndis.usb0"
+ln -s "$GADGET/functions/acm.usb0" "$GADGET/configs/c.1/acm.usb0"
+
+echo "$UDC" > "$GADGET/UDC" || { log "UDC bind failed"; cleanup; exit 0; }
+
+# Bring up the link with the fixed debug address (PC side: 10.66.0.2/24).
+for i in $(seq 1 20); do
+    ip link set usb0 up 2>/dev/null && break
+    sleep 0.5
+done
+ip addr add 10.66.0.1/24 dev usb0 2>/dev/null || true
+log "gadget up on $UDC: ssh nebel@10.66.0.1 (PC: ip addr add 10.66.0.2/24 dev <if>)"
+exit 0
