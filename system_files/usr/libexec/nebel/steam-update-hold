@@ -1,0 +1,58 @@
+#!/bin/bash
+# steam-update-hold: freeze the Steam client's self-update path.
+#
+# Rationale: Valve ships Steam client updates that repeatedly broke this
+# image's UI integration (16.09 broke Decky 3.2.8's router hooks, 18.09 broke
+# 3.2.9's; the disk patches survive but loader-level breaks cost users their
+# settings UI until fixed). The system updates with the image, after the new
+# client build has been tested - not whenever Valve pushes one.
+#
+# Mechanism: make ~/.local/share/Steam/package immutable (chattr +i). The
+# bootstrapper stages client updates there; with the directory locked the
+# update cannot stage and the running client keeps its current build. Games,
+# shaders and saves are unaffected - only the client self-update path lives
+# under package/.
+#
+# To deliberately update the client (e.g. after testing a new build):
+#   systemctl --user stop nebel-steam-update-hold.service   (chattr -i)
+#   restart the Steam session, let it update, reboot, verify, re-enable.
+set -uo pipefail
+
+PKG="/var/home/nebel/.local/share/Steam/package"
+STEAM_BIN="/var/home/nebel/.local/share/Steam/steamrtarm64/steam"
+LOG_TAG="nebel-steam-update-hold"
+log() { logger -t "$LOG_TAG" -- "$*"; }
+
+release() {
+    chattr -i "$PKG" 2>/dev/null || true
+    log "released $PKG"
+}
+
+if [[ "${1:-}" == "release" ]]; then
+    release
+    exit 0
+fi
+
+# Wait (bounded) for the client payload to be present on fresh installs;
+# locking package/ before the bootstrapper has landed the client would break
+# first boot.
+for i in $(seq 1 120); do
+    [[ -x "$STEAM_BIN" ]] && break
+    sleep 5
+done
+if [[ ! -d "$PKG" ]]; then
+    log "$PKG missing - client not installed yet; nothing to hold"
+    exit 0
+fi
+
+if chattr +i "$PKG" 2>/dev/null; then
+    log "holding client updates: $PKG is immutable"
+else
+    # btrfs without chattr support, or other fs failure - degrade to the
+    # permissions barrier so the bootstrapper (running as the user) cannot
+    # stage into a root-owned package dir.
+    chown root:root "$PKG" 2>/dev/null || true
+    chmod 0555 "$PKG" 2>/dev/null || true
+    log "chattr unsupported - fell back to root-owned $PKG (0555)"
+fi
+exit 0

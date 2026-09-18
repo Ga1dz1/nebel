@@ -1,0 +1,14 @@
+[Unit]
+Description=Hold Steam client self-updates (system updates ship tested clients)
+# After the game session so package/ exists on fresh installs; the script
+# itself waits (bounded) for the client payload before locking.
+After=gamescope-session-plus@steam.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/nebel/steam-update-hold
+ExecStopPost=/usr/libexec/nebel/steam-update-hold release
+
+[Install]
+WantedBy=default.target
