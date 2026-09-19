@@ -1,7 +1,7 @@
 ARG FEX_PKG=ghcr.io/virtudude/armada-packages/fex@sha256:5efff7dd05124e0653fd31a62bba78a68c87bd28f54ad12f6d0079acb3f07f7e
 ARG MESA_PKG=ghcr.io/ga1dz1/armada-packages/mesa@sha256:ca61a80075d1a58854d13d0272539fb1e4211e881803d4b5384954413ff4bc8c
 ARG MANGOHUD_PKG=ghcr.io/virtudude/armada-packages/mangohud@sha256:685ec69671d23188cfaf93a9d898da2356eca2ee80d3205a7445b200c6774c47
-ARG GAMESCOPE_PKG=ghcr.io/ga1dz1/armada-packages/gamescope@sha256:8364ddc548b966ee37022e62d9d734d6d2fb0f162b87a6ee7d5b9965fb63682c
+ARG GAMESCOPE_PKG=ghcr.io/ga1dz1/armada-packages/gamescope-nebel@sha256:9d77cc3c12da3b357216ee2efa41450a3421d535dd496ab94b17bb65827aabaf
 ARG POWERDEVIL_PKG=ghcr.io/virtudude/armada-packages/powerdevil@sha256:996937f85b561eccfd006ac1c5e7dbd0a0a1b21846ca518fdb5938c215878d81
 ARG KERNEL_PKG=ghcr.io/ga1dz1/armada-packages/kernel@sha256:553217b63625b32785922b08d33a3173151b4cf2866a326063c2aec0eb1c2743
 ARG INPUTPLUMBER_PKG=ghcr.io/ga1dz1/armada-packages/inputplumber@sha256:ce87f64eaeab2ed05a31b7ef035429dac5bf6fc842c4ecdb92d3075c4c7b6564
@@ -41,7 +41,7 @@ FROM quay.io/fedora/fedora-bootc:44
 ARG NEBEL_VERSION=unknown
 # Human release version for Settings -> System (VERSION_ID in os-release);
 # NEBEL_VERSION (date.sha) stays as BUILD_ID. Bump NEBEL_RELEASE per release.
-ARG NEBEL_RELEASE=1.4.2
+ARG NEBEL_RELEASE=1.4.3
 ARG NEBEL_CODENAME=Stratus
 LABEL org.opencontainers.image.version="${NEBEL_VERSION}"
 

@@ -1,0 +1,17 @@
+[Unit]
+Description=User cache on tmpfs (less eMMC write amplification)
+After=local-fs.target var-home.mount
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# tmpfs so browser/KDE caches never hit the eMMC; contents are disposable
+# by definition. Sized like thorch's default.
+ExecStart=/usr/bin/mkdir -p /var/home/nebel/.cache
+ExecStart=/usr/bin/chown nebel:nebel /var/home/nebel/.cache
+ExecStart=/bin/mount -t tmpfs -o size=512M,mode=0755,uid=nebel,gid=nebel tmpfs /var/home/nebel/.cache
+ExecStopPost=/bin/umount /var/home/nebel/.cache
+
+[Install]
+WantedBy=multi-user.target

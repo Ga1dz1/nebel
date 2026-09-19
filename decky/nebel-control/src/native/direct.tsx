@@ -273,12 +273,17 @@ export function deckyRouterHookWorks(): boolean {
   try {
     const loader = (window as any).DeckyPluginLoader;
     const routerState = loader?.routerHook?.routerState;
-    if (!routerState || !loader.routerHook.addPatch) return false;
-    const before = Object.keys(routerState._routePatches || {}).length;
-    const probe = loader.routerHook.addPatch("/__nebel_probe__", (route: unknown) => route);
-    const after = Object.keys(routerState._routePatches || {}).length;
+    // _routePatches is a Map - Object.keys() of a Map is always [], which
+    // made this probe report 'inert' on every client and forced the direct
+    // injection path even when the classic route patching worked fine.
+    const patches: Map<string, unknown> | undefined =
+      routerState?._routePatches instanceof Map ? routerState._routePatches : undefined;
+    if (!patches || typeof routerState.addPatch !== "function") return false;
+    const before = patches.size;
+    const probe = routerState.addPatch("/__nebel_probe__", (route: unknown) => route);
+    const after = patches.size;
     try {
-      loader.routerHook.removePatch("/__nebel_probe__", probe);
+      routerState.removePatch("/__nebel_probe__", probe);
     } catch {
     }
     return after > before;
