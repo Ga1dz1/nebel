@@ -197,7 +197,16 @@ if [[ "${NEBEL_DISPLAY_MODE:-}" == "duo" ]]; then
                 ;;
         esac
         ROT_B=none
-        ext_mode="$(head -1 /sys/class/drm/card*-"${duo_connector}"/modes 2>/dev/null)"
+        # Hotplug race: right after a DP connect the modes file can still be
+        # empty, and a portrait-mounted addon then starts unrotated (reads as
+        # "external under 90") until a manual Apply restarts the session.
+        # Wait (bounded) for the EDID modes to settle before deciding.
+        ext_mode=""
+        for _try in $(seq 1 20); do
+            ext_mode="$(head -1 /sys/class/drm/card*-"${duo_connector}"/modes 2>/dev/null)"
+            [[ -n "$ext_mode" ]] && break
+            sleep 0.25
+        done
         if [[ -n "$ext_mode" ]]; then
             ext_w="${ext_mode%%x*}"; ext_h="${ext_mode##*x}"
             if (( ext_w < ext_h )); then
