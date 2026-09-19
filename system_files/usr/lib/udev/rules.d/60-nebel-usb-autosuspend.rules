@@ -3,3 +3,10 @@
 # (ported from armada-os 60-armada-usb-autosuspend.rules)
 ACTION=="add|bind", SUBSYSTEM=="platform", KERNEL=="*.usb", DRIVERS=="dwc3-qcom", ATTR{power/control}="auto"
 ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="auto"
+
+# Exception: the Retroid Dual Screen addon touchscreen (222a:0001) must stay
+# awake - in duo mode gamescope routes it to the external seat, and a
+# suspended controller reads as a dead upper touchscreen. (Later assignment
+# wins over the blanket "auto" above; also shipped as an early safe net in
+# 90-nebel-rds-touch.rules.)
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="222a", ATTR{idProduct}=="0001", ATTR{power/control}="on"
