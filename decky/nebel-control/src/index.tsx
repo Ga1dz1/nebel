@@ -63,7 +63,23 @@ export default definePlugin(() => {
     }, 3000);
   };
   bootstrap();
-  routerHook.addRoute("/nebel-control", FullPage);
+  // Register the fullpage route on the LIVE router state - see
+  // native/index.tsx for why the api-captured routerHook must not be used.
+  let routeTimer: number | null = null;
+  let routeRegisteredOn: any = null;
+  const ensureRoute = () => {
+    if (cancelled) return;
+    try {
+      const state = (window as any).DeckyPluginLoader?.routerHook?.routerState;
+      if (state && state !== routeRegisteredOn) {
+        state.addRoute("/nebel-control", FullPage);
+        routeRegisteredOn = state;
+      }
+    } catch {
+    }
+    routeTimer = window.setTimeout(ensureRoute, 5000);
+  };
+  ensureRoute();
   const uninstallNativeSections = installNativeSettingsSections();
   const uninstallQamQuickPanel = installQamQuickPanel();
   return {
@@ -75,6 +91,11 @@ export default definePlugin(() => {
     // all that. The plugin still appears in Decky's plugin management.
     onDismount() {
       cancelled = true;
+      if (routeTimer) window.clearTimeout(routeTimer);
+      try {
+        routeRegisteredOn?.removeRoute("/nebel-control");
+      } catch {
+      }
       unregisterDownloadWatcher();
       uninstallNativeSections();
       uninstallQamQuickPanel();

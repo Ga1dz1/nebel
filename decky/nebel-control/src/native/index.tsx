@@ -2,7 +2,7 @@ import { routerHook } from "@decky/api";
 import { ErrorBoundary } from "@decky/ui";
 import type { RoutePatch } from "@decky/api";
 import type { ReactNode } from "react";
-import { deckyRouterHookWorks, installDirectSettingsSections } from "./direct";
+import { deckyRouterHookWorks } from "./direct";
 import { ControllerLightingSection, CloudSyncSection, ControlCenterSection, ExternalDisplaySection, GameTweaksSection, InGameOverlaySection, LibraryAddGameSection, NotificationFlashSection, PowerLimitsSection, SshSection } from "./sections";
 
 // Duplicates Nebel Control's management UI into Steam's own settings pages
@@ -28,6 +28,11 @@ import { ControllerLightingSection, CloudSyncSection, ControlCenterSection, Exte
 // plugin itself never breaks.
 
 const LOG = "[Nebel Control] native-settings:";
+
+// 2026-09-16+ Steam clients renamed the pages-array field: what used to be
+// `route` is now `identifier` (the paged-nav maps {route,link} -> identifier).
+// Matchers read both so the sections survive either shape.
+const pageId = (page: PageDescriptor): string => String(page.route || page.identifier || page.link || "");
 // Marks a component type we already wrapped - the router re-runs route
 // patches on every render, and a fresh wrapper each time would remount the
 // whole page subtree (focus/state loss), so wrapping must be idempotent.
@@ -35,6 +40,7 @@ const NEO_WRAPPED = "__nebelNativeTypeWrapped";
 
 interface PageDescriptor {
   route?: string;
+  identifier?: string;
   link?: string;
   content?: ReactNode;
   __nebelWrapped?: boolean;
@@ -49,47 +55,47 @@ interface InjectedSection {
 const SETTINGS_SECTIONS: InjectedSection[] = [
   {
     name: "controller-lighting",
-    match: (page) => String(page.route || "").startsWith("/settings/controller"),
+    match: (page) => pageId(page).startsWith("/settings/controller"),
     render: () => <ControllerLightingSection />,
   },
   {
     name: "power-limits",
-    match: (page) => page.route === "/settings/power",
+    match: (page) => pageId(page) === "/settings/power",
     render: () => <PowerLimitsSection />,
   },
   {
     name: "external-display",
-    match: (page) => page.route === "/settings/display",
+    match: (page) => pageId(page) === "/settings/display",
     render: () => <ExternalDisplaySection />,
   },
   {
     name: "cloud-sync",
-    match: (page) => page.route === "/settings/cloud",
+    match: (page) => pageId(page) === "/settings/cloud",
     render: () => <CloudSyncSection />,
   },
   {
     name: "library-add-game",
-    match: (page) => page.route === "/settings/library",
+    match: (page) => pageId(page) === "/settings/library",
     render: () => <LibraryAddGameSection />,
   },
   {
     name: "internet-ssh",
-    match: (page) => page.route === "/settings/internet",
+    match: (page) => pageId(page) === "/settings/internet",
     render: () => <SshSection />,
   },
   {
     name: "ingame-overlay",
-    match: (page) => page.route === "/settings/ingame",
+    match: (page) => pageId(page) === "/settings/ingame",
     render: () => <InGameOverlaySection />,
   },
   {
     name: "notification-flash",
-    match: (page) => page.route === "/settings/notifications",
+    match: (page) => pageId(page) === "/settings/notifications",
     render: () => <NotificationFlashSection />,
   },
   {
     name: "control-center-entry",
-    match: (page) => page.route === "/settings/system",
+    match: (page) => pageId(page) === "/settings/system",
     render: () => <ControlCenterSection />,
   },
 ];
@@ -99,7 +105,7 @@ const PROPERTIES_SECTIONS: InjectedSection[] = [
     name: "game-tweaks",
     // Compatibility is the natural home for per-game tweaks (Steam games and
     // non-Steam shortcuts both get a Compatibility page).
-    match: (page) => String(page.route || "").endsWith("/properties/compatibility"),
+    match: (page) => pageId(page).endsWith("/properties/compatibility"),
     render: (page) => {
       const appid = String(page.link || "").match(/\/app\/(\d+)\//)?.[1] || "";
       return appid ? <GameTweaksSection appid={appid} /> : null;
@@ -117,12 +123,12 @@ const KINDS: Record<"settings" | "properties", InjectionKind> = {
   settings: {
     name: "settings",
     sections: SETTINGS_SECTIONS,
-    hostMatch: (page) => String(page?.route || "").startsWith("/settings"),
+    hostMatch: (page) => pageId(page).startsWith("/settings"),
   },
   properties: {
     name: "properties",
     sections: PROPERTIES_SECTIONS,
-    hostMatch: (page) => /\/app\/(\d+|\:appid)\/properties/.test(String(page?.route || "") + " " + String(page?.link || "")),
+    hostMatch: (page) => /\/app\/(\d+|\:appid)\/properties/.test(pageId(page)),
   },
 };
 
@@ -285,31 +291,58 @@ function makeRoutePatch(kind: InjectionKind): RoutePatch {
 
 // Installs both injections; returns the uninstaller for onDismount. Never
 // throws - a half-broken Steam update must cost us the duplicates, not the
-// plugin. When the Decky loader's routerHook is inert on this Steam client
-// (probe: addPatch doesn't grow _routePatches), falls back to direct
-// webpack-factory injection that needs no router patching at all.
+// plugin.
+//
+// Registration targets the LIVE DeckyPluginLoader.routerHook.routerState,
+// never the api object captured at plugin load: every loader frontend
+// reinjection (CEF reconnect, Steam client self-update) constructs a NEW
+// RouterHook/routerState, and patches registered on the stale instance are
+// silently dropped - that staleness, not the Steam client, is what made the
+// native sections vanish. A poller re-registers on the current instance
+// whenever it changes.
 export function installNativeSettingsSections(): () => void {
-  if (!deckyRouterHookWorks()) {
-    return installDirectSettingsSections();
-  }
-  console.log(LOG, "installing");
-  let settingsPatch: RoutePatch | null = null;
-  let propertiesPatch: RoutePatch | null = null;
-  try {
-    settingsPatch = routerHook.addPatch("/settings", makeRoutePatch(KINDS.settings));
-  } catch (error) {
-    console.warn(LOG, "failed to register /settings patch", error);
-  }
-  try {
-    propertiesPatch = routerHook.addPatch("/app/:appid/properties", makeRoutePatch(KINDS.properties));
-  } catch (error) {
-    console.warn(LOG, "failed to register /app/:appid/properties patch", error);
-  }
-  return () => {
+  console.log(LOG, "installing (live-instance registration)");
+  let stopped = false;
+  let timer: number | null = null;
+  let currentState: any = null;
+  let settingsPatch: any = null;
+  let propertiesPatch: any = null;
+
+  const liveState = () => (window as any).DeckyPluginLoader?.routerHook?.routerState;
+
+  const register = () => {
+    const state = liveState();
+    if (!state) return;
+    if (state === currentState && settingsPatch) return;
     try {
-      if (settingsPatch) routerHook.removePatch("/settings", settingsPatch);
-      if (propertiesPatch) routerHook.removePatch("/app/:appid/properties", propertiesPatch);
+      if (currentState && settingsPatch) currentState.removePatch("/settings", settingsPatch);
+      if (currentState && propertiesPatch) currentState.removePatch("/app/:appid/properties", propertiesPatch);
+    } catch {
+    }
+    settingsPatch = state.addPatch("/settings", makeRoutePatch(KINDS.settings));
+    propertiesPatch = state.addPatch("/app/:appid/properties", makeRoutePatch(KINDS.properties));
+    currentState = state;
+    console.log(LOG, "registered on routerState instance");
+  };
+
+  const ensure = () => {
+    if (stopped) return;
+    try {
+      register();
     } catch (error) {
+      console.warn(LOG, "registration failed", error);
+    }
+    timer = window.setTimeout(ensure, 3000);
+  };
+  ensure();
+
+  return () => {
+    stopped = true;
+    if (timer) window.clearTimeout(timer);
+    try {
+      if (currentState && settingsPatch) currentState.removePatch("/settings", settingsPatch);
+      if (currentState && propertiesPatch) currentState.removePatch("/app/:appid/properties", propertiesPatch);
+    } catch {
     }
   };
 }

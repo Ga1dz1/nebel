@@ -12,7 +12,7 @@
 // Steam-internal route changes can't disable it wholesale. Regex anchors
 // match the map's STRUCTURE (return{...X,identifier:Y||Z}), not minified
 // names, so re-minification survives.
-import { ErrorBoundary } from "@decky/ui";
+import { ErrorBoundary, findAllModules } from "@decky/ui";
 import type { ReactNode } from "react";
 import {
   CloudSyncSection,
@@ -157,7 +157,9 @@ export function installDirectSettingsSections(): () => void {
   } catch (error) {
     console.warn(LOG, "install failed", error);
   }
+  const uninstallGrabber = installExportGrabber();
   return () => {
+    uninstallGrabber();
     try {
       delete (window as any)[WRAP];
     } catch {
@@ -165,6 +167,106 @@ export function installDirectSettingsSections(): () => void {
   };
 }
 
+// --- Export grabber ---------------------------------------------------------
+// The pages-map module is executed at boot, before Decky loads plugins, so
+// factory patching cannot affect the live component. But webpack compiles
+// ESM imports to property reads at use time, and its export getters are
+// configurable - so REDEFINING the export property redirects every future
+// render. We find component exports whose source contains the pages-map
+// anchor and wrap them: on each render we walk the returned element tree and
+// route any `pages` array carrying our identifiers through wrapPage, exactly
+// like the classic route-patch cascade but triggered from the export.
+const EXPORT_MARK = "__nebelExportWrapped";
+
+const IDENT_RE = /^\/settings\/|^\/app\/\d+\/properties\//;
+
+function scanElements(node: any, depth: number): void {
+  if (!node || typeof node !== "object" || depth > 14) return;
+  if (Array.isArray(node)) {
+    for (const child of node) scanElements(child, depth);
+    return;
+  }
+  const props = node.props;
+  if (!props || typeof props !== "object") return;
+  const pages = props.pages;
+  if (Array.isArray(pages) && pages.length > 2 && !pages.__nebelScanned) {
+    const ours = pages.some((page: any) => {
+      const id = page && (page.identifier || page.route || page.link);
+      return typeof id === "string" && IDENT_RE.test(id);
+    });
+    if (ours) {
+      try {
+        Object.defineProperty(pages, "__nebelScanned", { value: true, configurable: true });
+        props.pages = pages.map((page: any) => (window as any)[WRAP](page));
+      } catch (error) {
+        console.warn(LOG, "pages wrap failed", error);
+      }
+    }
+  }
+  scanElements(props.children, depth + 1);
+}
+
+function wrapExport(exportsObj: any, key: string): boolean {
+  try {
+    const Original = exportsObj[key];
+    if (typeof Original !== "function" || Original[EXPORT_MARK]) return false;
+    // Only components whose render output can carry the pages array.
+    const src = Original.toString();
+    if (!src.includes("pages") || !src.includes("identifier")) return false;
+    const Wrapped: any = function (this: unknown, props: any) {
+      const ret = Original.call(this, props);
+      try {
+        scanElements(ret, 0);
+      } catch (error) {
+        console.warn(LOG, "tree scan failed", error);
+      }
+      return ret;
+    };
+    Object.assign(Wrapped, Original);
+    Wrapped.toString = () => Original.toString();
+    Wrapped[EXPORT_MARK] = true;
+    Object.defineProperty(exportsObj, key, {
+      value: Wrapped,
+      configurable: true,
+      enumerable: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function installExportGrabber(): () => void {
+  let wrapped = 0;
+  try {
+    const chunks = (window as any).webpackChunksteamui || [];
+    for (const ch of chunks) {
+      const mods = ch && ch[1];
+      if (!mods) continue;
+      for (const id of Object.keys(mods)) {
+        if (typeof mods[id] !== "function") continue;
+        // Module exports live behind the webpack runtime; findModuleByExport
+        // (DFL) knows how to resolve them - but it needs the module loaded.
+        // Try the runtime's cache via a require without executing factories.
+      }
+    }
+    // DFL's scanner resolves every loaded module's exports; collect all
+    // modules that export at least one pages/identifier component, then
+    // redefine each matching export.
+    const modules = (findAllModules as any)((e: any) =>
+      typeof e === "function" && e.toString().includes("pages") && e.toString().includes("identifier")
+    ) as any[];
+    for (const mod of modules) {
+      for (const key of Object.keys(mod)) {
+        if (wrapExport(mod, key)) wrapped++;
+      }
+    }
+    console.log(LOG, "export-grabber wrapped exports:", wrapped);
+  } catch (error) {
+    console.warn(LOG, "export grabber failed", error);
+  }
+  return () => {};
+}
 // Probe: does the loader's routerHook actually register patches on this Steam
 // client? A no-op addPatch is what 18.09 clients do to 3.2.9.
 export function deckyRouterHookWorks(): boolean {
