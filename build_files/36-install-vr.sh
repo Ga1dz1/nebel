@@ -17,7 +17,6 @@ dnf5 -y install --setopt=install_weak_deps=False \
     monado \
     openxr \
     opencomposite \
-    openvr \
     xr-hardware \
     avahi \
     avahi-tools
