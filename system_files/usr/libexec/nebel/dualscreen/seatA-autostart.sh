@@ -96,7 +96,20 @@ while true; do
         [ "$seat_found" = "1" ] && break
         sleep 2
     done
-    [ "$seat_found" = "1" ] && continue
+    [ "$seat_found" = "1" ] || continue
+    # Content health: the X window can be alive while its render is dead
+    # (Steam client update shifts webpack module IDs, CEF restart wipes the
+    # JS context). The window then shows just its background = "gradient".
+    # Re-render in place when the body has no children; recreate via seatA.sh
+    # when the JS handle itself is gone.
+    content=$(python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "try{(window.__seatB&&!window.__seatB.closed&&window.__seatB.document&&window.__seatB.document.body)?window.__seatB.document.body.children.length:-1}catch(e){-2}" 2>/dev/null) || content=""
+    content=$(echo "$content" | tr -d '"[:space:]')
+    case "$content" in
+        0|-1|-2)
+            python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "$(cat "$DUALSCREEN_DIR/seatA_render.js")" >/dev/null 2>&1 || true
+            ;;
+    esac
+    continue
     curl -sf http://127.0.0.1:8080/json 2>/dev/null | grep -q SharedJSContext || continue
     python3 "$DUALSCREEN_DIR/steamui_switcher_patch.py" >/dev/null 2>&1 || true
     python3 "$DUALSCREEN_DIR/cefeval.py" SharedJSContext "void($(cat "$DUALSCREEN_DIR/switcher_patch.js")); \"started\"" >/dev/null 2>&1 || true

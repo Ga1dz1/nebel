@@ -78,4 +78,6 @@ if [ "$(sed -n 's/^FULL_STEAM=//p' /etc/nebel/seat-a.conf 2>/dev/null | head -1)
 fi
 sleep 1
 echo "== render contextual view =="
-$CEFEVAL SharedJSContext "void($(cat "$DUALSCREEN_DIR/seatA_render.js")); \"started\""
+# The render JS returns a diagnostic string (mode/deps/errs) - keep it in the
+# journal; a bare "started" here previously hid total render failures.
+$CEFEVAL SharedJSContext "$(cat "$DUALSCREEN_DIR/seatA_render.js")"
