@@ -41,8 +41,8 @@ FROM quay.io/fedora/fedora-bootc:44
 ARG NEBEL_VERSION=unknown
 # Human release version for Settings -> System (VERSION_ID in os-release);
 # NEBEL_VERSION (date.sha) stays as BUILD_ID. Bump NEBEL_RELEASE per release.
-ARG NEBEL_RELEASE=1.4.3
-ARG NEBEL_CODENAME=Stratus
+ARG NEBEL_RELEASE=1.4.4
+ARG NEBEL_CODENAME=Aurora
 LABEL org.opencontainers.image.version="${NEBEL_VERSION}"
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \

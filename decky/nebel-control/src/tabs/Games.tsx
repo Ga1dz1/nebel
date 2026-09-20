@@ -16,6 +16,7 @@ import { saveCompatApplied, listDir, getDepsStatus, getLsfgAvailability, install
 import type { DepsStatus, DirListing, LsfgAvailability } from "../backend";
 import { Collapsible, OpenFullScreenButton, SelectEdit } from "../components/widgets";
 import { HeroicSection } from "../components/HeroicSection";
+import { TweaksShareSection } from "../components/TweaksShare";
 import { t } from "../i18n";
 import { getGlobalResolution, setGlobalResolution } from "../lib/steamSettings";
 import { clone } from "../lib/util";
@@ -765,6 +766,7 @@ export function Games({ config, setConfig, qam, lockedAppid, injected }: { confi
         </>
       )}
       {!lockedAppid && <AddGameSection />}
+      {!qam && !lockedAppid && <TweaksShareSection />}
       {qam && <OpenFullScreenButton />}
     </>
   );

@@ -771,6 +771,34 @@ def action_get_ssh_enabled(request):
     return {"enabled": ssh_enabled()}
 
 
+def _scx_unit_state():
+    def state_of(arg):
+        result = subprocess.run(
+            ["/usr/bin/systemctl", "is-" + arg, "nebel-scx.service"],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=15,
+        )
+        return result.stdout.strip() == ("enabled" if arg == "enabled" else "active")
+    return {"enabled": state_of("enabled"), "active": state_of("active")}
+
+
+def action_set_scx_enabled(request):
+    # Opt-in only (see nebel-scx.service): nothing in the image enables this
+    # unit; the toggle here is the single entry point, so a bad A/B result
+    # can always be undone from the UI or by `systemctl disable nebel-scx`.
+    enabled = bool(request.get("enabled"))
+    action = "enable" if enabled else "disable"
+    run(["/usr/bin/systemctl", action, "--now", "nebel-scx.service"], timeout=30)
+    return _scx_unit_state()
+
+
+def action_get_scx_enabled(request):
+    return _scx_unit_state()
+
+
 # --- Supporter key (Patreon early access) ---------------------------------
 # The key unlocks the beta/preview update channels; its sha256 lives in the
 # public allowlist supporter-keys.txt in the nebel repo (fetched/cached by
@@ -900,6 +928,8 @@ ACTIONS = {
     "clear_supporter_key": action_clear_supporter_key,
     "inputplumber_intercept": action_inputplumber_intercept,
     "set_ssh_enabled": action_set_ssh_enabled,
+    "set_scx_enabled": action_set_scx_enabled,
+    "get_scx_enabled": action_get_scx_enabled,
     "set_syncthing_enabled": action_set_syncthing_enabled,
     "get_syncthing_enabled": action_get_syncthing_enabled,
     "write_config": action_write_config,

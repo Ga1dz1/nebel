@@ -1,0 +1,16 @@
+[Unit]
+Description=nebel Wi-Fi profile heal (drop MAC-pinned/duplicate NM profiles)
+# Runs after NetworkManager so nmcli works; oneshot, idempotent, exits
+# quietly when there is nothing to fix. See nebel-wifi-heal for why:
+# QCA6390 without factory MAC leaves dead MAC-pinned profiles behind.
+After=NetworkManager.service
+Requires=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nebel/nebel-wifi-heal
+TimeoutStartSec=60
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

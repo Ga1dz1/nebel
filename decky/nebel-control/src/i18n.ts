@@ -363,6 +363,25 @@ const uk: Dictionary = {
   "Key saved, but it is not on the supporter list yet (check again tomorrow)": "Ключ збережено, але його ще немає у списку підтримки (повторіть перевірку завтра)",
   "Invalid key format (expected nbl-xxxx-xxxx-xxxx)": "Неправильний формат ключа (очікується nbl-xxxx-xxxx-xxxx)",
   "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Розблоковує канали оновлення beta і preview. Ключі надаються за підтримки на Patreon — канал stable залишається безкоштовним для всіх.",
+  "TabVr": "VR та кіно",
+  "Share Game Profiles": "Поділитися профілями ігор",
+  "Export all game profiles": "Експортувати всі профілі",
+  "Import from nebel-tweaks-export.json": "Імпорт із nebel-tweaks-export.json",
+  "Imported {n} game profiles": "Імпортовано профілів ігор: {n}",
+  "Exported to {path}": "Експортовано до {path}",
+  "VR & Cinema": "VR та кінотеатр",
+  "WiVRn is not installed on this system image.": "WiVRn не встановлено в цьому образі системи.",
+  "VR server (WiVRn)": "VR-сервер (WiVRn)",
+  "Stream games and the desktop to a headset (Quest 3, etc.) over Wi-Fi. When a headset connects, it gets its own virtual screen.": "Стрімінг ігор та робочого столу в шолом (Quest 3 тощо) через Wi-Fi. Підключившись, шолом отримує власний віртуальний екран.",
+  "Status: running — connect the headset over the same Wi-Fi network and accept pairing.": "Статус: працює — підключіть шолом до тієї ж Wi-Fi мережі та прийміть парування.",
+  "Status: enabled, not running yet. It starts with the gaming session.": "Статус: увімкнено, ще не запущено. Запуститься разом із ігровою сесією.",
+  "CPU Scheduler (experimental)": "Планувальник CPU (експериментально)",
+  "scx_lavd gaming scheduler": "Ігровий планувальник scx_lavd",
+  "sched-ext BPF scheduler for frame pacing (opt-in). Off by default — enable only for A/B testing, disable immediately if anything feels wrong.": "sched-ext BPF-планувальник для рівного фреймрейту (opt-in). За замовчуванням вимкнено — вмикайте лише для A/B-тесту, за будь-яких проблем одразу вимикайте.",
+  "scx_lavd binary not installed (scx-scheds package) — toggle will take effect once it ships.": "Бінарник scx_lavd не встановлено (пакет scx-scheds) — перемикач запрацює після його поставки.",
+  "Status: active": "Статус: активний",
+  "Status: enabled, not active (binary missing?)": "Статус: увімкнено, не активний (немає бінарника?)",
+  "Disable scx_lavd": "Вимкнути scx_lavd",
 };
 
 const ru: Dictionary = {
@@ -722,6 +741,25 @@ const ru: Dictionary = {
   "Key saved, but it is not on the supporter list yet (check again tomorrow)": "Ключ сохранён, но его ещё нет в списке поддержки (проверьте завтра)",
   "Invalid key format (expected nbl-xxxx-xxxx-xxxx)": "Неправильный формат ключа (ожидается nbl-xxxx-xxxx-xxxx)",
   "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Разблокирует каналы обновления beta и preview. Ключи выдаются за поддержку на Patreon — канал stable остаётся бесплатным для всех.",
+  "TabVr": "VR и кино",
+  "Share Game Profiles": "Поделиться профилями игр",
+  "Export all game profiles": "Экспортировать все профили",
+  "Import from nebel-tweaks-export.json": "Импорт из nebel-tweaks-export.json",
+  "Imported {n} game profiles": "Импортировано профилей игр: {n}",
+  "Exported to {path}": "Экспортировано в {path}",
+  "VR & Cinema": "VR и кинотеатр",
+  "WiVRn is not installed on this system image.": "WiVRn не установлен в этом образе системы.",
+  "VR server (WiVRn)": "VR-сервер (WiVRn)",
+  "Stream games and the desktop to a headset (Quest 3, etc.) over Wi-Fi. When a headset connects, it gets its own virtual screen.": "Стриминг игр и рабочего стола в шлем (Quest 3 и др.) по Wi-Fi. При подключении шлем получает собственный виртуальный экран.",
+  "Status: running — connect the headset over the same Wi-Fi network and accept pairing.": "Статус: работает — подключите шлем к той же Wi-Fi сети и примите сопряжение.",
+  "Status: enabled, not running yet. It starts with the gaming session.": "Статус: включён, ещё не запущен. Запустится вместе с игровой сессией.",
+  "CPU Scheduler (experimental)": "Планировщик CPU (экспериментально)",
+  "scx_lavd gaming scheduler": "Игровой планировщик scx_lavd",
+  "sched-ext BPF scheduler for frame pacing (opt-in). Off by default — enable only for A/B testing, disable immediately if anything feels wrong.": "sched-ext BPF-планировщик для ровного фреймрейта (opt-in). По умолчанию выключен — включайте только для A/B-теста, при любых проблемах сразу выключайте.",
+  "scx_lavd binary not installed (scx-scheds package) — toggle will take effect once it ships.": "Бинарник scx_lavd не установлен (пакет scx-scheds) — переключатель заработает после его поставки.",
+  "Status: active": "Статус: активен",
+  "Status: enabled, not active (binary missing?)": "Статус: включён, не активен (нет бинарника?)",
+  "Disable scx_lavd": "Выключить scx_lavd",
 };
 
 const es: Dictionary = {
@@ -1073,6 +1111,7 @@ const es: Dictionary = {
   "Volume": "Volumen",
   "Brightness": "Brillo",
   "Menu key": "Tecla de menú",
+  "TabVr": "VR y cine",
 };
 
 const fr: Dictionary = {
@@ -1424,6 +1463,7 @@ const fr: Dictionary = {
   "Volume": "Volume",
   "Brightness": "Luminosité",
   "Menu key": "Touche menu",
+  "TabVr": "VR et cinéma",
 };
 
 const dictionaries: Partial<Record<Locale, Dictionary>> = { uk, ru, es, fr };

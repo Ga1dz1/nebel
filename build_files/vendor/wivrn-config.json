@@ -1,0 +1,21 @@
+{
+  "bitrate": 50000000,
+  "encoders": [
+    {
+      "encoder": "ffmpeg",
+      "codec": "h264",
+      "width": 0,
+      "height": 0,
+      "offset_x": 0,
+      "offset_y": 0,
+      "group": 0
+    }
+  ],
+  "tcp_only": false,
+  "virtual-display": {
+    "enabled": true,
+    "mode": "auto",
+    "scale": 1.0
+  },
+  "application": []
+}

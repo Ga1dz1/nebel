@@ -166,4 +166,29 @@ export const romsSetRoot = (path: string) => call<[string], RomsRootState>("roms
 export interface SgdbKeyState { present: boolean; masked: string }
 export const getSgdbKeyState = () => call<[], SgdbKeyState>("get_sgdb_key_state");
 export const setSgdbKey = (key: string) => call<[string], SgdbKeyState>("set_sgdb_key", key);
+export interface VrState {
+  installed: boolean;
+  enabled: boolean;
+  active: boolean;
+  dashboard: boolean;
+  error?: string;
+}
+export const getVrState = () => call<[], VrState>("get_vr_state");
+export const setVrEnabled = (enabled: boolean) => call<[boolean], VrState>("set_vr_enabled", enabled);
+export interface ScxState {
+  available: boolean;
+  enabled: boolean;
+  active: boolean;
+}
+export const getScxState = () => call<[], ScxState>("get_scx_state");
+export const setScxEnabled = (enabled: boolean) => call<[boolean], ScxState>("set_scx_enabled", enabled);
+export interface TweaksExport {
+  "nebel-tweaks": number;
+  global: Record<string, unknown>;
+  games: Record<string, Record<string, unknown>>;
+}
+export const exportTweaks = () => call<[], TweaksExport>("export_tweaks");
+export const importTweaks = (payload: TweaksExport) => call<[TweaksExport], TweaksExport>("import_tweaks", payload);
+export const exportTweaksFile = () => call<[], { path: string; games: number }>("export_tweaks_file");
+export const importTweaksFile = (path?: string) => call<[string | undefined], { games: number; path: string }>("import_tweaks_file", path);
 export const syncNow = () => call<[], { ok: boolean; scanned: number }>("sync_now");

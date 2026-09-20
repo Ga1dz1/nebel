@@ -16,6 +16,7 @@ import { Power } from "./tabs/Power";
 import { Roms } from "./tabs/Roms";
 import { Sync } from "./tabs/Sync";
 import { System } from "./tabs/System";
+import { Vr } from "./tabs/Vr";
 import type { Config } from "./types";
 
 type SetConfig = Dispatch<SetStateAction<Config | null>>;
@@ -105,6 +106,7 @@ function buildTabs(config: Config, setConfig: SetConfig, qam: boolean): PluginTa
     { id: "Power", icon: tabIcons.Power, label: t("TabPower"), content: <Power config={config} setConfig={setConfig} qam={qam} /> },
     { id: "Lighting", icon: tabIcons.Lighting, label: t("TabLighting"), content: <Lighting config={config} setConfig={setConfig} qam={qam} /> },
     { id: "Sync", icon: tabIcons.Sync, label: t("TabSync"), content: <Sync qam={qam} /> },
+    { id: "Vr", icon: tabIcons.Vr, label: t("TabVr"), content: <Vr qam={qam} /> },
     { id: "System", icon: tabIcons.System, label: t("TabSystem"), content: <System config={config} setConfig={setConfig} qam={qam} /> },
   ];
 }

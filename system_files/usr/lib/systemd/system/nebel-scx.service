@@ -1,0 +1,21 @@
+[Unit]
+Description=nebel scx_lavd gaming scheduler (OPT-IN, experimental)
+ConditionPathExists=/usr/bin/scx_lavd
+# scx_lavd is a sched-ext BPF scheduler (pocknix/ROCKNIX lineage) for frame
+# pacing. It is NOT a default: gamescope-on-SCHED_RR already gave us a full
+# system hang (see SCHEDULER_NOTES.md and the nebel-gamescope-rt disable
+# note in 40-vendor-system-files.sh), and scx needs on-device A/B before we
+# trust any scheduler meddling. This unit only starts when:
+#   1. the scx-scheds package actually provides /usr/bin/scx_lavd, and
+#   2. the unit is explicitly enabled by the user (plugin toggle writes the
+#      enablement; nothing in the image enables it).
+# ConditionPathExists keeps a missing binary from becoming a boot error.
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/scx_lavd
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

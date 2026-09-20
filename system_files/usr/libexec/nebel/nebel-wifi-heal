@@ -1,0 +1,77 @@
+#!/bin/bash
+# nebel-wifi-heal — drop NetworkManager wifi profiles that can never match.
+#
+# Background: the QCA6390 on Mini V2 exposes no factory MAC to ath11k
+# (see /etc/NetworkManager/conf.d/22-wifi-mac-addr.conf), so connection
+# profiles saved while a one-off/per-boot MAC was active get pinned via
+# 802-11-wireless.mac-address to an address that no longer exists after a
+# reboot. NetworkManager then refuses to autoconnect them and the user sees
+# "Wi-Fi doesn't save". Observed live 2026-09-19: two "Family" profiles,
+# one pinned to 00:03:7f:12:f9:f9 with permaddr 00:03:7f:12:39:39.
+#
+# Heal: for every wifi profile carrying an explicit mac-address pin, delete
+# the profile if that MAC is not among the addresses of any present wifi
+# device (permaddr, current, or stable-cloned — we just compare against
+# `ip -o link` plus `permaddr`). Also drop duplicate leftover profiles for
+# the same SSID, keeping the newest by profile timestamp.
+
+set -u
+
+CONN_DIR=/etc/NetworkManager/system-connections
+[ -d "$CONN_DIR" ] || exit 0
+
+# All MACs currently known to the system (any interface, any case).
+live_macs=$(
+    { ip -o link 2>/dev/null | grep -oE 'link/ether [0-9a-f:]{17}|permaddr [0-9a-f:]{17}' || true
+      nmcli -t -f GENERAL.HWADDR device show 2>/dev/null | cut -d: -f2- || true
+    } | tr 'A-F' 'a-f' | grep -oE '[0-9a-f]{2}(:[0-9a-f]{2}){5}' | sort -u
+)
+
+pinned_to_missing_mac() {
+    local file=$1 pin
+    # Only wifi profiles with an explicit, non-special pin.
+    grep -qE '^type=wifi$' "$file" 2>/dev/null || return 1
+    pin=$(grep -E '^mac-address=' "$file" | head -1 | cut -d= -f2 | tr 'A-F' 'a-f')
+    [ -n "$pin" ] || return 1
+    case "$pin" in
+        preserve|permanent|stable|random|explicit) return 1 ;;
+    esac
+    # Missing = heal target.
+    ! grep -qx "$pin" <<<"$live_macs"
+}
+
+uuid_of() { grep -E '^uuid=' "$1" | head -1 | cut -d= -f2-; }
+ssid_of() { grep -E '^ssid='  "$1" | head -1 | cut -d= -f2-; }
+mtime_of() { stat -c %Y "$1" 2>/dev/null || echo 0; }
+
+declare -A seen_ssid newest_file
+for f in "$CONN_DIR"/*.nmconnection; do
+    [ -f "$f" ] || continue
+    if pinned_to_missing_mac "$f"; then
+        u=$(uuid_of "$f")
+        echo "nebel-wifi-heal: deleting $(basename "$f") (pinned MAC not present)"
+        nmcli connection delete uuid "$u" >/dev/null 2>&1 || rm -f "$f"
+        continue
+    fi
+    # Dedupe by SSID, keep the newest.
+    s=$(ssid_of "$f")
+    [ -n "$s" ] || continue
+    if [ -z "${seen_ssid[$s]:-}" ]; then
+        seen_ssid[$s]=1
+        newest_file[$s]=$f
+    else
+        cur=${newest_file[$s]}
+        if [ "$(mtime_of "$f")" -gt "$(mtime_of "$cur")" ]; then
+            u=$(uuid_of "$cur")
+            echo "nebel-wifi-heal: deleting older duplicate $(basename "$cur") for SSID '$s'"
+            nmcli connection delete uuid "$u" >/dev/null 2>&1 || rm -f "$cur"
+            newest_file[$s]=$f
+        else
+            u=$(uuid_of "$f")
+            echo "nebel-wifi-heal: deleting older duplicate $(basename "$f") for SSID '$s'"
+            nmcli connection delete uuid "$u" >/dev/null 2>&1 || rm -f "$f"
+        fi
+    fi
+done
+
+exit 0

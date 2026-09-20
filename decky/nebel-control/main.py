@@ -83,7 +83,17 @@ from nebel_control.sync import (
 )
 from nebel_control.system import set_ssh_enabled
 from nebel_control import supporter
-from nebel_control.tweaks import load_compat_applied, lsfg_availability, save_compat_applied, save_tweaks
+from nebel_control.tweaks import (
+    export_tweaks,
+    export_tweaks_file,
+    import_tweaks,
+    import_tweaks_file,
+    load_compat_applied,
+    lsfg_availability,
+    save_compat_applied,
+    save_tweaks,
+)
+from nebel_control import vr as vr_mod
 
 
 class Plugin:
@@ -307,3 +317,27 @@ class Plugin:
 
     async def end_calibration_session(self, token=None):
         return await asyncio.to_thread(end_session, token)
+
+    async def get_vr_state(self):
+        return await asyncio.to_thread(vr_mod.vr_state)
+
+    async def set_vr_enabled(self, enabled):
+        return await asyncio.to_thread(vr_mod.set_vr_enabled, enabled)
+
+    async def get_scx_state(self):
+        return await asyncio.to_thread(vr_mod.scx_state)
+
+    async def set_scx_enabled(self, enabled):
+        return await asyncio.to_thread(vr_mod.set_scx_enabled, enabled)
+
+    async def export_tweaks(self):
+        return await asyncio.to_thread(export_tweaks)
+
+    async def import_tweaks(self, payload):
+        return await asyncio.to_thread(import_tweaks, payload)
+
+    async def export_tweaks_file(self):
+        return await asyncio.to_thread(export_tweaks_file)
+
+    async def import_tweaks_file(self, path=None):
+        return await asyncio.to_thread(import_tweaks_file, path)

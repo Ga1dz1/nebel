@@ -123,3 +123,53 @@ def save_compat_applied(appids):
     text = json.dumps({"appids": clean}, indent=2, sort_keys=True) + "\n"
     call("write_config", name="compat-applied", text=text)
     return clean
+
+
+# --- Export / import (shareable per-game tweak packs, pocknix-style) ------
+TWEAKS_EXPORT_VERSION = 1
+TWEAKS_EXPORT_PATH = Path("/var/home/nebel/nebel-tweaks-export.json")
+
+
+def export_tweaks():
+    data = load_tweaks()
+    return {
+        "nebel-tweaks": TWEAKS_EXPORT_VERSION,
+        "global": data.get("global", {}),
+        "games": data.get("games", {}),
+    }
+
+
+def import_tweaks(payload):
+    if not isinstance(payload, dict):
+        raise ValueError("not a tweaks export")
+    version = payload.get("nebel-tweaks")
+    if version is None:
+        raise ValueError("missing nebel-tweaks marker")
+    if int(version) > TWEAKS_EXPORT_VERSION:
+        raise ValueError(f"unsupported export version {version}")
+    data = sanitize_tweaks({"global": payload.get("global", {}), "games": payload.get("games", {})})
+    save_tweaks(data)
+    return export_tweaks()
+
+
+def export_tweaks_file():
+    """Write the export next to the user home so it can be grabbed off the
+    console (SD card, sync, ssh) and shared; returns the path."""
+    payload = export_tweaks()
+    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    TWEAKS_EXPORT_PATH.write_text(text, encoding="utf-8")
+    try:
+        import os
+        os.chown(TWEAKS_EXPORT_PATH, 1000, 1000)
+    except OSError:
+        pass
+    return {"path": str(TWEAKS_EXPORT_PATH), "games": len(payload.get("games", {}))}
+
+
+def import_tweaks_file(path=None):
+    """Import from a JSON file (defaults to the export path)."""
+    source = Path(path) if path else TWEAKS_EXPORT_PATH
+    with source.open(encoding="utf-8") as f:
+        payload = json.load(f)
+    result = import_tweaks(payload)
+    return {"games": len(result.get("games", {})), "path": str(source)}

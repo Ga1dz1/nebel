@@ -98,6 +98,12 @@ const romsRoot = () => call("roms_root");
 const romsSetRoot = (path) => call("roms_set_root", path);
 const getSgdbKeyState = () => call("get_sgdb_key_state");
 const setSgdbKey = (key) => call("set_sgdb_key", key);
+const getVrState = () => call("get_vr_state");
+const setVrEnabled = (enabled) => call("set_vr_enabled", enabled);
+const getScxState = () => call("get_scx_state");
+const setScxEnabled = (enabled) => call("set_scx_enabled", enabled);
+const exportTweaksFile = () => call("export_tweaks_file");
+const importTweaksFile = (path) => call("import_tweaks_file", path);
 const syncNow = () => call("sync_now");
 
 function useDebouncedSave(options) {
@@ -487,6 +493,25 @@ const uk = {
     "Key saved, but it is not on the supporter list yet (check again tomorrow)": "Ключ збережено, але його ще немає у списку підтримки (повторіть перевірку завтра)",
     "Invalid key format (expected nbl-xxxx-xxxx-xxxx)": "Неправильний формат ключа (очікується nbl-xxxx-xxxx-xxxx)",
     "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Розблоковує канали оновлення beta і preview. Ключі надаються за підтримки на Patreon — канал stable залишається безкоштовним для всіх.",
+    "TabVr": "VR та кіно",
+    "Share Game Profiles": "Поділитися профілями ігор",
+    "Export all game profiles": "Експортувати всі профілі",
+    "Import from nebel-tweaks-export.json": "Імпорт із nebel-tweaks-export.json",
+    "Imported {n} game profiles": "Імпортовано профілів ігор: {n}",
+    "Exported to {path}": "Експортовано до {path}",
+    "VR & Cinema": "VR та кінотеатр",
+    "WiVRn is not installed on this system image.": "WiVRn не встановлено в цьому образі системи.",
+    "VR server (WiVRn)": "VR-сервер (WiVRn)",
+    "Stream games and the desktop to a headset (Quest 3, etc.) over Wi-Fi. When a headset connects, it gets its own virtual screen.": "Стрімінг ігор та робочого столу в шолом (Quest 3 тощо) через Wi-Fi. Підключившись, шолом отримує власний віртуальний екран.",
+    "Status: running — connect the headset over the same Wi-Fi network and accept pairing.": "Статус: працює — підключіть шолом до тієї ж Wi-Fi мережі та прийміть парування.",
+    "Status: enabled, not running yet. It starts with the gaming session.": "Статус: увімкнено, ще не запущено. Запуститься разом із ігровою сесією.",
+    "CPU Scheduler (experimental)": "Планувальник CPU (експериментально)",
+    "scx_lavd gaming scheduler": "Ігровий планувальник scx_lavd",
+    "sched-ext BPF scheduler for frame pacing (opt-in). Off by default — enable only for A/B testing, disable immediately if anything feels wrong.": "sched-ext BPF-планувальник для рівного фреймрейту (opt-in). За замовчуванням вимкнено — вмикайте лише для A/B-тесту, за будь-яких проблем одразу вимикайте.",
+    "scx_lavd binary not installed (scx-scheds package) — toggle will take effect once it ships.": "Бінарник scx_lavd не встановлено (пакет scx-scheds) — перемикач запрацює після його поставки.",
+    "Status: active": "Статус: активний",
+    "Status: enabled, not active (binary missing?)": "Статус: увімкнено, не активний (немає бінарника?)",
+    "Disable scx_lavd": "Вимкнути scx_lavd",
 };
 const ru = {
     "Internal screen": "Встроенный экран",
@@ -845,6 +870,25 @@ const ru = {
     "Key saved, but it is not on the supporter list yet (check again tomorrow)": "Ключ сохранён, но его ещё нет в списке поддержки (проверьте завтра)",
     "Invalid key format (expected nbl-xxxx-xxxx-xxxx)": "Неправильный формат ключа (ожидается nbl-xxxx-xxxx-xxxx)",
     "Unlocks the beta and preview update channels. Keys come with Patreon support - the stable channel stays free for everyone.": "Разблокирует каналы обновления beta и preview. Ключи выдаются за поддержку на Patreon — канал stable остаётся бесплатным для всех.",
+    "TabVr": "VR и кино",
+    "Share Game Profiles": "Поделиться профилями игр",
+    "Export all game profiles": "Экспортировать все профили",
+    "Import from nebel-tweaks-export.json": "Импорт из nebel-tweaks-export.json",
+    "Imported {n} game profiles": "Импортировано профилей игр: {n}",
+    "Exported to {path}": "Экспортировано в {path}",
+    "VR & Cinema": "VR и кинотеатр",
+    "WiVRn is not installed on this system image.": "WiVRn не установлен в этом образе системы.",
+    "VR server (WiVRn)": "VR-сервер (WiVRn)",
+    "Stream games and the desktop to a headset (Quest 3, etc.) over Wi-Fi. When a headset connects, it gets its own virtual screen.": "Стриминг игр и рабочего стола в шлем (Quest 3 и др.) по Wi-Fi. При подключении шлем получает собственный виртуальный экран.",
+    "Status: running — connect the headset over the same Wi-Fi network and accept pairing.": "Статус: работает — подключите шлем к той же Wi-Fi сети и примите сопряжение.",
+    "Status: enabled, not running yet. It starts with the gaming session.": "Статус: включён, ещё не запущен. Запустится вместе с игровой сессией.",
+    "CPU Scheduler (experimental)": "Планировщик CPU (экспериментально)",
+    "scx_lavd gaming scheduler": "Игровой планировщик scx_lavd",
+    "sched-ext BPF scheduler for frame pacing (opt-in). Off by default — enable only for A/B testing, disable immediately if anything feels wrong.": "sched-ext BPF-планировщик для ровного фреймрейта (opt-in). По умолчанию выключен — включайте только для A/B-теста, при любых проблемах сразу выключайте.",
+    "scx_lavd binary not installed (scx-scheds package) — toggle will take effect once it ships.": "Бинарник scx_lavd не установлен (пакет scx-scheds) — переключатель заработает после его поставки.",
+    "Status: active": "Статус: активен",
+    "Status: enabled, not active (binary missing?)": "Статус: включён, не активен (нет бинарника?)",
+    "Disable scx_lavd": "Выключить scx_lavd",
 };
 const es = {
     "Internal screen": "Pantalla interna",
@@ -1195,6 +1239,7 @@ const es = {
     "Volume": "Volumen",
     "Brightness": "Brillo",
     "Menu key": "Tecla de menú",
+    "TabVr": "VR y cine",
 };
 const fr = {
     "Internal screen": "Écran interne",
@@ -1545,6 +1590,7 @@ const fr = {
     "Volume": "Volume",
     "Brightness": "Luminosité",
     "Menu key": "Touche menu",
+    "TabVr": "VR et cinéma",
 };
 const dictionaries = { uk, ru, es, fr };
 // CEF's navigator.language follows the Steam UI language in game mode, which
@@ -1577,6 +1623,7 @@ const tabIcons = {
     Display: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("rect", { width: "20", height: "14", x: "2", y: "3", rx: "2" }), SP_JSX.jsx("line", { x1: "8", x2: "16", y1: "21", y2: "21" }), SP_JSX.jsx("line", { x1: "12", x2: "12", y1: "17", y2: "21" })] }) })),
     Lighting: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5" }), SP_JSX.jsx("path", { d: "M9 18h6" }), SP_JSX.jsx("path", { d: "M10 22h4" })] }) })),
     Sync: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M21 12a9 9 0 0 1-15.5 6.2L3 16" }), SP_JSX.jsx("path", { d: "M3 12a9 9 0 0 1 15.5-6.2L21 8" }), SP_JSX.jsx("path", { d: "M3 11v5h5" }), SP_JSX.jsx("path", { d: "M21 13V8h-5" })] }) })),
+    Vr: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M3 7h18a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3.5a2 2 0 0 1-1.7-.95l-1.2-1.9a1.5 1.5 0 0 0-2.6 0l-1.2 1.9A2 2 0 0 1 6.5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" }), SP_JSX.jsx("circle", { cx: "7.5", cy: "12", r: "1.6" }), SP_JSX.jsx("circle", { cx: "16.5", cy: "12", r: "1.6" })] }) })),
     System: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("path", { d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" }), SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "3" })] }) })),
     Roms: (SP_JSX.jsx(Icon, { path: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "10" }), SP_JSX.jsx("circle", { cx: "12", cy: "12", r: "3" })] }) })),
 };
@@ -2669,6 +2716,34 @@ function HeroicSection({ appid, forced, onToggleForce }) {
                         } })) : null, sarekAvailable && !sarekActive ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("A Sarek (legacy DXVK) build is installed - choose it for games that black-screen or report that no adapters were found") })) : null, !cfg ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Heroic configuration not found - launch the game once from Heroic first") })) : null, cfg ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { label: "Esync", checked: cfg.enableEsync, onChange: (value) => patch({ enableEsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Fsync", checked: cfg.enableFsync, onChange: (value) => patch({ enableFsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Msync", checked: cfg.enableMsync, onChange: (value) => patch({ enableMsync: value }) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WoW64 mode"), checked: cfg.enableWoW64, onChange: (value) => patch({ enableWoW64: value }) })] })) : null] })) : null, message ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.Field, { label: message }) })) : null] }));
 }
 
+// Export/import of the whole per-game tweak database (pocknix-style
+// shareable packs). Files round-trip through the user home so they can be
+// moved on/off the console via SD card, sync or ssh.
+function TweaksShareSection() {
+    const [message, setMessage] = SP_REACT.useState("");
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const run = async (action) => {
+        setBusy(true);
+        setMessage("");
+        try {
+            const result = await action();
+            if (result.games !== undefined) {
+                setMessage(t("Imported {n} game profiles").replace("{n}", String(result.games)));
+            }
+            else if (result.path) {
+                setMessage(t("Exported to {path}").replace("{path}", result.path));
+            }
+        }
+        catch (error) {
+            setMessage(String(error));
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("Share Game Profiles"), children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => run(exportTweaksFile), children: t("Export all game profiles") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => run(() => importTweaksFile(undefined)), children: t("Import from nebel-tweaks-export.json") }), message && SP_JSX.jsx(DFL.Field, { label: message })] }));
+}
+
 const GLOBAL_RESOLUTION_KEY = "gamescope_game_resolution_global";
 function getGlobalResolution() {
     return window.settingsStore?.GetClientSetting?.(GLOBAL_RESOLUTION_KEY)?.[0] || "Default";
@@ -3217,7 +3292,7 @@ function Games({ config, setConfig, qam, lockedAppid, injected }) {
                                 ? fexKnobs.map((knob) => (SP_JSX.jsx(DFL.ToggleField, { label: knob.label, checked: fexConfig[knob.key] === "1", onChange: (value) => setKnob(knob.key, value) }, knob.key)))
                                 : null] }))] })), !editingDefault && game?.appid ? (SP_JSX.jsx(HeroicSection, { appid: game.appid, forced: gameSettings.heroicForce === true, onToggleForce: (enabled) => patchSettings({ heroicForce: enabled || undefined }) })) : null, !qam && (!injected || forcedTool) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsxs(Collapsible, { label: t("Advanced"), children: [SP_JSX.jsx(SelectEdit, { label: t("CPU Cores"), value: String(values.cores || ""), options: cpuAffinityOptions, onChange: (value) => patchSettings({ cores: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Power Profile"), value: String(values.powerProfile || ""), options: powerProfileOptions, onChange: (value) => patchSettings({ powerProfile: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Switches the system power profile for this game and restores it after exit") }), lsfgAvailability?.layer && lsfgAvailability?.lossless ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("LSFG"), description: t("Frame generation via Lossless Scaling; requires V-Sync in game"), checked: values.lsfg === true, onChange: (enabled) => patchSettings({ lsfg: enabled || undefined }) }), values.lsfg === true ? (SP_JSX.jsx(SelectEdit, { label: t("LSFG Multiplier"), value: String(values.lsfgMultiplier || 2), options: lsfgMultiplierOptions, onChange: (value) => patchSettings({ lsfgMultiplier: Number(value) || undefined }) })) : null] })) : lsfgAvailability?.layer ? (SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("LSFG: frame generation unlocks here once Lossless Scaling is installed from Steam") })) : null, (!injected || values.gameEra === "xp") && (SP_JSX.jsxs(Collapsible, { label: t("Old games (legacy Windows)"), children: [SP_JSX.jsx(SelectEdit, { label: t("Windows Version (reported)"), value: String(values.windowsVersion || "auto"), options: windowsVersionOptions, onChange: (value) => patchSettings({ windowsVersion: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Old DirectX renderer"), value: String(values.legacyRenderer || "auto"), options: legacyRendererOptions, onChange: (value) => patchSettings({ legacyRenderer: value === "auto" ? undefined : value }) }), SP_JSX.jsx(SelectEdit, { label: t("Virtual Desktop"), value: String(values.virtualDesktop || ""), options: virtualDesktopOptions, onChange: (value) => patchSettings({ virtualDesktop: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("Memory Limit"), value: String(values.memoryLimitMB || 0), options: memoryLimitOptions, onChange: (value) => patchSettings({ memoryLimitMB: Number(value) || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Caps memory the game can allocate - last resort for very old titles; can crash modern games") })] })), SP_JSX.jsx(SelectEdit, { label: t("GPU Spoof"), value: String(values.gpuSpoof || ""), options: gpuSpoofOptions, onChange: (value) => patchSettings({ gpuSpoof: value || undefined }) }), (!injected || isX86Mode) && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SelectEdit, { label: t("DXVK version"), value: String(values.dxvkVersion || ""), options: dxvkVersionOptions, onChange: (value) => patchSettings({ dxvkVersion: value || undefined }) }), SP_JSX.jsx(SelectEdit, { label: t("D3D12 (VKD3D) version"), value: String(values.vkd3dVersion || ""), options: vkd3dVersionOptions, onChange: (value) => patchSettings({ vkd3dVersion: value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Older builds can help on Adreno GPUs where newer DXVK/VKD3D refuse to start - default uses Proton's built-in version") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowThunks((value) => !value), children: showThunks ? t("Hide Host Thunks") : t("Host Thunks") }), showThunks
                                                 ? thunkModules.map((thunk) => (SP_JSX.jsx(DFL.ToggleField, { label: thunk.label, checked: thunks[thunk.module] !== false, onChange: (value) => setThunk(thunk.module, value) }, thunk.module)))
-                                                : null] }))] }), SP_JSX.jsxs(Collapsible, { label: t("Launch flags"), children: [SP_JSX.jsx(DFL.ToggleField, { label: t("D3D12 feature level 12_1"), description: t("For DirectX 12 games that black-screen or refuse to start"), checked: envPresets.dx12Fl121 === true, onChange: (value) => setEnvPreset("dx12Fl121", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable DirectX 12"), description: t("For games whose DirectX 12 mode crashes - they fall back to DX11"), checked: envPresets.noD3d12 === true, onChange: (value) => setEnvPreset("noD3d12", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WineD3D instead of DXVK"), description: t("For old DirectX 9-11 games that won't start on DXVK"), checked: envPresets.wineD3d === true, onChange: (value) => setEnvPreset("wineD3d", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Old OpenGL compatibility"), description: t("For old OpenGL games that misdetect the graphics driver"), checked: envPresets.oldGlString === true, onChange: (value) => setEnvPreset("oldGlString", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Large address aware (32-bit games)"), description: t("For 32-bit era games crashing with out-of-memory errors"), checked: envPresets.largeAddress === true, onChange: (value) => setEnvPreset("largeAddress", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Mod/launcher DLL override"), description: t("Needed by mod loaders and third-party launchers (winhttp)"), checked: envPresets.winhttpOverride === true, onChange: (value) => setEnvPreset("winhttpOverride", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable fsync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noFsync === true, onChange: (value) => setEnvPreset("noFsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable esync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noEsync === true, onChange: (value) => setEnvPreset("noEsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Skip Larian launcher"), description: t("Baldur's Gate 3 and Divinity: Original Sin 2 - goes straight into the game"), checked: envPresets.skipLauncherLarian === true, onChange: (value) => setEnvPreset("skipLauncherLarian", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Skip intro videos"), description: t("Passes -novid for Source-engine and other games that stall on intro videos"), checked: envPresets.skipIntroVid === true, onChange: (value) => setEnvPreset("skipIntroVid", value) }), SP_JSX.jsx(DFL.TextField, { label: t("Extra launch arguments"), value: values.extraArgs || "", onChange: (e) => patchSettings({ extraArgs: e.target.value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Launch switches applied to the game's environment - variables set directly in Launch Options take precedence") })] })] }), !editingDefault && game?.appid && forcedTool ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
+                                                : null] }))] }), SP_JSX.jsxs(Collapsible, { label: t("Launch flags"), children: [SP_JSX.jsx(DFL.ToggleField, { label: t("D3D12 feature level 12_1"), description: t("For DirectX 12 games that black-screen or refuse to start"), checked: envPresets.dx12Fl121 === true, onChange: (value) => setEnvPreset("dx12Fl121", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable DirectX 12"), description: t("For games whose DirectX 12 mode crashes - they fall back to DX11"), checked: envPresets.noD3d12 === true, onChange: (value) => setEnvPreset("noD3d12", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("WineD3D instead of DXVK"), description: t("For old DirectX 9-11 games that won't start on DXVK"), checked: envPresets.wineD3d === true, onChange: (value) => setEnvPreset("wineD3d", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Old OpenGL compatibility"), description: t("For old OpenGL games that misdetect the graphics driver"), checked: envPresets.oldGlString === true, onChange: (value) => setEnvPreset("oldGlString", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Large address aware (32-bit games)"), description: t("For 32-bit era games crashing with out-of-memory errors"), checked: envPresets.largeAddress === true, onChange: (value) => setEnvPreset("largeAddress", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Mod/launcher DLL override"), description: t("Needed by mod loaders and third-party launchers (winhttp)"), checked: envPresets.winhttpOverride === true, onChange: (value) => setEnvPreset("winhttpOverride", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable fsync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noFsync === true, onChange: (value) => setEnvPreset("noFsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Disable esync"), description: t("For games that hang at startup or in anti-cheat init"), checked: envPresets.noEsync === true, onChange: (value) => setEnvPreset("noEsync", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Skip Larian launcher"), description: t("Baldur's Gate 3 and Divinity: Original Sin 2 - goes straight into the game"), checked: envPresets.skipLauncherLarian === true, onChange: (value) => setEnvPreset("skipLauncherLarian", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("Skip intro videos"), description: t("Passes -novid for Source-engine and other games that stall on intro videos"), checked: envPresets.skipIntroVid === true, onChange: (value) => setEnvPreset("skipIntroVid", value) }), SP_JSX.jsx(DFL.TextField, { label: t("Extra launch arguments"), value: values.extraArgs || "", onChange: (e) => patchSettings({ extraArgs: e.target.value || undefined }) }), SP_JSX.jsx("div", { className: "nebel-compat-note", children: t("Launch switches applied to the game's environment - variables set directly in Launch Options take precedence") })] })] }), !editingDefault && game?.appid && forcedTool ? (SP_JSX.jsx(DependenciesSection, { appid: game.appid, eraXp: values.gameEra === "xp" })) : null, !editingDefault ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: resetGame, children: t("Reset to Default") }) })) : (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: resettingAll, onClick: confirmResetAllGames, children: resettingAll ? t("Resetting...") : t("Reset All Games") }) }))] })), !lockedAppid && SP_JSX.jsx(AddGameSection, {}), !qam && !lockedAppid && SP_JSX.jsx(TweaksShareSection, {}), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
 // Per-game winetricks verbs ("Dependencies"): installs run in a backend
 // worker thread, so the UI polls deps_status while busy instead of blocking.
@@ -4636,6 +4711,51 @@ function System({ config, setConfig, qam }) {
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(ControllerExtras, { config: config, setConfig: setConfig, showEmulation: !qam }), SP_JSX.jsx(SystemExtras, { config: config, setConfig: setConfig, showStorage: !qam }), qam && SP_JSX.jsx(OpenFullScreenButton, {})] }));
 }
 
+// VR / Cinema tab (1.4.4). Backend: py_modules/nebel_control/vr.py +
+// privileged nebel-control actions (scx). All toggles are opt-in and
+// survive OTA: wivrn as a user unit, nebel-scx as a system unit.
+function Vr(_props) {
+    const [vr, setVr] = SP_REACT.useState(null);
+    const [scx, setScx] = SP_REACT.useState(null);
+    const [busy, setBusy] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        getVrState().then((s) => { if (!cancelled)
+            setVr(s); }).catch(() => { });
+        getScxState().then((s) => { if (!cancelled)
+            setScx(s); }).catch(() => { });
+        return () => { cancelled = true; };
+    }, []);
+    const toggleVr = async (value) => {
+        setBusy(true);
+        try {
+            setVr(await setVrEnabled(value));
+        }
+        catch {
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    const toggleScx = async (value) => {
+        setBusy(true);
+        try {
+            setScx(await setScxEnabled(value));
+        }
+        catch {
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    if (vr && !vr.installed) {
+        return (SP_JSX.jsx(DFL.PanelSection, { title: t("VR & Cinema"), children: SP_JSX.jsx("div", { children: t("WiVRn is not installed on this system image.") }) }));
+    }
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: t("VR & Cinema"), children: [SP_JSX.jsx(ToggleRow, { label: t("VR server (WiVRn)"), description: t("Stream games and the desktop to a headset (Quest 3, etc.) over Wi-Fi. When a headset connects, it gets its own virtual screen."), value: !!vr?.enabled, disabled: busy, onChange: toggleVr }), vr?.enabled && (SP_JSX.jsx("div", { style: { padding: "4px 0", opacity: 0.8 }, children: vr.active
+                            ? t("Status: running — connect the headset over the same Wi-Fi network and accept pairing.")
+                            : t("Status: enabled, not running yet. It starts with the gaming session.") }))] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("CPU Scheduler (experimental)"), children: [SP_JSX.jsx(ToggleRow, { label: t("scx_lavd gaming scheduler"), description: t("sched-ext BPF scheduler for frame pacing (opt-in). Off by default — enable only for A/B testing, disable immediately if anything feels wrong."), value: !!scx?.enabled, disabled: busy || (scx ? !scx.available && !scx.enabled : true), onChange: toggleScx }), scx && !scx.available && (SP_JSX.jsx("div", { style: { padding: "4px 0", opacity: 0.8 }, children: t("scx_lavd binary not installed (scx-scheds package) — toggle will take effect once it ships.") })), scx?.enabled && (SP_JSX.jsx("div", { style: { padding: "4px 0", opacity: 0.8 }, children: scx.active ? t("Status: active") : t("Status: enabled, not active (binary missing?)") })), scx?.enabled && (SP_JSX.jsx("div", { className: "nebel-reset-row", children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => toggleScx(false), children: t("Disable scx_lavd") }) }))] })] }));
+}
+
 function usePluginConfig() {
     const [config, setConfig] = SP_REACT.useState(null);
     const [message, setMessage] = SP_REACT.useState(t("Loading"));
@@ -4721,6 +4841,7 @@ function buildTabs(config, setConfig, qam) {
         { id: "Power", icon: tabIcons.Power, label: t("TabPower"), content: SP_JSX.jsx(Power, { config: config, setConfig: setConfig, qam: qam }) },
         { id: "Lighting", icon: tabIcons.Lighting, label: t("TabLighting"), content: SP_JSX.jsx(Lighting, { config: config, setConfig: setConfig, qam: qam }) },
         { id: "Sync", icon: tabIcons.Sync, label: t("TabSync"), content: SP_JSX.jsx(Sync, { qam: qam }) },
+        { id: "Vr", icon: tabIcons.Vr, label: t("TabVr"), content: SP_JSX.jsx(Vr, { qam: qam }) },
         { id: "System", icon: tabIcons.System, label: t("TabSystem"), content: SP_JSX.jsx(System, { config: config, setConfig: setConfig, qam: qam }) },
     ];
 }

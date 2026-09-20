@@ -85,6 +85,17 @@ export const tabIcons = {
       }
     />
   ),
+  Vr: (
+    <Icon
+      path={
+        <>
+          <path d="M3 7h18a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3.5a2 2 0 0 1-1.7-.95l-1.2-1.9a1.5 1.5 0 0 0-2.6 0l-1.2 1.9A2 2 0 0 1 6.5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" />
+          <circle cx="7.5" cy="12" r="1.6" />
+          <circle cx="16.5" cy="12" r="1.6" />
+        </>
+      }
+    />
+  ),
   System: (
     <Icon
       path={
