@@ -77,13 +77,19 @@
     const cMyGames = getColl(["mygames","my-games","all","allgames","my games"]);
     const cRecent  = getColl(["recent","recently-played","недавние","played recently"]);
     // --- optional steamui component deps (QAM/pause/full provider tree) ---
-    const aWin   = tryReq(61236) || scanModule(["GamepadUIMainWindowInstance"], (m)=>m && m.oy && m.oy.WindowStore);
+    const aWinOld = tryReq(61236);
+    const aWin = (aWinOld && aWinOld.oy && aWinOld.oy.WindowStore) ? aWinOld
+               : scanModule(["GamepadUIMainWindowInstance"], (m)=>m && m.oy && m.oy.WindowStore);
     const QAMmod = tryReq(79476) || scanModule(["QuickAccess"], (m)=>m && (typeof m.pZ === "function"));
     const EzMod  = tryReq(5822);
     const RW     = tryReq(97329) || scanModule(["overscanCount","FixedSizeList"], (m)=>m && (typeof m.Y1 === "function" || typeof m.FixedSizeList === "function"));
     const RWList = RW ? (RW.Y1 || RW.FixedSizeList) : null;
-    const FocusM = tryReq(69164) || scanModule(["gpfocus"], (m)=>m && typeof m.Z === "function");
-    const FZ = (FocusM && FocusM.Z) || null;
+    const FocusM = tryReq(69164);
+    const FocusM2 = tryReq(46307);
+    const FocusS = scanModule(["Focusable","OnActivate"], (m)=>m && (typeof m.RT === "function" || typeof m.Z === "function"));
+    const FZ = (FocusM && typeof FocusM.Z === "function") ? FocusM.Z
+             : (FocusM2 && typeof FocusM2.RT === "function") ? FocusM2.RT
+             : FocusS ? (FocusS.RT || FocusS.Z) : null;
     // providers (only needed to host real steamui components)
     const prov = {};
     for (const [k,id] of Object.entries({nav:35560,b5m:3524,cfg:72476,inst:96680,app:3375,qc:21371,pop:11131,st:46382,navCtx:79112,bs:51115,StoreA:73870,acct:24295})) prov[k]=tryReq(id);
@@ -307,7 +313,7 @@
       } catch(_) {}
       return null;
     };
-    const homeTab = ()=>{ try { const h = window.tempNavStore && window.tempNavStore.m_history; const st = h && h.location && h.location.state; return st ? String(st.HomeActiveTab_HistoryValue||"") : ""; } catch(_) { return ""; } };
+    const homeTab = ()=>{ try { const st = window.tempNavStore && window.tempNavStore.m_history && window.tempNavStore.m_history.location && window.tempNavStore.m_history.location.state; if (!st) return ""; for (const k of Object.keys(st)) { const v = st[k]; if (typeof v === "string" && /whatsnew/i.test(v)) return v; } return String(st.HomeActiveTab_HistoryValue || st.HomeTab_HistoryValue || ""); } catch(_) { return ""; } };
     const downloadInfo = ()=>{
       try {
         const o = window.downloadsStore && window.downloadsStore.LocalDownloadOverview;
