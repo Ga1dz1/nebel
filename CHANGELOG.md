@@ -16,9 +16,8 @@
 - **scx_lavd** (sched-ext BPF-скедулер, линия pocknix/ROCKNIX) — opt-in:
   `nebel-scx.service` (выключен по умолчанию, ConditionPathExists на бинарь)
   + переключатель в UI. С учётом истории gamescope-SCHED_RR (полный хэнг,
-  см. SCHEDULER_NOTES.md) — только для A/B-теста. Пакет scx-scheds в образе
-  пока отсутствует — тогл заработает после его поставки (сборка в
-  armada-packages, в плане).
+  см. SCHEDULER_NOTES.md) — только для A/B-теста. Пакет **scx-scheds** тащим
+  из Terra (в Fedora 44 его нет) — бинарь в образе, тогл живой сразу.
 
 ### Исправления
 - **Wi-Fi не сохраняется**: найден корневой дефект — дублирующий профиль

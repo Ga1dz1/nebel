@@ -11,6 +11,7 @@ cd /ctx/build_files
 ./34-install-dxvk-versions.sh
 ./35-install-emulators.sh
 ./36-install-vr.sh
+./37-optimizations.sh
 ./40-vendor-system-files.sh
 ./45-install-decky-plugins.sh
 ./50-create-user.sh
