@@ -1,0 +1,17 @@
+[Unit]
+Description=nebel Wi-Fi gaming mode (power_save off)
+# ath11k dynamic power save adds multi-ms latency spikes under burst load —
+# exactly what hurts game streaming / DUO wireless display / WiVRn. On a
+# gaming handheld the battery cost of power_save=off is modest; revert by
+# disabling this unit if runtime matters more than latency.
+
+[Service]
+Type=oneshot
+# Best-effort: interface naming and driver readiness vary; failure must not
+# block boot. RuntimeDirectory+wpa_cli fallback covers both iwd and
+# wpa_supplicant setups.
+ExecStart=/bin/sh -c 'for d in /sys/class/net/*/wireless; do [ -e "$d" ] || continue; i="${d%/wireless}"; i="${i##*/}"; /usr/sbin/iw dev "$i" set power_save off 2>/dev/null || true; done'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

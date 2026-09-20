@@ -99,6 +99,7 @@ systemctl enable nebel-powerd.service
 systemctl enable nebel-audio-resume.service
 systemctl enable nebel-audio-heal.service
 systemctl enable nebel-wifi-heal.service
+systemctl enable nebel-wifi-perf.service
 # No nebel-abl-update.service: ABL writes run only from the shutdown finalizer
 # (nebel-bootimg-sync.service ExecStop) gated by NEBEL_ABL_AUTO, or manually.
 systemctl enable nebel-desktop-hotkeys.service

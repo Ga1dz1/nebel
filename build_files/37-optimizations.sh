@@ -12,7 +12,7 @@ set -euxo pipefail
 # scx-scheds is not in Fedora proper; Terra (repos.fyralabs.com, already
 # enabled system-wide by 10-base-packages.sh) ships it for aarch64.
 
-dnf5 -y install --setopt=install_weak_deps=False scx-scheds
+dnf5 -y install --setopt=install_weak_deps=False scx-scheds iw
 
 # Sanity: the UI toggle and nebel-scx.service key off /usr/bin/scx_lavd.
 command -v scx_lavd
