@@ -1,0 +1,10 @@
+._*
+.DS_Store
+output/
+*.img
+*.img.gz
+*.sha256
+*.sig
+secrets/
+private/
+

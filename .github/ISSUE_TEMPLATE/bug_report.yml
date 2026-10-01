@@ -1,0 +1,23 @@
+name: Bug report
+description: Report an installation or released-image problem
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Nebel version
+      description: The exact version shown by the image or release notes.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem
+      description: Describe what happened and how to reproduce it. Remove private logs and identifiers.
+    validations:
+      required: true
