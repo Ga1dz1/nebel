@@ -14,7 +14,7 @@ ARG GRAPHICS_PKG=ghcr.io/ga1dz1/armada-packages/graphics@sha256:e40a52496b08a6e3
 ARG POWERDEVIL_PKG=ghcr.io/virtudude/armada-packages/powerdevil@sha256:996937f85b561eccfd006ac1c5e7dbd0a0a1b21846ca518fdb5938c215878d81
 # Local qualification overrides this with localhost/nebel-packages/kernel.
 # Publish the exact carrier (including corresponding sources) before remote builds.
-ARG KERNEL_PKG=ghcr.io/ga1dz1/nebel-components/kernel@sha256:edcd480ba4601d29c4d4fdc812b34ef4b5e55a9430fa787ef358c7a02390db60
+ARG KERNEL_PKG=ghcr.io/ga1dz1/nebel-components/kernel@sha256:47e81eab32e859dce087c41cb3dd7c026289261c5f1eac39ba57f409a818df2b
 ARG INPUTPLUMBER_PKG=ghcr.io/ga1dz1/armada-packages/inputplumber@sha256:ce87f64eaeab2ed05a31b7ef035429dac5bf6fc842c4ecdb92d3075c4c7b6564
 ARG EXTEST_PKG=ghcr.io/virtudude/armada-packages/extest@sha256:bdd44824ebbff167e007fd44df794713e2340e8fe94247d9e231f3ce10ff1844
 ARG NETWORKMANAGER_PKG=ghcr.io/virtudude/armada-packages/networkmanager@sha256:ed0b1c9877fbeba38067f3b0de663c9483000019e0a0a968740f231bcfe3d095
