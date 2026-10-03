@@ -1,2 +1,0 @@
-# Default root-only /dev/ntsync makes Proton fall back to fsync; grant wheel rw.
-SUBSYSTEM=="misc", KERNEL=="ntsync", GROUP="wheel", MODE="0660"

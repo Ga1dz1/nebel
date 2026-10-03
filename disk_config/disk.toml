@@ -1,4 +1,0 @@
-[[customizations.filesystem]]
-mountpoint = "/"
-# Enough room for one staged bootc upgrade before first-boot repart growth.
-minsize = "10 GiB"

@@ -1,6 +1,0 @@
-#!/bin/sh
-# Launches yaps2 (github.com/yaps2/yaps2, an ARM64-focused PCSX2 fork -
-# vendored as a prebuilt nightly, see armada-packages/pcsx2/build.sh),
-# self-contained under /usr/share/pcsx2 (its binary carries RUNPATH
-# $ORIGIN/../lib, no LD_LIBRARY_PATH needed).
-exec /usr/share/pcsx2/bin/yaps2-qt -bigpicture "$@"

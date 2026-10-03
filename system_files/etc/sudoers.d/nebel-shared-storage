@@ -1,2 +1,0 @@
-# Allow the armada user to toggle the shared-storage mount without a password.
-nebel ALL=(root) NOPASSWD: /usr/libexec/nebel/shared-storage-setup enable, /usr/libexec/nebel/shared-storage-setup disable

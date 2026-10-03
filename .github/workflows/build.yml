@@ -57,8 +57,10 @@ jobs:
 
       - name: Require signing key before publishing a channel
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          HAVE_SIGNING_SECRET: ${{ secrets.SIGNING_SECRET != '' }}
         run: |
-          if [ -z "${{ secrets.SIGNING_SECRET }}" ]; then
+          if [ "$HAVE_SIGNING_SECRET" != true ]; then
             echo "::error::SIGNING_SECRET is not set — refusing to publish an unsigned image (devices verify ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }})."
             exit 1
           fi
@@ -98,17 +100,17 @@ jobs:
           sep-annotations: " "
 
       - name: Log in to ghcr.io
-        # The Containerfile pulls our own armada-packages/{kernel,pcsx2,eden} -
-        # kernel is public so GITHUB_TOKEN (or no auth at all) works for it, but
-        # pcsx2/eden are private, unlinked packages: GITHUB_TOKEN only carries
-        # access to *this* repo's own package, not other private packages on the
-        # account, so pulling them needs a real PAT (PACKAGES_READ_TOKEN, scoped
-        # to read:packages only) instead. buildah-build runs as this same
+        # Component packages can live in separate/private repositories.
+        # Keep the read-only package token for those pulls; the image no longer
+        # imports PCSX2 or Eden. buildah-build runs as this same
         # unprivileged user (no sudo anywhere before this point in the job), so
         # the login has to be unprivileged too - a root-only login wouldn't be
         # visible to it. The later push step logs in again with GITHUB_TOKEN,
         # which overwrites this entry before it needs write access.
-        run: echo "${{ secrets.PACKAGES_READ_TOKEN }}" | podman login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
+        env:
+          PACKAGES_READ_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
+          REGISTRY_USER: ${{ github.repository_owner }}
+        run: printf '%s' "$PACKAGES_READ_TOKEN" | podman login ghcr.io -u "$REGISTRY_USER" --password-stdin
 
       - name: Build Image
         id: build_image
@@ -153,12 +155,16 @@ jobs:
       - name: Push to GHCR
         id: push
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+          CANDIDATE_TAG: candidate-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
-          set -euxo pipefail
-          echo "${{ secrets.GITHUB_TOKEN }}" | sudo skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
+          set -euo pipefail
+          printf '%s' "$REGISTRY_TOKEN" | sudo skopeo login ghcr.io -u "$REGISTRY_USER" --password-stdin
           IMAGE_FULL="${IMAGE_REGISTRY}/${IMAGE_NAME}"
-          # One image, many tags → one digest, so one signature (below) covers all.
-          # Retry so a transient ghcr 5xx can't leave a tag pushed but unsigned.
+          # Publish only a quarantined run-specific tag until signing succeeds.
+          # Never expose an unsigned digest through testing/beta/stable/latest.
           push_tag() {
             local n=0
             until sudo skopeo copy \
@@ -166,14 +172,11 @@ jobs:
               n=$((n + 1)); [ "${n}" -ge 3 ] && return 1; sleep 15
             done
           }
-          first=""
-          for tag in ${{ steps.metadata.outputs.tags }}; do
-            push_tag "${tag}"
-            [ -n "${first}" ] || first="${tag}"
-          done
+          push_tag "$CANDIDATE_TAG"
           # skopeo --digestfile can't write under sudo's userns remap; read it back.
-          digest=$(sudo skopeo inspect --format '{{.Digest}}' "docker://${IMAGE_FULL}:${first}")
+          digest=$(sudo skopeo inspect --format '{{.Digest}}' "docker://${IMAGE_FULL}:${CANDIDATE_TAG}")
           echo "digest=${digest}" >> "${GITHUB_OUTPUT}"
+          echo "candidate=${CANDIDATE_TAG}" >> "${GITHUB_OUTPUT}"
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -189,7 +192,7 @@ jobs:
           IMAGE_FULL="${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}"
           # cosign runs rootless and has its own auth store — the push step's
           # `sudo skopeo login` only authenticated root, so log cosign in too.
-          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u "${{ github.actor }}" --password-stdin
+          printf '%s' "$REGISTRY_TOKEN" | cosign login ghcr.io -u "$REGISTRY_USER" --password-stdin
           # Sign the digest, not a tag (a concurrent run could re-point the tag).
           # --new-bundle-format=false: bootc's verifier expects the legacy .sig; the
           # default flips in cosign v3.
@@ -197,5 +200,23 @@ jobs:
         env:
           HAVE_SIGNING_SECRET: ${{ secrets.SIGNING_SECRET != '' }}
           TAGS: ${{ steps.push.outputs.digest }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
           COSIGN_EXPERIMENTAL: false
           COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+
+      - name: Verify signature and publish testing by immutable digest
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+          CANDIDATE_TAG: ${{ steps.push.outputs.candidate }}
+          CANDIDATE_DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$REGISTRY_TOKEN" | skopeo login ghcr.io -u "$REGISTRY_USER" --password-stdin
+          python3 tools/promote-image.py \
+            --repository "${IMAGE_REGISTRY}/${IMAGE_NAME}" \
+            --source "$CANDIDATE_TAG" --target testing \
+            --expected-digest "$CANDIDATE_DIGEST" \
+            --key system_files/etc/pki/containers/nebel.pub

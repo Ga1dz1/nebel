@@ -1,4 +1,0 @@
-# Disable runtime PM for WCD938x SoundWire RX/TX to fix jack detection.
-# Ported from ROCKNIX (packages/hardware/quirks/platforms/SM8250). Only
-# matches the WCD938x SoundWire device ID, harmless on hardware without it.
-ACTION=="bind", SUBSYSTEM=="soundwire", KERNEL=="sdw:*:0217:010d:*", ATTR{power/control}="on"

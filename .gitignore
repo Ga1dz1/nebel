@@ -1,9 +1,0 @@
-Justfile.local
-output/
-_build*
-cosign.key
-__pycache__/
-*.pyc
-._*
-__pycache__/
-*.pyc

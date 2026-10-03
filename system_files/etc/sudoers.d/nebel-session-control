@@ -1,3 +1,0 @@
-# Allow the nebel user to switch sessions (desktop <-> game mode) without a
-# password - os-session-select calls this from inside the running session.
-nebel ALL=(root) NOPASSWD: /usr/libexec/nebel/session-control

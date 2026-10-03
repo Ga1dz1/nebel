@@ -1,6 +1,0 @@
-polkit.addRule(function(action, subject) {
-    if (action.id == "org.shadowblip.Input.CompositeDevice.SetTargetDevices" &&
-        subject.user == "root") {
-        return polkit.Result.YES;
-    }
-});

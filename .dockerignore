@@ -1,2 +1,9 @@
-**/node_modules
-decky/nebel-control/dist
+# Implementation comes from the pinned private component carrier, never
+# from the public checkout or its Git history/credentials.
+*
+!Containerfile
+!licenses/
+licenses/**
+!licenses/GLM.txt
+!licenses/STB.txt
+!licenses/README.txt

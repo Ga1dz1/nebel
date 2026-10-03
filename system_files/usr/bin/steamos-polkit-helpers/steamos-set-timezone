@@ -1,4 +1,0 @@
-#!/usr/bin/bash
-# Steam's timezone picker calls this via pkexec; nebel lacks jupiter-hw-support.
-set -eu
-exec /usr/bin/timedatectl set-timezone "$1"

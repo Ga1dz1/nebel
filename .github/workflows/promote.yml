@@ -14,20 +14,26 @@ on:
         type: string
         default: testing
       version:
-        description: "Optional release version (e.g. 1.0). Set when cutting a release: keeps an immutable :<version> tag as the permanent pin for the downloadable disk image."
+        description: "Release version matching the image (e.g. 1.4.8); mandatory for stable. An existing version cannot be replaced with another digest."
         type: string
         default: ""
+      expected_digest:
+        description: "Exact sha256 digest of the qualified image; promotion stops if the source tag changed"
+        type: string
+        required: true
 
 env:
   IMAGE_NAME: ${{ github.event.repository.name }}
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.target }}
+  # Serialize beta AND stable: either can create a permanent version tag.
+  group: nebel-image-promotion
   cancel-in-progress: false
 
 jobs:
   promote:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     name: Promote ${{ inputs.source }} -> ${{ inputs.target }}
     runs-on: ubuntu-latest
 
@@ -47,37 +53,25 @@ jobs:
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: 'v2.6.3'
 
       - name: Log in to ghcr.io
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_ACTOR: ${{ github.actor }}
+        run: printf '%s' "$REGISTRY_TOKEN" | skopeo login ghcr.io -u "$REGISTRY_ACTOR" --password-stdin
 
-      - name: Refuse to promote an unsigned image
-        id: resolve
+      - name: Verify approved image and promote without replacing release versions
+        env:
+          PROMOTE_SOURCE: ${{ inputs.source }}
+          PROMOTE_TARGET: ${{ inputs.target }}
+          PROMOTE_VERSION: ${{ inputs.version }}
+          PROMOTE_DIGEST: ${{ inputs.expected_digest }}
         run: |
-          set -euxo pipefail
-          REPO="${IMAGE_REGISTRY}/${IMAGE_NAME}"
-          # Pin to the digest so verify and the retag below act on the same image
-          # even if a concurrent build re-points the source tag in between.
-          DIGEST=$(skopeo inspect --format '{{.Digest}}' "docker://${REPO}:${{ inputs.source }}")
-          # Fail closed: never promote an unsigned build into beta/stable.
-          cosign verify --key system_files/etc/pki/containers/nebel.pub "${REPO}@${DIGEST}"
-          echo "digest=${DIGEST}" >> "${GITHUB_OUTPUT}"
-
-      - name: Promote (retag by digest — preserves digest, so the cosign signature carries)
-        run: |
-          set -euxo pipefail
-          REPO="${IMAGE_REGISTRY}/${IMAGE_NAME}"
-          SRC="${REPO}@${{ steps.resolve.outputs.digest }}"
-          promote() { skopeo copy --all "docker://${SRC}" "docker://${REPO}:$1"; }
-
-          promote "${{ inputs.target }}"
-
-          # stable doubles as :latest for tooling that expects it.
-          if [ "${{ inputs.target }}" = stable ]; then
-            promote latest
-          fi
-
-          # Tag the release.
-          if [ -n "${{ inputs.version }}" ]; then
-            promote "${{ inputs.version }}"
-          fi
+          set -euo pipefail
+          python3 tools/promote-image.py \
+            --repository "${IMAGE_REGISTRY}/${IMAGE_NAME}" \
+            --source "$PROMOTE_SOURCE" --target "$PROMOTE_TARGET" \
+            --version "$PROMOTE_VERSION" --expected-digest "$PROMOTE_DIGEST" \
+            --key system_files/etc/pki/containers/nebel.pub

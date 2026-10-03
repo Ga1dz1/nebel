@@ -1,0 +1,64 @@
+---
+name: Sign qualified image without rebuilding
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_tag:
+        description: "Quarantined candidate tag already uploaded after qualification"
+        required: true
+        type: string
+      expected_digest:
+        description: "Exact approved sha256 image digest"
+        required: true
+        type: string
+concurrency:
+  group: nebel-image-promotion
+  cancel-in-progress: false
+jobs:
+  sign:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+        with:
+          cosign-release: 'v2.6.3'
+      - name: Validate immutable candidate, sign and verify before publishing testing
+        env:
+          CANDIDATE_TAG: ${{ inputs.candidate_tag }}
+          EXPECTED_DIGEST: ${{ inputs.expected_digest }}
+          REPOSITORY: ghcr.io/${{ github.repository }}
+          REGISTRY_ACTOR: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+          COSIGN_EXPERIMENTAL: false
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_TAG" =~ ^candidate-[a-zA-Z0-9][a-zA-Z0-9._-]*$ ]]
+          [[ "$EXPECTED_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
+          test -n "$COSIGN_PRIVATE_KEY"
+          REPOSITORY=${REPOSITORY,,}
+          command -v skopeo >/dev/null || { sudo apt-get update && sudo apt-get install -y skopeo; }
+          printf '%s' "$REGISTRY_TOKEN" | skopeo login ghcr.io -u "$REGISTRY_ACTOR" --password-stdin
+          printf '%s' "$REGISTRY_TOKEN" | cosign login ghcr.io -u "$REGISTRY_ACTOR" --password-stdin
+          resolved=$(skopeo inspect --format '{{.Digest}}' "docker://${REPOSITORY}:${CANDIDATE_TAG}")
+          test "$resolved" = "$EXPECTED_DIGEST"
+          skopeo inspect "docker://${REPOSITORY}@${EXPECTED_DIGEST}" > candidate.json
+          python3 - <<'PY'
+          import json
+          info = json.load(open('candidate.json'))
+          assert info['Architecture'] == 'aarch64' or info['Architecture'] == 'arm64'
+          assert info['Os'] == 'linux'
+          assert info['Labels']['io.nebel.release.version'] == '1.4.8'
+          assert info['Labels']['containers.bootc'] == '1'
+          PY
+          cosign sign -y --new-bundle-format=false --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${EXPECTED_DIGEST}"
+          # The existing promotion helper rechecks identity and signature; it
+          # only mutates testing after successful public-key verification.
+          python3 tools/promote-image.py --repository "$REPOSITORY" \
+            --source "$CANDIDATE_TAG" --target testing \
+            --expected-digest "$EXPECTED_DIGEST" \
+            --key system_files/etc/pki/containers/nebel.pub
