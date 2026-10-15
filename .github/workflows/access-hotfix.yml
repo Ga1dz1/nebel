@@ -1,0 +1,103 @@
+name: Publish beta access micro-update
+on:
+  workflow_dispatch:
+    inputs:
+      stable_digest:
+        description: Qualified stable beta-open1 candidate digest
+        required: true
+        type: string
+      beta_digest:
+        description: Qualified beta beta-open1 candidate digest
+        required: true
+        type: string
+      testing_digest:
+        description: Qualified testing beta-open1 candidate digest
+        required: true
+        type: string
+concurrency:
+  group: nebel-image-promotion
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+        with:
+          cosign-release: 'v2.6.3'
+      - name: Verify branch ancestry, sign all candidates, then update their own channels
+        env:
+          STABLE_DIGEST: ${{ inputs.stable_digest }}
+          BETA_DIGEST: ${{ inputs.beta_digest }}
+          TESTING_DIGEST: ${{ inputs.testing_digest }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_ACTOR: ${{ github.actor }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+          COSIGN_EXPERIMENTAL: false
+        run: |
+          set -euo pipefail
+          test -n "$COSIGN_PRIVATE_KEY"
+          command -v skopeo >/dev/null || { sudo apt-get update && sudo apt-get install -y skopeo; }
+          printf '%s' "$REGISTRY_TOKEN" | skopeo login ghcr.io -u "$REGISTRY_ACTOR" --password-stdin
+          printf '%s' "$REGISTRY_TOKEN" | cosign login ghcr.io -u "$REGISTRY_ACTOR" --password-stdin
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          repo = 'ghcr.io/ga1dz1/nebel'
+          parents = {
+              'stable': 'sha256:01260eba8c71fa5e068df7519bfb89a3b72daf0e5edeb1e7fe2164e4fa376c73',
+              'beta': 'sha256:d66640930e0a34b3f766c5bdd41ccccdbd306cc14150e424d20426d7363eba30',
+              'testing': 'sha256:c1bac5820f7e3bb8cd04a17a549f3a7ab6df190784dd280418af8974ffaa173e'}
+          releases = {'stable': '1.4.8', 'beta': '1.4.9-preview.2', 'testing': '1.4.9-preview.3'}
+          def run(*args):
+              return subprocess.check_output(args, text=True)
+          def inspect(ref, config=False):
+              command = ['skopeo', 'inspect', '--override-os', 'linux', '--override-arch', 'arm64']
+              if config:
+                  command += ['--config']
+              return json.loads(run(*command, 'docker://' + ref))
+          approved = {}
+          assert inspect(repo + ':latest')['Digest'] == parents['stable'], 'Latest alias changed'
+          for channel, parent in parents.items():
+              digest = os.environ[channel.upper() + '_DIGEST']
+              assert re.fullmatch(r'sha256:[a-f0-9]{64}', digest)
+              assert inspect(repo + ':' + channel)['Digest'] == parent, 'Channel changed; stop, never overwrite it'
+              tag = 'candidate-beta-open1-' + channel + '-20261015'
+              assert inspect(repo + ':' + tag)['Digest'] == digest
+              child = inspect(repo + '@' + digest, True)
+              base = inspect(repo + '@' + parent, True)
+              labels = child['config']['Labels']
+              assert labels['io.nebel.hotfix'] == 'beta-open1-20261015'
+              assert labels['io.nebel.hotfix.parent'] == parent
+              assert labels['io.nebel.release.version'] == releases[channel]
+              assert labels['containers.bootc'] == '1'
+              assert labels['org.opencontainers.image.version'].endswith('-beta-open1')
+              assert child['architecture'] == base['architecture'] == 'arm64'
+              assert child['os'] == base['os'] == 'linux'
+              assert child['rootfs']['diff_ids'][:-1] == base['rootfs']['diff_ids']
+              for field in ('Entrypoint', 'Cmd', 'User', 'WorkingDir', 'Env', 'StopSignal', 'Healthcheck', 'OnBuild'):
+                  assert child['config'].get(field) == base['config'].get(field), field
+              approved[channel] = digest
+          # Finish signing and verifying ALL three before changing ANY channel.
+          for digest in approved.values():
+              subprocess.run(['cosign', 'sign', '-y', '--new-bundle-format=false', '--key',
+                              'env://COSIGN_PRIVATE_KEY', repo + '@' + digest], check=True)
+              subprocess.run(['cosign', 'verify', '--key', 'system_files/etc/pki/containers/nebel.pub',
+                              repo + '@' + digest], check=True)
+          for channel, parent in parents.items():
+              assert inspect(repo + ':' + channel)['Digest'] == parent, 'Channel changed during signing'
+          assert inspect(repo + ':latest')['Digest'] == parents['stable'], 'Latest alias changed during signing'
+          # Existing permanent release tags remain untouched. These are small
+          # branch-local access hotfixes, not promotion of a newer OS baseline.
+          for channel, digest in approved.items():
+              subprocess.run(['skopeo', 'copy', '--all', '--preserve-digests',
+                              'docker://' + repo + '@' + digest, 'docker://' + repo + ':' + channel], check=True)
+              assert inspect(repo + ':' + channel)['Digest'] == digest
+          subprocess.run(['skopeo', 'copy', '--all', '--preserve-digests',
+                          'docker://' + repo + '@' + approved['stable'], 'docker://' + repo + ':latest'], check=True)
+          assert inspect(repo + ':latest')['Digest'] == approved['stable']
+          print(json.dumps({'published': approved, 'parents': parents}, indent=2))
+          PY
