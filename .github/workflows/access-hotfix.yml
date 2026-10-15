@@ -11,7 +11,7 @@ on:
         required: true
         type: string
       testing_digest:
-        description: Qualified testing beta-open1 candidate digest
+        description: Already published Preview 4 digest; verified but never retagged by this job
         required: true
         type: string
 concurrency:
@@ -49,9 +49,8 @@ jobs:
           repo = 'ghcr.io/ga1dz1/nebel'
           parents = {
               'stable': 'sha256:01260eba8c71fa5e068df7519bfb89a3b72daf0e5edeb1e7fe2164e4fa376c73',
-              'beta': 'sha256:d66640930e0a34b3f766c5bdd41ccccdbd306cc14150e424d20426d7363eba30',
-              'testing': 'sha256:c1bac5820f7e3bb8cd04a17a549f3a7ab6df190784dd280418af8974ffaa173e'}
-          releases = {'stable': '1.4.8', 'beta': '1.4.9-preview.2', 'testing': '1.4.9-preview.3'}
+              'beta': 'sha256:d66640930e0a34b3f766c5bdd41ccccdbd306cc14150e424d20426d7363eba30'}
+          releases = {'stable': '1.4.8', 'beta': '1.4.9-preview.2'}
           def run(*args):
               return subprocess.check_output(args, text=True)
           def inspect(ref, config=False):
@@ -60,6 +59,15 @@ jobs:
                   command += ['--config']
               return json.loads(run(*command, 'docker://' + ref))
           approved = {}
+          preview_digest = os.environ['TESTING_DIGEST']
+          assert re.fullmatch(r'sha256:[a-f0-9]{64}', preview_digest)
+          assert inspect(repo + ':testing')['Digest'] == preview_digest
+          preview = inspect(repo + '@' + preview_digest, True)
+          assert preview['config']['Labels']['io.nebel.release.version'] == '1.4.9-preview.4'
+          assert preview['config']['Labels']['io.nebel.release.kind'] == 'cumulative-preview4'
+          assert preview['config']['Labels']['io.nebel.release.parent'] == 'sha256:c1bac5820f7e3bb8cd04a17a549f3a7ab6df190784dd280418af8974ffaa173e'
+          subprocess.run(['cosign', 'verify', '--key', 'system_files/etc/pki/containers/nebel.pub',
+                          repo + '@' + preview_digest], check=True)
           assert inspect(repo + ':latest')['Digest'] == parents['stable'], 'Latest alias changed'
           for channel, parent in parents.items():
               digest = os.environ[channel.upper() + '_DIGEST']
@@ -81,7 +89,8 @@ jobs:
               for field in ('Entrypoint', 'Cmd', 'User', 'WorkingDir', 'Env', 'StopSignal', 'Healthcheck', 'OnBuild'):
                   assert child['config'].get(field) == base['config'].get(field), field
               approved[channel] = digest
-          # Finish signing and verifying ALL three before changing ANY channel.
+          # Testing already has beta access through Preview 4. Sign and verify
+          # both older branches before changing either of their channels.
           for digest in approved.values():
               subprocess.run(['cosign', 'sign', '-y', '--new-bundle-format=false', '--key',
                               'env://COSIGN_PRIVATE_KEY', repo + '@' + digest], check=True)
