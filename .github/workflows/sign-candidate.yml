@@ -11,6 +11,11 @@ on:
         description: "Exact approved sha256 image digest"
         required: true
         type: string
+      publish_testing:
+        description: "Also update Testing after signing (disable for a Stable repair)"
+        required: false
+        default: true
+        type: boolean
 concurrency:
   group: nebel-image-promotion
   cancel-in-progress: false
@@ -30,6 +35,7 @@ jobs:
         env:
           CANDIDATE_TAG: ${{ inputs.candidate_tag }}
           EXPECTED_DIGEST: ${{ inputs.expected_digest }}
+          PUBLISH_TESTING: ${{ inputs.publish_testing }}
           REPOSITORY: ghcr.io/${{ github.repository }}
           REGISTRY_ACTOR: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,9 +62,10 @@ jobs:
           assert info['Labels']['containers.bootc'] == '1'
           PY
           cosign sign -y --new-bundle-format=false --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${EXPECTED_DIGEST}"
-          # The existing promotion helper rechecks identity and signature; it
-          # only mutates testing after successful public-key verification.
-          python3 tools/promote-image.py --repository "$REPOSITORY" \
-            --source "$CANDIDATE_TAG" --target testing \
-            --expected-digest "$EXPECTED_DIGEST" \
-            --key system_files/etc/pki/containers/nebel.pub
+          cosign verify --key system_files/etc/pki/containers/nebel.pub "${REPOSITORY}@${EXPECTED_DIGEST}" >/dev/null
+          if [[ "$PUBLISH_TESTING" == true ]]; then
+            python3 tools/promote-image.py --repository "$REPOSITORY" \
+              --source "$CANDIDATE_TAG" --target testing \
+              --expected-digest "$EXPECTED_DIGEST" \
+              --key system_files/etc/pki/containers/nebel.pub
+          fi

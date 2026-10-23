@@ -21,6 +21,14 @@ on:
         description: "Exact sha256 digest of the qualified image; promotion stops if the source tag changed"
         type: string
         required: true
+      replace_existing_version:
+        description: "Replace the existing 1.5.0 tag only for an approved Stable repair"
+        type: boolean
+        default: false
+      expected_previous_digest:
+        description: "Current 1.5.0 and Stable digest; required for a replacement"
+        type: string
+        default: ""
 
 env:
   IMAGE_NAME: ${{ github.event.repository.name }}
@@ -68,10 +76,16 @@ jobs:
           PROMOTE_TARGET: ${{ inputs.target }}
           PROMOTE_VERSION: ${{ inputs.version }}
           PROMOTE_DIGEST: ${{ inputs.expected_digest }}
+          REPLACE_EXISTING_VERSION: ${{ inputs.replace_existing_version }}
+          EXPECTED_PREVIOUS_DIGEST: ${{ inputs.expected_previous_digest }}
         run: |
           set -euo pipefail
+          args=()
+          if [[ "$REPLACE_EXISTING_VERSION" == true ]]; then
+            args+=(--replace-existing-version --expected-previous-digest "$EXPECTED_PREVIOUS_DIGEST")
+          fi
           python3 tools/promote-image.py \
             --repository "${IMAGE_REGISTRY}/${IMAGE_NAME}" \
             --source "$PROMOTE_SOURCE" --target "$PROMOTE_TARGET" \
             --version "$PROMOTE_VERSION" --expected-digest "$PROMOTE_DIGEST" \
-            --key system_files/etc/pki/containers/nebel.pub
+            --key system_files/etc/pki/containers/nebel.pub "${args[@]}"

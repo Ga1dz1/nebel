@@ -65,7 +65,8 @@ def verify_image(repository, source, version, expected_digest, key, runner=run):
             "build_id": (image.get("Labels") or {}).get("org.opencontainers.image.version")}
 
 
-def promote(repository, source, target, version, expected_digest, key, runner=run):
+def promote(repository, source, target, version, expected_digest, key, runner=run,
+            replace_existing_version=False, expected_previous_digest=""):
     if target not in ("testing", "beta", "stable"):
         raise ValueError("Target must be testing, beta or stable")
     if target == "testing" and version:
@@ -75,6 +76,17 @@ def promote(repository, source, target, version, expected_digest, key, runner=ru
     verify_image(repository, source, version, expected_digest, key, runner)
     pinned = f"{repository}@{expected_digest}"
 
+    if replace_existing_version:
+        if (target != "stable" or version != "1.5.0"
+                or not source.startswith("candidate-")
+                or not DIGEST.fullmatch(expected_previous_digest)
+                or expected_previous_digest == expected_digest):
+            raise ValueError("Replacement requires an explicit 1.5.0 Stable repair and old digest")
+        if inspect(f"{repository}:stable", runner)["Digest"] != expected_previous_digest:
+            raise ValueError("Stable moved since the repair was approved")
+    elif expected_previous_digest:
+        raise ValueError("Old digest is only valid for an explicit replacement")
+
     version_exists = False
     if version:
         listing = json.loads(runner(["skopeo", "list-tags", "docker://" + repository]))
@@ -82,8 +94,15 @@ def promote(repository, source, target, version, expected_digest, key, runner=ru
         if not isinstance(tags, list) or any(not isinstance(t, str) for t in tags):
             raise ValueError("Cannot establish whether release tag already exists")
         version_exists = version in tags
-        if version_exists and inspect(f"{repository}:{version}", runner)["Digest"] != expected_digest:
-            raise ValueError("Release version already names a different image; refusing overwrite")
+        if version_exists:
+            existing_digest = inspect(f"{repository}:{version}", runner)["Digest"]
+            if existing_digest != expected_digest:
+                if not replace_existing_version or existing_digest != expected_previous_digest:
+                    raise ValueError("Release version already names a different image; refusing overwrite")
+            elif replace_existing_version:
+                raise ValueError("Version already has the repaired digest; inspect channels instead")
+        elif replace_existing_version:
+            raise ValueError("Expected existing 1.5.0 version tag is missing")
 
     def copy(tag):
         runner(["skopeo", "copy", "--all", "--preserve-digests",
@@ -92,7 +111,7 @@ def promote(repository, source, target, version, expected_digest, key, runner=ru
             raise ValueError(f"Published tag {tag} does not match approved digest; stopping")
 
     # Establish the permanent pin before changing a user's OTA channel.
-    if version and not version_exists:
+    if version and (not version_exists or replace_existing_version):
         copy(version)
     copy(target)
     if target == "stable":
@@ -108,13 +127,17 @@ def main():
     parser.add_argument("--target")
     parser.add_argument("--verify-only", action="store_true", help="Read-only qualification for disk builds; never retag")
     parser.add_argument("--version", default="")
+    parser.add_argument("--replace-existing-version", action="store_true")
+    parser.add_argument("--expected-previous-digest", default="")
     args = parser.parse_args()
     try:
         if args.verify_only:
             result = verify_image(args.repository, args.source, args.version, args.expected_digest, args.key)
         else:
             result = promote(args.repository, args.source, args.target, args.version,
-                             args.expected_digest, args.key)
+                             args.expected_digest, args.key,
+                             replace_existing_version=args.replace_existing_version,
+                             expected_previous_digest=args.expected_previous_digest)
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         print(f"Promotion stopped: {error}", file=sys.stderr)
         return 1
