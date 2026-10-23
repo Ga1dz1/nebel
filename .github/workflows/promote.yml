@@ -14,7 +14,7 @@ on:
         type: string
         default: testing
       version:
-        description: "Release version matching the image (e.g. 1.4.8); mandatory for stable. An existing version cannot be replaced with another digest."
+        description: "Release version matching the image (e.g. 1.4.8); mandatory for stable. An existing version cannot be replaced except through the explicit Stable repair path."
         type: string
         default: ""
       expected_digest:
@@ -22,11 +22,11 @@ on:
         type: string
         required: true
       replace_existing_version:
-        description: "Replace the existing 1.5.0 tag only for an approved Stable repair"
+        description: "Replace the current Stable version only for an approved Stable repair"
         type: boolean
         default: false
       expected_previous_digest:
-        description: "Current 1.5.0 and Stable digest; required for a replacement"
+        description: "Current version tag and Stable digest; required for a replacement"
         type: string
         default: ""
 

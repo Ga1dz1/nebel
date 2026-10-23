@@ -77,11 +77,11 @@ def promote(repository, source, target, version, expected_digest, key, runner=ru
     pinned = f"{repository}@{expected_digest}"
 
     if replace_existing_version:
-        if (target != "stable" or version != "1.5.0"
+        if (target != "stable" or version not in ("1.5.0", "1.5.1")
                 or not source.startswith("candidate-")
                 or not DIGEST.fullmatch(expected_previous_digest)
                 or expected_previous_digest == expected_digest):
-            raise ValueError("Replacement requires an explicit 1.5.0 Stable repair and old digest")
+            raise ValueError("Replacement requires an explicit supported Stable repair and previous digest")
         if inspect(f"{repository}:stable", runner)["Digest"] != expected_previous_digest:
             raise ValueError("Stable moved since the repair was approved")
     elif expected_previous_digest:
@@ -102,7 +102,7 @@ def promote(repository, source, target, version, expected_digest, key, runner=ru
             elif replace_existing_version:
                 raise ValueError("Version already has the repaired digest; inspect channels instead")
         elif replace_existing_version:
-            raise ValueError("Expected existing 1.5.0 version tag is missing")
+            raise ValueError("Expected existing release version tag is missing")
 
     def copy(tag):
         runner(["skopeo", "copy", "--all", "--preserve-digests",
