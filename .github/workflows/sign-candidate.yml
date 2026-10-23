@@ -58,7 +58,7 @@ jobs:
           info = json.load(open('candidate.json'))
           assert info['Architecture'] == 'aarch64' or info['Architecture'] == 'arm64'
           assert info['Os'] == 'linux'
-          assert info['Labels']['io.nebel.release.version'] in ('1.4.8', '1.4.9-preview.1', '1.4.9-preview.2', '1.4.9-preview.3', '1.4.9-preview.4', '1.5.0', '1.5.1-preview.1', '1.5.1-preview.2', '1.5.1-preview.3', '1.5.1-preview.4')
+          assert info['Labels']['io.nebel.release.version'] in ('1.4.8', '1.4.9-preview.1', '1.4.9-preview.2', '1.4.9-preview.3', '1.4.9-preview.4', '1.5.0', '1.5.1-preview.1', '1.5.1-preview.2', '1.5.1-preview.3', '1.5.1-preview.4', '1.5.1-preview.6')
           assert info['Labels']['containers.bootc'] == '1'
           PY
           cosign sign -y --new-bundle-format=false --key env://COSIGN_PRIVATE_KEY "${REPOSITORY}@${EXPECTED_DIGEST}"
