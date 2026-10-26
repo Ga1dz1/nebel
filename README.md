@@ -14,23 +14,21 @@ this is not an offer of access to the entire private Git repository.
 
 ## Release status
 
-The 1.4.8 candidate has passed container-level kernel, experimental Gamescope,
-device-profile, runtime, license-notice and OTA signature-policy checks.
-Its draft installer has passed independent kernel/DTB/initramfs and factory
-Flatpak deployment checks. Signing, public OTA promotion, mandatory source
-downloads and final installer release are still pending. It is not yet a
-published OTA and has not been physically tested on every supported handheld.
+**Nebel OS 1.5.1 Aurora** is available through the **Stable** update channel.
 
-Use the [releases page](https://github.com/Ga1dz1/nebel/releases) for published
-images, checksums, source downloads and release-specific installation notes.
-Do not flash an unpublished build or use a different device's bootloader.
+- [Installer image](https://pub-b1313cdcc23d40dea4d423185bd9b5e4.r2.dev/nebel/nebel-1.5.1-Aurora.img.gz)
+- [SHA256](https://pub-b1313cdcc23d40dea4d423185bd9b5e4.r2.dev/nebel/nebel-1.5.1-Aurora.img.gz.sha256)
+- [Release notes / Примітки до випуску](https://github.com/Ga1dz1/nebel/releases/tag/1.5.1)
+
+Bluetooth Controller Mode remains WIP. See the release notes for current
+model-specific limitations and installation notes.
 
 ## Device scope
 
-The image carries 18 device-tree variants across SM8250, SM8550, SM8650 and
-SM8750. Retroid profiles include Pocket Mini/Mini V2, Pocket 5, Flip 2 and
-Pocket 6; a profile's presence does not mean every hardware revision was tested.
-Retroid Classic and additional environment work are scheduled separately.
+The common image carries 19 device-tree variants across SM4450, SM8250,
+SM8550, SM8650 and SM8750. Retroid profiles include Pocket Classic,
+Pocket Mini/Mini V2, Pocket 5, Flip 2 and Pocket 6. Hardware capabilities and
+available settings depend on the model.
 
 ## Building the skeleton
 
